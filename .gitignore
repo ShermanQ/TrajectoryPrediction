@@ -1,3 +1,7 @@
+# personnal
+sdd_extractor/csv/
+sdd_extractor/sdd/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
