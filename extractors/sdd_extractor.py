@@ -3,7 +3,7 @@ import csv
 import helpers 
 import os
 
-DATA_PATH = "./sdd/trajectories/"
+DATA_PATH = "./datasets/sdd/trajectories/"
 DATA_FILES = "/annotations.txt"
 DATASET = "sdd"
 CSV_PATH = "./csv/"
