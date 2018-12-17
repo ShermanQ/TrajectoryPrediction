@@ -69,7 +69,9 @@ def line_init(init,fieldnames,counter):
     global TRAJECTORY_COUNTER
     line = [TRAJECTORY_COUNTER]
     for key in init:
-        if key != "trajectory_label":
+        if key == "bbox":
+            line.append(init[key].tolist())
+        elif key != "trajectory_label":
             line.append(init[key])
     line.append(counter)
 
@@ -93,7 +95,7 @@ def line_trajectory(trajectory,fieldnames,counter):
         if key != "t":
             line.append(trajectory[key])
 
-    t = str(int(trajectory["t"]) + SCENE_LENGTHS[CURRENT_SCENE] + 1)
+    t = str(int(trajectory["t"]) + SCENE_LENGTHS[CURRENT_SCENE] )
 
     line.append(t)
     # print(line)
