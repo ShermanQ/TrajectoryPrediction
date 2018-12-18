@@ -19,7 +19,7 @@ CSV_PATH = "./csv/"
 NB_FRAME = 300
 
 
-PRINT_EVERY = 300
+PRINT_EVERY = 1
 
 def remove_char(chars,string):
     # chars_to_remove = ['{','}',' ','\'']
@@ -72,7 +72,7 @@ def main():
                 else:
                     frame_to_line[bframe] = line_count
             line_count +=1
-
+    print(line_count)
 
     available_boxes = np.ones(line_count)
     
@@ -93,17 +93,21 @@ def main():
                     if trajectory_id%PRINT_EVERY == 0:
                         print("trajectory n°"+str(trajectory_id))
                         print(time.time() - s)
-                
 
+                    if trajectory_id  == 3:
+                        break
+                
+                    last_frame_added = -1
                     with open(BOXES_PATH,'r') as csv_reader:
                         current_line = 0
                         # print(frame, frame + NB_FRAME)
                         # print(frame)
+                        print(frame_to_line[frame])
                         boxes_reader = itertools.islice(csv.reader(csv_reader, delimiter=','),frame_to_line[frame],None)
                        
                         
-                        if current_line == 0:
-                            _ = next(boxes_reader)
+                        # if current_line == 0:
+                        #     temp = next(boxes_reader)
                             
 
                         # next(itertools.islice(csv.reader(f), N, None)
@@ -114,13 +118,15 @@ def main():
                         
                         while bframe < frame + NB_FRAME:
                             # print(bframe)
-                            if available_boxes[current_line] and bframe + 1 > frame: 
+                            print(frame_to_line[bframe])
+                            print(available_boxes[frame_to_line[bframe]])
+                            if last_frame_added != bframe and available_boxes[frame_to_line[frame] + current_line] and bframe + 1 > frame: 
                                 o = iou(box,bbox)
                                 # print(box)
                                 # print(bbox)
                                 # print(o)
                                 if  o > 0.9 :
-                                    available_boxes[current_line] = 0
+                                    available_boxes[frame_to_line[frame] + current_line] = 0
                                     new_line = []
                                     new_line.append(DATASET) # dataset label
                                     new_line.append(DATASET) # subscene label
@@ -137,10 +143,13 @@ def main():
                                     writer.writerow(new_line)
 
                                     box = bbox
+                                    last_frame_added = bframe
                             # print("trajectory n°"+str(trajectory_id))
                             try:
                                 brow = next(boxes_reader)
+                                
                                 bbox,bframe = parse_boxes_line(brow)
+                                
                             except:
                                 break
                             current_line += 1
@@ -154,7 +163,7 @@ def main():
     print("Done!")
     print(time.time() - s)
 
-    print( "number of not used lines: " + str(sum(available_boxes))
+    print( "number of not used lines: " + str(sum(available_boxes)))
     nb_box_per_traj = np.zeros(line_count_init)
 
     with open(bad_csv) as csv_file:
