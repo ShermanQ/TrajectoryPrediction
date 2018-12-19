@@ -17,7 +17,7 @@ TRAJECTORIES_PATH = DATA + "trajectories.csv"
 dict_classes = {'7': 'car', '15':'pedestrian', '6': 'car', '14': 'pedestrian'}
 CSV_PATH = "./csv/"
 
-NB_FRAME = 1400
+NB_FRAME = 3000
 
 
 PRINT_EVERY = 300
@@ -35,11 +35,16 @@ def main():
     frame_to_line = {}
     
     line_count = 0
+
+    available_boxes = {}
+
     with open(BOXES_PATH) as f:
         reader = csv.reader(f, delimiter=',')
         for row in reader:
             if line_count != 0:
                 bbox,bframe = parse_boxes_line(row)
+                available = [True for _ in bbox]
+                available_boxes[bframe] = available
 
                 if bframe in frame_to_line:
                     frame_to_line[bframe] = min(line_count,frame_to_line[bframe])
@@ -74,42 +79,50 @@ def main():
                         bboxes,bframe = parse_boxes_line(first_row)
                         
                         
+                        
                         while bframe < frame + NB_FRAME :
-                            if last_frame_added != bframe and bframe + 1 > frame: 
-                                for bbox in bboxes:
-                                    o = iou(box,bbox)
-                                    if  o > 0.9 :
+                            if last_frame_added < bframe and bframe + 1 > frame: 
+                                # print(bboxes,available_boxes[bframe])
+                                k = 0
+                                for bbox,is_available in zip(bboxes,available_boxes[bframe]):
+                                    if is_available:
+                                        o = iou(box,bbox)
+                                        if  o > 0.9 :
 
-                                        x = (bbox[0] + bbox[2])/2.0
-                                        y = (bbox[1] + bbox[3])/2.0 # middle of bounding box
-                                        # y = bbox[3] # paper version
-                                        new_line = []
-                                        new_line.append(DATASET) # dataset label
-                                        new_line.append(DATASET) # subscene label
-                                        new_line.append(bframe) #frame
-                                        new_line.append(trajectory_id) #id
-                                        new_line.append(x) #x
-                                        new_line.append(y) #y
-                                        new_line.append(bbox[0])# xmin. The top left x-coordinate of the bounding box.
-                                        new_line.append(bbox[1])# ymin The top left y-coordinate of the bounding box.
-                                        new_line.append(bbox[2])# xmax. The bottom right x-coordinate of the bounding box
-                                        new_line.append(bbox[3])# ymax. The bottom right y-coordinate of the bounding box
-                                        new_line.append(dict_classes[class_id]) # label type of agent   
+                                            x = (bbox[0] + bbox[2])/2.0
+                                            y = (bbox[1] + bbox[3])/2.0 # middle of bounding box
+                                            # y = bbox[3] # paper version
+                                            new_line = []
+                                            new_line.append(DATASET) # dataset label
+                                            new_line.append(DATASET) # subscene label
+                                            new_line.append(bframe) #frame
+                                            new_line.append(trajectory_id) #id
+                                            new_line.append(x) #x
+                                            new_line.append(y) #y
+                                            new_line.append(bbox[0])# xmin. The top left x-coordinate of the bounding box.
+                                            new_line.append(bbox[1])# ymin The top left y-coordinate of the bounding box.
+                                            new_line.append(bbox[2])# xmax. The bottom right x-coordinate of the bounding box
+                                            new_line.append(bbox[3])# ymax. The bottom right y-coordinate of the bounding box
+                                            new_line.append(dict_classes[class_id]) # label type of agent   
 
 
-                                        if last_row_added != [] and last_frame_added + 1 < bframe:
-                                            for i in range(last_frame_added + 1, bframe):
-                                                last_row_added[2] = i
-                                                writer.writerow(last_row_added)
+                                            if last_row_added != [] and last_frame_added + 1 < bframe:
+                                                for i in range(last_frame_added + 1, bframe):
+                                                    last_row_added[2] = i
+                                                    writer.writerow(last_row_added)
 
-                                        writer.writerow(new_line)
-                                        COUNTER += 1
+                                            writer.writerow(new_line)
+                                            COUNTER += 1
+                                            available_boxes[bframe][k] = False
 
-                                        box = bbox
-                                        last_frame_added = bframe
-                                        last_row_added = new_line
+                                            box = bbox
+                                            last_frame_added = bframe
+                                            last_row_added = new_line
 
-                                        break
+                                            
+
+                                            break
+                                    k += 1
                             try:
                                 brow = next(boxes_reader)
                                 
@@ -124,6 +137,12 @@ def main():
     print(time.time() - s)
 
     print( "number of used boxes: " + str(COUNTER))
+
+    count_true = len([1 for b in available_boxes for t in available_boxes[b] if t == True])
+    count_false = len([1 for b in available_boxes for t in available_boxes[b] if t == False])
+    count_total = len([1 for b in available_boxes for t in available_boxes[b] ])
+
+    print(count_true,count_false,count_total)
 
 if __name__ == "__main__":
     main()
