@@ -6,6 +6,7 @@ import pandas as pd
 import time
 import itertools
 import numpy as np
+from helpers import remove_char,parse_init_line,parse_boxes_line
 
 ROOT = "./datasets/"
 DATASET = "bad"
@@ -16,48 +17,20 @@ TRAJECTORIES_PATH = DATA + "trajectories.csv"
 dict_classes = {'7': 'car', '15':'pedestrian', '6': 'car', '14': 'pedestrian'}
 CSV_PATH = "./csv/"
 
-NB_FRAME = 300
+NB_FRAME = 1400
 
 
-PRINT_EVERY = 1
-
-def remove_char(chars,string):
-    # chars_to_remove = ['{','}',' ','\'']
-    sc = set(chars)
-    string = ''.join([c for c in string if c not in sc])
-    return string
-
-def parse_init_line(row):
-    trajectory_id = int(row[0])
-    class_id = row[1]
-    box = remove_char(['[',']'],row[2]).split(",")
-    box = [float(b) for b in box]
-    frame = int(row[3])
-    return trajectory_id,class_id,box,frame
-
-def parse_boxes_line(row):
-    
-    box = box = remove_char(['[',']'],row[0]).split(",")
-    box = [float(b) for b in box]
-    frame = int(row[1])
-    return box,frame
+PRINT_EVERY = 300
 
 def main():
-    # df = pd.read_csv(BOXES_PATH)
-
-    # for row in df.iterrows():
-    #     pass
     s = time.time()
 
     bad_csv = CSV_PATH + DATASET + ".csv"
     if os.path.exists(bad_csv):
         os.remove(bad_csv)
-    
-    # nb_lines = 0
-    # with open(BOXES_PATH) as f:
-    #     nb_lines = sum(1 for line in f)
+  
         
-
+    COUNTER = 0
     print("Computing frame to line")
     frame_to_line = {}
     
@@ -67,17 +40,12 @@ def main():
         for row in reader:
             if line_count != 0:
                 bbox,bframe = parse_boxes_line(row)
+
                 if bframe in frame_to_line:
                     frame_to_line[bframe] = min(line_count,frame_to_line[bframe])
                 else:
                     frame_to_line[bframe] = line_count
             line_count +=1
-    print(line_count)
-
-    available_boxes = np.ones(line_count)
-    
-
-
 
     with open(bad_csv,"a") as csv_file:
         writer = csv.writer(csv_file)
@@ -86,101 +54,76 @@ def main():
             init_reader = csv.reader(csv_file, delimiter=',')
             line_count_init = 0
             for row in init_reader:
-                # print(row)
                 if line_count_init != 0:
                     trajectory_id,class_id,box,frame = parse_init_line(row)
+
+
 
                     if trajectory_id%PRINT_EVERY == 0:
                         print("trajectory n°"+str(trajectory_id))
                         print(time.time() - s)
 
-                    if trajectory_id  == 3:
-                        break
-                
                     last_frame_added = -1
+                    last_row_added = []
                     with open(BOXES_PATH,'r') as csv_reader:
                         current_line = 0
-                        # print(frame, frame + NB_FRAME)
-                        # print(frame)
-                        print(frame_to_line[frame])
                         boxes_reader = itertools.islice(csv.reader(csv_reader, delimiter=','),frame_to_line[frame],None)
-                       
-                        
-                        # if current_line == 0:
-                        #     temp = next(boxes_reader)
-                            
-
-                        # next(itertools.islice(csv.reader(f), N, None)
+                    
                         first_row = next(boxes_reader)
                         current_line += 1
-                        bbox,bframe = parse_boxes_line(first_row)
+                        bboxes,bframe = parse_boxes_line(first_row)
                         
                         
-                        while bframe < frame + NB_FRAME:
-                            # print(bframe)
-                            print(frame_to_line[bframe])
-                            print(available_boxes[frame_to_line[bframe]])
-                            if last_frame_added != bframe and available_boxes[frame_to_line[frame] + current_line] and bframe + 1 > frame: 
-                                o = iou(box,bbox)
-                                # print(box)
-                                # print(bbox)
-                                # print(o)
-                                if  o > 0.9 :
-                                    available_boxes[frame_to_line[frame] + current_line] = 0
-                                    new_line = []
-                                    new_line.append(DATASET) # dataset label
-                                    new_line.append(DATASET) # subscene label
-                                    new_line.append(bframe) #frame
-                                    new_line.append(trajectory_id) #id
-                                    new_line.append(0) #x
-                                    new_line.append(0) #y
-                                    new_line.append(bbox[0])# xmin. The top left x-coordinate of the bounding box.
-                                    new_line.append(bbox[1])# ymin The top left y-coordinate of the bounding box.
-                                    new_line.append(bbox[2])# xmax. The bottom right x-coordinate of the bounding box
-                                    new_line.append(bbox[3])# ymax. The bottom right y-coordinate of the bounding box
-                                    new_line.append(dict_classes[class_id]) # label type of agent   
+                        while bframe < frame + NB_FRAME :
+                            if last_frame_added != bframe and bframe + 1 > frame: 
+                                for bbox in bboxes:
+                                    o = iou(box,bbox)
+                                    if  o > 0.9 :
 
-                                    writer.writerow(new_line)
+                                        x = (bbox[0] + bbox[2])/2.0
+                                        y = (bbox[1] + bbox[3])/2.0 # middle of bounding box
+                                        # y = bbox[3] # paper version
+                                        new_line = []
+                                        new_line.append(DATASET) # dataset label
+                                        new_line.append(DATASET) # subscene label
+                                        new_line.append(bframe) #frame
+                                        new_line.append(trajectory_id) #id
+                                        new_line.append(x) #x
+                                        new_line.append(y) #y
+                                        new_line.append(bbox[0])# xmin. The top left x-coordinate of the bounding box.
+                                        new_line.append(bbox[1])# ymin The top left y-coordinate of the bounding box.
+                                        new_line.append(bbox[2])# xmax. The bottom right x-coordinate of the bounding box
+                                        new_line.append(bbox[3])# ymax. The bottom right y-coordinate of the bounding box
+                                        new_line.append(dict_classes[class_id]) # label type of agent   
 
-                                    box = bbox
-                                    last_frame_added = bframe
-                            # print("trajectory n°"+str(trajectory_id))
+
+                                        if last_row_added != [] and last_frame_added + 1 < bframe:
+                                            for i in range(last_frame_added + 1, bframe):
+                                                last_row_added[2] = i
+                                                writer.writerow(last_row_added)
+
+                                        writer.writerow(new_line)
+                                        COUNTER += 1
+
+                                        box = bbox
+                                        last_frame_added = bframe
+                                        last_row_added = new_line
+
+                                        break
                             try:
                                 brow = next(boxes_reader)
                                 
-                                bbox,bframe = parse_boxes_line(brow)
+                                bboxes,bframe = parse_boxes_line(brow)
                                 
                             except:
                                 break
                             current_line += 1
-                            # print(brow)
-                            
-                            
-
-                # if line_count_init != 0:
-                #     break
+                        
                 line_count_init += 1  
     print("Done!")
     print(time.time() - s)
 
-    print( "number of not used lines: " + str(sum(available_boxes)))
-    nb_box_per_traj = np.zeros(line_count_init)
-
-    with open(bad_csv) as csv_file:
-        reader = csv.reader(csv_file, delimiter=',')
-        line_ = 0
-        for row in reader:
-            # print(row)
-            if line_ != 0:
-                nb_box_per_traj[int(row[3])] += 1
-            
-            line_ += 1
-    print("mean number of boxes per trajectorie: " + str(np.mean(nb_box_per_traj)), "std: " + str(np.std(nb_box_per_traj)))
-
-
-
-
-# Note generate frame when stopped
+    print( "number of used boxes: " + str(COUNTER))
 
 if __name__ == "__main__":
     main()

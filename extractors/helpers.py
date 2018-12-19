@@ -54,6 +54,10 @@ def parse_line(line,scene, dataset ):
 
     return new_line
 
+"""
+    Intersection over Union between two bounding boxes
+    box = [xtopleft,ytopleft,xbottomright,ybottomright]
+""" 
 
 def bb_intersection_over_union(boxA, boxB):
 	# determine the (x, y)-coordinates of the intersection rectangle
@@ -77,3 +81,46 @@ def bb_intersection_over_union(boxA, boxB):
  
 	# return the intersection over union value
 	return iou
+
+
+"""
+    Remove a list of chars from string
+"""
+def remove_char(chars,string):
+    # chars_to_remove = ['{','}',' ','\'']
+    sc = set(chars)
+    string = ''.join([c for c in string if c not in sc])
+    return string
+
+"""
+    In bad extractor parse row from text file obtained
+    after parsing the init cpkl file
+"""
+def parse_init_line(row):
+    trajectory_id = int(row[0])
+    class_id = row[1]
+    box = remove_char(['[',']'],row[2]).split(",")
+    box = [float(b) for b in box]
+    frame = int(row[3])
+    return trajectory_id,class_id,box,frame
+
+"""
+    In bad extractor parse row from text file obtained
+    after parsing the boxes cpkl file
+"""
+
+def parse_boxes_line(row):
+
+    nb_points = 4 
+    
+    box = remove_char(['[',']'],row[0]).split(",")
+    box = [float(b) for b in box]
+    boxes = []
+    for j in range(int(len(box)/nb_points)):
+        sub_box = []
+        for i in range(nb_points):
+            sub_box.append(float(box[nb_points * j + i]))
+        boxes.append(sub_box)
+
+    frame = int(row[1])
+    return boxes,frame
