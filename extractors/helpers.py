@@ -1,4 +1,5 @@
 import os
+import numpy as np
 
 """
     Get the directories contained in a directory
@@ -124,3 +125,84 @@ def parse_boxes_line(row):
 
     frame = int(row[1])
     return boxes,frame
+
+
+
+"""
+    Get the first timestep for a scene in fsc dataset
+"""
+def frame_corrector(subscene_path):
+    with open(subscene_path,"r") as a:
+
+        start_frame = None
+        # last_frame = 0.
+
+        # min_step = 10000
+        for k,line in enumerate(a):
+
+            frame = float(line.split(" ")[0])
+            if k == 0:
+                start_frame = frame
+            # step = frame - last_frame
+            # if step < min_step:
+            #     min_step = step
+            
+            # last_frame = frame
+        # min_step = round(min_step,5)
+        # gap = round(last_frame-start_frame,5)
+        # nb_frame = int(gap/min_step)
+    return start_frame
+
+
+"""
+    Parse and add scene specific informations to a line
+    line : a line of the original fsc dataset
+    scene: scene name + subscene number
+    dataset: name of the dataset
+    min_step: framrate * 100
+    start_frame: first timestamp of the scene
+"""   
+
+def parse_line_fsc(line,scene_name, dataset_name,min_step,start_frame):
+
+    undefined = -1
+
+    line = line.split(" ")
+
+    timestamp = round(float(line[0]),2)*100
+    start_frame = round(start_frame,2)*100
+    dt = timestamp - start_frame
+
+    frame = int(dt/min_step)
+    id_ = line[1]
+    
+    r = -1
+    theta = -1
+    x = -1
+    y = -1
+
+    if "" != line[3] and "" != line[-1]:
+        
+        r = float(line[3])     
+        theta = float(line[-1])
+
+        x = r * np.cos(theta)
+        y = r * np.sin(theta)
+
+    new_line = []
+
+    new_line.append(dataset_name) # dataset label
+    new_line.append(scene_name)   # subscene label
+    new_line.append(frame) #frame
+    new_line.append(id_) #id
+
+    new_line.append(x) #x
+    new_line.append(y) #y
+    new_line.append(undefined) # xmin. The top left x-coordinate of the bounding box.
+    new_line.append(undefined) # ymin The top left y-coordinate of the bounding box.
+    new_line.append(undefined) # xmax. The bottom right x-coordinate of the bounding box.
+    new_line.append(undefined) # ymax. The bottom right y-coordinate of the bounding box.
+
+    new_line.append(undefined) # label type of agent    
+
+    return new_line
