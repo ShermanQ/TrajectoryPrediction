@@ -1,7 +1,7 @@
-import numpy as np 
 import csv
 import os
 import time
+import helpers
 
 DATASETS = "./datasets/"
 DATASET = "ngsim"
@@ -21,62 +21,63 @@ def get_scene_names(filename):
             line_num += 1
     return [s[:-1] for s in scene_names[1:]]
 
+
 def main():
 
+    start = time.time()
     print("checking the existence of destination files...")
     dict_type = {1:"motorcycle", 2:"car", 3:"truck"}
-    scene_names = get_scene_names(DATAFILE)
+    # scene_names = get_scene_names(DATAFILE)
+    
+    print(time.time()-start)
 
-    for scene_name in scene_names:
-        scene_file = CSV + scene_name + ".csv"
-        if os.path.exists(scene_file):
-            os.remove(scene_file)
+    scene_names = ["lankershim" ,"peachtree"]
+
+    csv_files = helpers.get_dir_names(CSV)
+    for csv_ in csv_files:
+        for scene_name in scene_names:
+            if scene_name in csv_:
+                scene_file = CSV + csv_
+                print(scene_file)
+                if os.path.exists(scene_file):
+                    os.remove(scene_file)
     print("Done!")
-    # print(scene_names)
-  
-    # for scene_name in scene_names:
-    #     scene_file = CSV + scene_name + ".csv"
-    #     print("processing scene: " + str(scene_name))
 
-        # with open(scene_file,"a") as scene_csv:
-        #     scene_writer = csv.writer(scene_csv)
+    scene_names = ["peachtree"]
+    # print("extracting subscenes id")
+    # subscenes = get_subscenes(scene_names)
+    # print("Done!")
+    # print(time.time()-start)
+
     print("processing extraction...")
 
-    # print_every = 3000000
-    start = time.time()
-    
-        
+    feet_meters = 0.3048
     for scene_name in scene_names:
         print("processing scene: " + scene_name)
         with open(DATAFILE) as csv_reader:
-   
-            
-            scene_file = CSV + scene_name + ".csv"
+            line_num = 0
 
-            with open(scene_file,"a") as scene_csv:
-                scene_writer = csv.writer(scene_csv)
+            for line in csv_reader:
 
-                line_num = 0
+                if line_num != 0:
+                    line = line.split(",")
+                    scene_line = line[-1][:-1]
+                    
 
-                for line in csv_reader:
-                    # if line_num % print_every == 0:
-                    #     print(line_num)
-                    #     print(time.time()-start)
+                    if scene_name == scene_line:
 
-                    if line_num != 0:
-                        line = line.split(",")
-                        scene_line = line[-1][:-1]
+                        scene_file = CSV + scene_name +line[16] + ".csv"
 
-                        if scene_name == scene_line:
-
+                        with open(scene_file,"a") as scene_csv:
+                            scene_writer = csv.writer(scene_csv)
 
                             row = []
                             row.append(DATASET) #dataset
                             row.append(scene_name) #scene
                             row.append(int(line[1])) # frame
                             row.append(int(line[0])) # id
-                            row.append(float(line[4])) #x
-                            row.append(float(line[5])) #y
+                            row.append(float(line[4]) * feet_meters) #x
+                            row.append(float(line[5]) * feet_meters) #y
 
                             row.append(float(0)) #xl
                             row.append(float(0)) #yl
@@ -86,10 +87,7 @@ def main():
                             row.append(dict_type[int(line[10])]) # type
 
                             scene_writer.writerow(row)
-
-
-
-                    line_num += 1
+                line_num += 1
     print(time.time()-start)
     
 
