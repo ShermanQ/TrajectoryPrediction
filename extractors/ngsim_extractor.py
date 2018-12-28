@@ -38,12 +38,12 @@ def main():
         for scene_name in scene_names:
             if scene_name in csv_:
                 scene_file = CSV + csv_
-                print(scene_file)
+                # print(scene_file)
                 if os.path.exists(scene_file):
                     os.remove(scene_file)
     print("Done!")
 
-    scene_names = ["peachtree"]
+    scene_names = ["lankershim"]
     # print("extracting subscenes id")
     # subscenes = get_subscenes(scene_names)
     # print("Done!")
@@ -66,14 +66,21 @@ def main():
 
                     if scene_name == scene_line:
 
-                        scene_file = CSV + scene_name +line[16] + ".csv"
+                        new_scene_name = scene_name
+
+                        if line[16] != "0":
+                            new_scene_name = scene_name +"_inter" +line[16]                            
+                        elif line[17] != "0":
+                            new_scene_name = scene_name +"_section" +line[17]
+                            
+                        scene_file = CSV + new_scene_name + ".csv"
 
                         with open(scene_file,"a") as scene_csv:
                             scene_writer = csv.writer(scene_csv)
 
                             row = []
                             row.append(DATASET) #dataset
-                            row.append(scene_name) #scene
+                            row.append(new_scene_name) #scene
                             row.append(int(line[1])) # frame
                             row.append(int(line[0])) # id
                             row.append(float(line[4]) * feet_meters) #x
