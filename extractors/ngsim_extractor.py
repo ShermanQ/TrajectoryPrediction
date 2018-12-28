@@ -43,7 +43,7 @@ def main():
                     os.remove(scene_file)
     print("Done!")
 
-    scene_names = ["lankershim"]
+    # scene_names = ["lankershim"]
     # print("extracting subscenes id")
     # subscenes = get_subscenes(scene_names)
     # print("Done!")
@@ -55,46 +55,53 @@ def main():
     for scene_name in scene_names:
         print("processing scene: " + scene_name)
         with open(DATAFILE) as csv_reader:
-            line_num = 0
+            
 
-            for line in csv_reader:
+            dataset_file = CSV + DATASET + ".csv"
+            with open(dataset_file,"a") as dataset_csv:
+                dataset_writer = csv.writer(dataset_csv)
 
-                if line_num != 0:
-                    line = line.split(",")
-                    scene_line = line[-1][:-1]
-                    
+                line_num = 0
+                for line in csv_reader:
 
-                    if scene_name == scene_line:
+                    if line_num != 0:
+                        line = line.split(",")
+                        scene_line = line[-1][:-1]
+                        
 
-                        new_scene_name = scene_name
-
-                        if line[16] != "0":
-                            new_scene_name = scene_name +"_inter" +line[16]                            
-                        elif line[17] != "0":
-                            new_scene_name = scene_name +"_section" +line[17]
+                        if scene_name == scene_line:
                             
-                        scene_file = CSV + new_scene_name + ".csv"
+                            new_scene_name = scene_name
 
-                        with open(scene_file,"a") as scene_csv:
-                            scene_writer = csv.writer(scene_csv)
+                            if line[16] != "0" and line[17] == "0":
+                                new_scene_name = scene_name +"_inter" +line[16]                            
+                            elif line[17] != "0" and line[16] == "0":
+                                new_scene_name = scene_name +"_section" +line[17]
+                        
+                            scene_file = CSV + new_scene_name + ".csv"
 
-                            row = []
-                            row.append(DATASET) #dataset
-                            row.append(new_scene_name) #scene
-                            row.append(int(line[1])) # frame
-                            row.append(int(line[0])) # id
-                            row.append(float(line[4]) * feet_meters) #x
-                            row.append(float(line[5]) * feet_meters) #y
+                            if new_scene_name != scene_name:
+                                with open(scene_file,"a") as scene_csv:
+                                    subscene_writer = csv.writer(scene_csv)
 
-                            row.append(float(0)) #xl
-                            row.append(float(0)) #yl
-                            row.append(float(0)) #xb
-                            row.append(float(0)) #yb
+                                    row = []
+                                    row.append(DATASET) #dataset
+                                    row.append(new_scene_name) #scene
+                                    row.append(int(line[1])) # frame
+                                    row.append(int(line[0])) # id
+                                    row.append(float(line[4]) * feet_meters) #x
+                                    row.append(float(line[5]) * feet_meters) #y
 
-                            row.append(dict_type[int(line[10])]) # type
+                                    row.append(float(0)) #xl
+                                    row.append(float(0)) #yl
+                                    row.append(float(0)) #xb
+                                    row.append(float(0)) #yb
 
-                            scene_writer.writerow(row)
-                line_num += 1
+                                    row.append(dict_type[int(line[10])]) # type
+
+                                    subscene_writer.writerow(row)
+                                    dataset_writer.writerow(row)
+                    line_num += 1
     print(time.time()-start)
     
 
