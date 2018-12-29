@@ -235,20 +235,17 @@ def get_bbox(theta,width,length,x,y):
     ]
 
     new_points = transpose(theta,points,x,y)
-    # new_points = transpose(theta,points,0,0)
+    
 
-    # dists = [ euclidean(p,[0,0]) for p in points]
+    print(new_points)
 
-    # i_min = np.argmin(dists)
-    # i_max = np.argmax(dists)
-
-    t = []
-    b = []
+    t = [0,-10000]
+    b = [0,10000]
     pm = new_points[-1]
     for p in new_points[:-1]:
-        if p[0] < pm[0] and p[1] > pm[1]:
+        if p[0] < pm[0] and p[1] > t[1]:
             t = p
-        if p[0] > pm[0] and p[1] < pm[1]:
+        if p[0] > pm[0] and p[1] < b[1]:
             b = p
     
     

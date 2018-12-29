@@ -77,16 +77,6 @@ def main():
                     
 
                 frame += 1
-    #         print(dict_)
-    #         print(len(dict_.keys()))
-    
-    # print(frame)
-    
-        
-
-
-    # print(len(data))
-
 
 if __name__ == "__main__":
     main()
