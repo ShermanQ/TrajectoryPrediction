@@ -1,6 +1,8 @@
 import os
 import numpy as np
 from scipy.spatial.distance import euclidean
+import sys
+
 
 """
     Get the directories contained in a directory
@@ -237,10 +239,11 @@ def get_bbox(theta,width,length,x,y):
     new_points = transpose(theta,points,x,y)
     
 
-    print(new_points)
+    
 
-    t = [0,-10000]
-    b = [0,10000]
+    max_int = 10e30
+    t = [0,-max_int]
+    b = [0,max_int]
     pm = new_points[-1]
     for p in new_points[:-1]:
         if p[0] < pm[0] and p[1] > t[1]:
