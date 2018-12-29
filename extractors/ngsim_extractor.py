@@ -57,9 +57,9 @@ def main():
         with open(DATAFILE) as csv_reader:
             
 
-            dataset_file = CSV + DATASET + ".csv"
-            with open(dataset_file,"a") as dataset_csv:
-                dataset_writer = csv.writer(dataset_csv)
+            # dataset_file = CSV + DATASET + ".csv"
+            # with open(dataset_file,"a") as dataset_csv:
+            #     dataset_writer = csv.writer(dataset_csv)
 
                 line_num = 0
                 for line in csv_reader:
