@@ -9,7 +9,11 @@ DATA_FILES = "/annotations.txt"
 DATASET = "koper"
 CSV_PATH = "./csv/"
 
+
+
 def main():
+
+    dict_type = {0: "pedestrian", 1: "bicycle", 3: "car", 5: "truck" }
     files_name = helpers.get_dir_names(DATA_PATH)
     print(files_name)
    
@@ -25,7 +29,13 @@ def main():
 
         frame = 0 
 
+        
+        # ids = []
+
+        # files_name = ["sequence1a.mat"]
         for file_ in files_name:
+            # dict_ = {}
+            # print(file_)
             
             current_file = sio.loadmat(DATA_PATH + file_)
 
@@ -37,24 +47,41 @@ def main():
                 ref = ref["features"][0][0]
 
                 for object_ in ref:
+                    # a = int(object_[-2])
+                    # # if int(object_[-2]) not in ids:
+                    # if a in dict_:
+                    #     dict_[a] += 1
+                    # else:
+                    #     dict_[a] = 1
+                        # ids.append(int(object_[-2]))
+                    theta = float(object_[6])
+                    width = float(object_[3])
+                    length = float(object_[4])
+                    x = float(object_[0])
+                    y = float(object_[1])
+                    t,b,pm = helpers.get_bbox(theta,width,length,x,y)
 
                     row = []
                     row.append(DATASET) #dataset
                     row.append(DATASET) #scene
                     row.append(frame)   #frame
-                    row.append(object_[6])  # object_id
-                    row.append(object_[0])  #x
-                    row.append(object_[1]) #y
-                    row.append(-1) #xl
-                    row.append(-1) #yl
-                    row.append(-1) #xb
-                    row.append(-1) #yb
-                    row.append(object_[7]) #object type
+                    row.append(int(object_[-2]))  # object_id
+                    row.append(pm[0]) #x
+                    row.append(pm[1]) #y
+                    row.append(t[0]) #xl
+                    row.append(t[1]) #yl
+                    row.append(b[0]) #xb
+                    row.append(b[1]) #yb
+                    row.append(dict_type[int(object_[-1])]) #object type
                     csv_writer.writerow(row)
+                    
 
                 frame += 1
+    #         print(dict_)
+    #         print(len(dict_.keys()))
     
-    print(frame)
+    # print(frame)
+    
         
 
 

@@ -1,5 +1,6 @@
 import os
 import numpy as np
+from scipy.spatial.distance import euclidean
 
 """
     Get the directories contained in a directory
@@ -206,3 +207,51 @@ def parse_line_fsc(line,scene_name, dataset_name,min_step,start_frame):
     new_line.append(undefined) # label type of agent    
 
     return new_line
+
+def transpose(theta,points,x,y):
+    R = [
+        [np.cos(theta), -np.sin(theta)],
+        [np.sin(theta), np.cos(theta)]
+        ]
+    T = [x,y]
+    new_points = []
+
+    for point in points:
+        new_point = np.add(np.matmul(R,point), T)
+        new_points.append(new_point)
+    return np.array(new_points)
+
+
+
+def get_bbox(theta,width,length,x,y):
+    t,b = [],[]
+
+    points = [
+        [-length,width/2.0],
+        [-length,-width/2.0],
+        [0,width/2.0],
+        [0,-width/2.0], 
+        [-length/2.0,0],         
+    ]
+
+    new_points = transpose(theta,points,x,y)
+    # new_points = transpose(theta,points,0,0)
+
+    # dists = [ euclidean(p,[0,0]) for p in points]
+
+    # i_min = np.argmin(dists)
+    # i_max = np.argmax(dists)
+
+    t = []
+    b = []
+    pm = new_points[-1]
+    for p in new_points[:-1]:
+        if p[0] < pm[0] and p[1] > pm[1]:
+            t = p
+        if p[0] > pm[0] and p[1] < pm[1]:
+            b = p
+    
+    
+
+    # return new_points
+    return t,b,pm
