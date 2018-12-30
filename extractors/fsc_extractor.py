@@ -14,6 +14,7 @@ DATA = ROOT + DATASET + "/"
 RADAR_SUFFIX = "radar_data.txt"
 SAMPLING_RATE = 4 #0.04 * 100
 CSV_PATH = "./csv/"
+MAIN = "main/"
 
 
 
@@ -24,7 +25,7 @@ def main():
 
     main_scene_names = helpers.get_dir_names(DATA, lower = False)
 
-    fsc_csv = CSV_PATH + DATASET + ".csv"
+    fsc_csv = CSV_PATH + MAIN + DATASET + ".csv"
 
     if os.path.exists(fsc_csv):
         os.remove(fsc_csv)

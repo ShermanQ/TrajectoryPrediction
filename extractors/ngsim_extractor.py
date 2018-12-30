@@ -9,6 +9,7 @@ DATASETS = "./datasets/"
 DATASET = "ngsim"
 DATAFILE = DATASETS + DATASET + "/" + DATASET + ".csv"
 CSV = "./csv/"
+MAIN = "main/"
 
 def get_scene_names(filename):
     line_num = 0
@@ -59,7 +60,7 @@ def main():
         with open(DATAFILE) as csv_reader:
             
 
-            dataset_file = CSV + DATASET + ".csv"
+            dataset_file = CSV + MAIN + DATASET + ".csv"
             with open(dataset_file,"a") as dataset_csv:
                 dataset_writer = csv.writer(dataset_csv)
 
