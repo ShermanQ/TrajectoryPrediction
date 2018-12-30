@@ -94,32 +94,25 @@ def main():
                                     float(line[5]) * feet_meters
                                 ]
 
-                                if last_pos[0] == -1 and last_pos[1] == -1:
-                                    last_pos = new_pos
-                                    last_id = new_id
-                                else:
+                                                              
 
-                                    
-
+                                if  last_id == new_id:
                                     t = [0.,0.]
                                     b = [0.,0.]
+                                    disp = np.subtract(new_pos,last_pos)
+                                    norm = np.linalg.norm(disp)
+                                    if norm == 0.:
+                                        norm = 1
+                                    disp /= norm
+                                    axis = [1,0]
 
-                                    if  last_id == new_id:
-                                        disp = np.subtract(new_pos,last_pos)
-                                        norm = np.linalg.norm(disp)
-                                        if norm == 0.:
-                                            norm = 1
-                                        disp /= norm
-                                        axis = [1,0]
+                                    theta = np.arccos(np.dot(axis,disp))
+                                    length = float(line[8]) * feet_meters
+                                    width = float(line[9]) * feet_meters
+                                
+                                    t,b,new_pos = helpers.get_bbox(theta,width,length,new_pos[0],new_pos[1])
 
-                                        theta = np.arccos(np.dot(axis,disp))
-                                        length = float(line[8]) * feet_meters
-                                        width = float(line[9]) * feet_meters
                                     
-                                        t,b,new_pos = helpers.get_bbox(theta,width,length,new_pos[0],new_pos[1])
-
-                                    last_pos = new_pos
-                                    last_id = new_id
                                     with open(scene_file,"a") as scene_csv:
                                         subscene_writer = csv.writer(scene_csv)
 
@@ -140,6 +133,10 @@ def main():
 
                                         subscene_writer.writerow(row)
                                         dataset_writer.writerow(row)
+
+                                last_pos = new_pos
+                                last_id = new_id
+
                     line_num += 1
     print(time.time()-start)
     

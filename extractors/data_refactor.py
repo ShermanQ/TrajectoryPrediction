@@ -5,8 +5,9 @@ FILE_PATH = "./csv/quad0.csv"
 FRAMES = 1
 
 
-# fsc find type and bbox
-# ngsim problem still 0 0 0 0 starting bounding box
+# fsc find type and bbox --> nothing that I can do except set a fixed size bounding box / it seems that x and y are from the closest object point from the robot
+
+
 
 
 def main():
