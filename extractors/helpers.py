@@ -30,6 +30,14 @@ def get_dir_names(path,lower = True,ordered = True,descending = False):
     dataset: name of the dataset
 """
 def parse_line(line,scene, dataset ):
+
+    dict_type = {
+        "\"Biker\"\n" : "bicycle", 
+        "\"Pedestrian\"\n" : "pedestrian", 
+        "\"Cart\"\n" : "cart", 
+        "\"Car\"\n": "car", 
+        "\"Bus\"\n" : "bus", 
+        "\"Skater\"\n": "skate" }
     line = line.split(" ")
 
     new_line = []    
@@ -54,7 +62,7 @@ def parse_line(line,scene, dataset ):
     new_line.append(line[3]) # xmax. The bottom right x-coordinate of the bounding box.
     new_line.append(line[4]) # ymax. The bottom right y-coordinate of the bounding box.
 
-    new_line.append(line[9]) # label type of agent    
+    new_line.append(dict_type[line[9]]) # label type of agent    
 
     return new_line
 

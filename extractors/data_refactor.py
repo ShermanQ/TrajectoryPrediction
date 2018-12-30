@@ -1,11 +1,10 @@
 
 import helpers
 
-FILE_PATH = "./csv/koper.csv"
+FILE_PATH = "./csv/quad0.csv"
 FRAMES = 1
 
 
-# problem with sdd
 # fsc find type and bbox
 # ngsim problem still 0 0 0 0 starting bounding box
 
@@ -18,6 +17,6 @@ def main():
     else:
         trajectories = helpers.extract_trajectories(FILE_PATH)
 
-
+    print(frames.keys())
 if __name__ == "__main__":
     main()
