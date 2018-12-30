@@ -255,3 +255,91 @@ def get_bbox(theta,width,length,x,y):
 
     # return new_points
     return t,b,pm
+
+
+"""
+    Input: Standardized file_path
+    Output a dictionnary of trajectories:
+    {
+        traj_id: {
+            coordinates: [],
+            bboxes: [],
+            frames: [],
+            scene:
+
+        }
+    }
+"""
+
+def extract_trajectories(file_name):
+
+    trajectories = {}
+
+    with open(file_name) as file_:
+        for line in file_:
+            # print(line)
+
+            line = line.split(",")
+            # print(line)
+
+            # for i,l in enumerate(line[:-1]):
+            #     print(i,l)
+
+            id_ = line[3]
+            # print(id_)
+            coordinates = [line[4],line[5]]
+            bbox = [line[6],line[7],line[8],line[9]]
+            frame = line[2]
+
+            if id_ not in trajectories:
+
+                trajectories[id_] = {
+                    "coordinates" : [],
+                    "bboxes" : [],
+                    "frames" : [],
+                    "scene" : line[1],
+                    "user_type" : line[10]
+                }
+            trajectories[id_]["coordinates"].append(coordinates)
+            trajectories[id_]["bboxes"].append(bbox)
+            trajectories[id_]["frames"].append(frame)
+    return trajectories
+
+"""
+    Input: Standardized file_path
+    Output a dictionnary of frames:
+    {
+        frame: {
+            object_id : {
+                coordinates : [],
+                box : []
+            }
+
+        }
+    }
+"""
+
+
+def extract_frames(file_path):
+    frames = {}
+
+    with open(file_path) as file_:
+        for line in file_:
+            line = line.split(",")
+            
+            id_ = line[3]
+            # print(id_)
+            coordinates = [line[4],line[5]]
+            bbox = [line[6],line[7],line[8],line[9]]
+            frame = line[2]
+            type_ = line[10]
+
+            if frame not in frames:
+                frames[frame] = {}
+
+            frames[frame][id_] = {
+                "coordinates" : coordinates,
+                "bbox" : bbox,
+                "type" : type_
+                }
+    return frames
