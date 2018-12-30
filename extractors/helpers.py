@@ -1,6 +1,6 @@
 import os
 import numpy as np
-from scipy.spatial.distance import euclidean
+
 import sys
 
 

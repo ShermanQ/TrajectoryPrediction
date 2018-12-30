@@ -2,6 +2,8 @@ import csv
 import os
 import time
 import helpers
+import numpy as np
+from scipy.spatial.distance import euclidean
 
 DATASETS = "./datasets/"
 DATASET = "ngsim"
@@ -62,6 +64,8 @@ def main():
                 dataset_writer = csv.writer(dataset_csv)
 
                 line_num = 0
+                last_id = -1
+                last_pos = [-1,-1]
                 for line in csv_reader:
 
                     if line_num != 0:
@@ -81,6 +85,33 @@ def main():
                             scene_file = CSV + new_scene_name + ".csv"
 
                             if new_scene_name != scene_name:
+
+                                new_id = int(line[0])
+                                
+                                new_pos = [
+                                    float(line[4]) * feet_meters,
+                                    float(line[5]) * feet_meters
+                                ]
+
+                                t = [0.,0.]
+                                b = [0.,0.]
+
+                                if last_pos[0] != -1 and last_pos[1] != -1 and last_id == new_id:
+                                    disp = np.subtract(new_pos,last_pos)
+                                    norm = np.linalg.norm(disp)
+                                    if norm == 0.:
+                                        norm = 1
+                                    disp /= norm
+                                    axis = [1,0]
+
+                                    theta = np.arccos(np.dot(axis,disp))
+                                    length = float(line[8]) * feet_meters
+                                    width = float(line[9]) * feet_meters
+                                
+                                    t,b,new_pos = helpers.get_bbox(theta,width,length,new_pos[0],new_pos[1])
+
+                                last_pos = new_pos
+                                last_id = new_id
                                 with open(scene_file,"a") as scene_csv:
                                     subscene_writer = csv.writer(scene_csv)
 
@@ -88,14 +119,14 @@ def main():
                                     row.append(DATASET) #dataset
                                     row.append(new_scene_name) #scene
                                     row.append(int(line[1])) # frame
-                                    row.append(int(line[0])) # id
-                                    row.append(float(line[4]) * feet_meters) #x
-                                    row.append(float(line[5]) * feet_meters) #y
+                                    row.append(new_id) # id
+                                    row.append(new_pos[0]) #x
+                                    row.append(new_pos[1])  #y
 
-                                    row.append(float(0)) #xl
-                                    row.append(float(0)) #yl
-                                    row.append(float(0)) #xb
-                                    row.append(float(0)) #yb
+                                    row.append(t[0]) #xl
+                                    row.append(t[1]) #yl
+                                    row.append(b[0]) #xb
+                                    row.append(b[1]) #yb
 
                                     row.append(dict_type[int(line[10])]) # type
 
