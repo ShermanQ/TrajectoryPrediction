@@ -7,6 +7,7 @@ DATA_PATH = "./datasets/sdd/trajectories/"
 DATA_FILES = "/annotations.txt"
 DATASET = "sdd"
 CSV_PATH = "./csv/"
+MAIN = "main/"
 
 """
     Parse SDD line by line and return new csv files
@@ -22,7 +23,7 @@ def main():
     main_scene_names = helpers.get_dir_names(DATA_PATH, lower = False)
 
 
-    sdd_csv = CSV_PATH + DATASET + ".csv"
+    sdd_csv = CSV_PATH + MAIN + DATASET + ".csv"
     
     if os.path.exists(sdd_csv):
         os.remove(sdd_csv)
@@ -32,31 +33,42 @@ def main():
         
         for scene in main_scene_names:
 
-            scene_csv = CSV_PATH + scene + ".csv"
+            # scene_csv = CSV_PATH + scene + ".csv"
     
-            if os.path.exists(scene_csv):
-                os.remove(scene_csv)
+            # if os.path.exists(scene_csv):
+            #     os.remove(scene_csv)
 
 
-            with open(scene_csv,"a") as csv_scene:
-                writer_scene = csv.writer(csv_scene)
+            # with open(scene_csv,"a") as csv_scene:
+            #     writer_scene = csv.writer(csv_scene)
 
-                print("Processing scene: " + scene)
+            print("Processing scene: " + scene)
 
-                subscene_names = helpers.get_dir_names(DATA_PATH + scene)
-              
-                for i,sub in enumerate(subscene_names):
-                    print("------subscene: " + scene + str(i))
-                   
-                    subscene_path = DATA_PATH + scene + "/" + sub + DATA_FILES
-                    
+            subscene_names = helpers.get_dir_names(DATA_PATH + scene)
+            
+            for i,sub in enumerate(subscene_names):
+                print("------subscene: " + scene + str(i))
+                
+                subscene_path = DATA_PATH + scene + "/" + sub + DATA_FILES
+                # print(subscene_path)
 
-                    with open(subscene_path,"r") as a:
+                scene_csv = CSV_PATH + scene + str(i) + ".csv"
 
-                        for line in a:
+                if os.path.exists(scene_csv):
+                    os.remove(scene_csv)
+
+                with open(scene_csv,"a") as csv_scene:
+                    writer_scene = csv.writer(csv_scene)
+                
+
+                    with open(subscene_path) as a:
+                        
+                        
+                        for z,line in enumerate(a):
                             new_line = helpers.parse_line(line,scene + str(i), DATASET )
                             writer.writerow(new_line)
                             writer_scene.writerow(new_line)
+                        # print(z)
                     
     print("Execution time: " + str(time.time() - start) + " s") 
 
