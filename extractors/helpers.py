@@ -298,7 +298,7 @@ def extract_trajectories(file_name,destination_path = "", save = False):
             # print(id_)
             coordinates = [float(line[4]),float(line[5])]
             bbox = [float(line[6]),float(line[7]),float(line[8]),float(line[9])]
-            frame = line[2]
+            frame = int(line[2])
 
             if id_ not in trajectories:
 
@@ -358,7 +358,7 @@ def extract_frames(file_path,destination_path = "", save = False):
             # print(id_)
             coordinates = [float(line[4]),float(line[5])]
             bbox = [float(line[6]),float(line[7]),float(line[8]),float(line[9])]
-            frame = line[2]
+            frame = int(line[2])
             type_ = line[10]
 
             if frame not in frames:

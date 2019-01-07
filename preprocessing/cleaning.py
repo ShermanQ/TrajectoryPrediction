@@ -116,17 +116,39 @@ def trajectories_continuity(file_path,temp_path = "./temp.txt"):
     extract_trajectories(file_path,temp_path, save = True)
     trajectories_deltas = {}
     trajectories_length = {}
+    trajectories_outliers = {}
+    trajectories_outliers_prop = {}
+    trajectories_missing_segment = {}
+    trajectories_nb_missing_segment = {}
+    
+
     with open(temp_path) as trajectories:
         for trajectory in trajectories:
             trajectory = json.loads(trajectory)
-            deltas = trajectory_continuity(trajectory,threshold = 0.1)
+            deltas = trajectory_deltas(trajectory,threshold = 0.1)
+            outliers,outliers_prop = three_sigma(deltas)
+            missing_segments,nb_missing_segments = trajectory_frames(trajectory)
+
+
             trajectories_deltas[trajectory["id"]] = deltas
             trajectories_length[trajectory["id"]] = len(trajectory["coordinates"])
+            trajectories_outliers[trajectory["id"]] = outliers
+            trajectories_outliers_prop[trajectory["id"]] = outliers_prop
+            trajectories_missing_segment[trajectory["id"]] = missing_segments
+            trajectories_nb_missing_segment[trajectory["id"]] = nb_missing_segments
     os.remove(temp_path)
-    return trajectories_deltas,trajectories_length
+    return trajectories_deltas,trajectories_length,trajectories_outliers,trajectories_outliers_prop,trajectories_missing_segment,trajectories_nb_missing_segment
 
+def three_sigma(values):
+    sigma = np.std(values)
+    outliers = []
+    for i,value in enumerate(values):
+        if value > 3*sigma:
+            outliers.append((i-1,i))
+    outliers_prop = float(len(outliers))/float(len(values)+1)
+    return outliers, outliers_prop
 
-def trajectory_continuity(trajectory,threshold = 0.1):
+def trajectory_deltas(trajectory,threshold = 0.1):
 
     coordinates = trajectory["coordinates"]
     deltas = []
@@ -136,6 +158,15 @@ def trajectory_continuity(trajectory,threshold = 0.1):
 
     return deltas
 
+def trajectory_frames(trajectory):
+    frames = trajectory["frames"]
+    missing_segments = []
+    for i in range(1,len(frames)):
+        if frames[i] - frames[i-1] > 1:
+            missing_segments.append((frames[i-1],frames[i]))
+    return missing_segments,len(missing_segments)
+
+
     # print(trajectory["id"],np.mean(deltas),np.std(deltas))
         
 
@@ -144,10 +175,17 @@ def main():
     csvs = [ CSV + f for f in get_dir_names(CSV,lower = False) if f != "main"]
     # s = time.time()   
 
-    csv = csvs[1]
+    csv = csvs[0]
+    # csv = CSV + "fsc_0.csv"
     # for csv in csvs:
     #     print(csv)
-    #     deltas,lengths = trajectories_continuity(csv,temp_path = "./temp.txt")
+    # deltas,lengths,outliers,props,missing_segments,nb_missing = trajectories_continuity(csv,temp_path = "./temp.txt")
+
+    # print(missing_segments)
+    # for key in nb_missing:
+    #     print(key,nb_missing[key],lengths[key])
+
+    # print(outliers)
     # for csv in csvs:
     #     print(csv)
     #     nb_collisions_total,nb_objects_total,ious_total,ious_conflict_total = collisions_in_scene(csv) 
