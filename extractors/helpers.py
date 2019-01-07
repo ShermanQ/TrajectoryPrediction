@@ -280,7 +280,7 @@ def get_bbox(theta,width,length,x,y):
     }
 """
 
-def extract_trajectories(file_name):
+def extract_trajectories(file_name,destination_path = "", save = False):
 
     trajectories = {}
 
@@ -296,8 +296,8 @@ def extract_trajectories(file_name):
 
             id_ = line[3]
             # print(id_)
-            coordinates = [line[4],line[5]]
-            bbox = [line[6],line[7],line[8],line[9]]
+            coordinates = [float(line[4]),float(line[5])]
+            bbox = [float(line[6]),float(line[7]),float(line[8]),float(line[9])]
             frame = line[2]
 
             if id_ not in trajectories:
@@ -307,12 +307,28 @@ def extract_trajectories(file_name):
                     "bboxes" : [],
                     "frames" : [],
                     "scene" : line[1],
-                    "user_type" : line[10]
+                    "user_type" : line[10],
+                    "id" : id_
                 }
             trajectories[id_]["coordinates"].append(coordinates)
             trajectories[id_]["bboxes"].append(bbox)
             trajectories[id_]["frames"].append(frame)
-    return trajectories
+
+    if save:
+
+        if os.path.exists(destination_path):
+            os.remove(destination_path)
+        with open(destination_path,"a") as scene_txt:
+            for key in trajectories:
+                line = trajectories[key]
+                # trajectories["id"] = key
+                line = json.dumps(line)
+                # print(line)
+                # print("------")
+                scene_txt.write(line + "\n" )
+    else:
+        return trajectories
+    return
 
 """
     Input: Standardized file_path
@@ -364,7 +380,7 @@ def extract_frames(file_path,destination_path = "", save = False):
             with open(destination_path,"a") as scene_txt:
                 for key in frames:
                     line = frames[key]
-                    line["frame"] = key
+                    # line["frame"] = key
                     line = json.dumps(line)
                     # print(line)
                     # print("------")

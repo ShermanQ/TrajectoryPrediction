@@ -1,11 +1,12 @@
 import sys 
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from extractors.helpers import get_dir_names,extract_frames,bb_intersection_over_union
+from extractors.helpers import get_dir_names,extract_frames,bb_intersection_over_union,extract_trajectories
 
 import time
 import json
 import numpy as np
+from scipy.spatial.distance import euclidean
 
 ROOT = "./../"
 CSV = ROOT + "extractors/csv/"
@@ -110,19 +111,48 @@ def collisions_in_scene(file_path,temp_path = "./temp.txt"):
     # print(np.mean(ious_total),np.std(ious_total))
     # print(np.mean(ious_conflict_total),np.std(ious_conflict_total))
 
+def trajectories_continuity(file_path,temp_path = "./temp.txt"):
+    # to be called in notebook with dataframe describe for further analysis
+    extract_trajectories(file_path,temp_path, save = True)
+    trajectories_deltas = {}
+    trajectories_length = {}
+    with open(temp_path) as trajectories:
+        for trajectory in trajectories:
+            trajectory = json.loads(trajectory)
+            deltas = trajectory_continuity(trajectory,threshold = 0.1)
+            trajectories_deltas[trajectory["id"]] = deltas
+            trajectories_length[trajectory["id"]] = len(trajectory["coordinates"])
+    os.remove(temp_path)
+    return trajectories_deltas,trajectories_length
 
-                    
 
+def trajectory_continuity(trajectory,threshold = 0.1):
+
+    coordinates = trajectory["coordinates"]
+    deltas = []
+    for i in range(1,len(coordinates)):
+        delta = euclidean(coordinates[i],coordinates[i-1])
+        deltas.append(delta)
+
+    return deltas
+
+    # print(trajectory["id"],np.mean(deltas),np.std(deltas))
+        
 
 
 def main():
     csvs = [ CSV + f for f in get_dir_names(CSV,lower = False) if f != "main"]
-    s = time.time()   
-    for csv in csvs:
-        print(csv)
-        nb_collisions_total,nb_objects_total,ious_total,ious_conflict_total = collisions_in_scene(csv) 
-        print(time.time() - s)               
-    print(time.time() - s)
+    # s = time.time()   
+
+    csv = csvs[1]
+    # for csv in csvs:
+    #     print(csv)
+    #     deltas,lengths = trajectories_continuity(csv,temp_path = "./temp.txt")
+    # for csv in csvs:
+    #     print(csv)
+    #     nb_collisions_total,nb_objects_total,ious_total,ious_conflict_total = collisions_in_scene(csv) 
+    #     print(time.time() - s)               
+    # print(time.time() - s)
     # missing_values_multiple(csvs)
 
 
