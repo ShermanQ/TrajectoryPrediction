@@ -2,6 +2,7 @@ import os
 import numpy as np
 
 import sys
+import csv
 
 
 """
@@ -320,16 +321,18 @@ def extract_trajectories(file_name):
         frame: {
             object_id : {
                 coordinates : [],
-                box : []
+                bbox : []
             }
 
         }
     }
 """
+import json
 
-
-def extract_frames(file_path):
+def extract_frames(file_path,destination_path = "", save = False):
     frames = {}
+
+    
 
     with open(file_path) as file_:
         for line in file_:
@@ -337,17 +340,35 @@ def extract_frames(file_path):
             
             id_ = line[3]
             # print(id_)
-            coordinates = [line[4],line[5]]
-            bbox = [line[6],line[7],line[8],line[9]]
+            coordinates = [float(line[4]),float(line[5])]
+            bbox = [float(line[6]),float(line[7]),float(line[8]),float(line[9])]
             frame = line[2]
             type_ = line[10]
 
             if frame not in frames:
                 frames[frame] = {}
-
+    
             frames[frame][id_] = {
                 "coordinates" : coordinates,
                 "bbox" : bbox,
                 "type" : type_
                 }
-    return frames
+            if save:
+                frames[frame]["frame"] = frame
+
+
+        if save:
+
+            if os.path.exists(destination_path):
+                os.remove(destination_path)
+            with open(destination_path,"a") as scene_txt:
+                for key in frames:
+                    line = frames[key]
+                    line["frame"] = key
+                    line = json.dumps(line)
+                    # print(line)
+                    # print("------")
+                    scene_txt.write(line + "\n" )
+        else:
+            return frames
+    return
