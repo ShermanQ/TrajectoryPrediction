@@ -8,8 +8,6 @@ import json
 import numpy as np
 from scipy.spatial.distance import euclidean
 
-ROOT = "./../"
-CSV = ROOT + "extractors/csv/"
 
 
 def missing_values(file_path,nb_features = 11):
@@ -165,36 +163,3 @@ def trajectory_frames(trajectory):
         if frames[i] - frames[i-1] > 1:
             missing_segments.append((frames[i-1],frames[i]))
     return missing_segments,len(missing_segments)
-
-
-    # print(trajectory["id"],np.mean(deltas),np.std(deltas))
-        
-
-
-def main():
-    csvs = [ CSV + f for f in get_dir_names(CSV,lower = False) if f != "main"]
-    # s = time.time()   
-
-    csv = csvs[0]
-    # csv = CSV + "fsc_0.csv"
-    # for csv in csvs:
-    #     print(csv)
-    # deltas,lengths,outliers,props,missing_segments,nb_missing = trajectories_continuity(csv,temp_path = "./temp.txt")
-
-    # print(missing_segments)
-    # for key in nb_missing:
-    #     print(key,nb_missing[key],lengths[key])
-
-    # print(outliers)
-    # for csv in csvs:
-    #     print(csv)
-    #     nb_collisions_total,nb_objects_total,ious_total,ious_conflict_total = collisions_in_scene(csv) 
-    #     print(time.time() - s)               
-    # print(time.time() - s)
-    # missing_values_multiple(csvs)
-
-
-
-
-if __name__ == "__main__":
-    main()
