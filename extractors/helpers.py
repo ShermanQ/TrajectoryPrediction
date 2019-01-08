@@ -308,7 +308,8 @@ def extract_trajectories(file_name,destination_path = "", save = False):
                     "frames" : [],
                     "scene" : line[1],
                     "user_type" : line[10],
-                    "id" : id_
+                    "id" : id_,
+                    "dataset" : line[0]
                 }
             trajectories[id_]["coordinates"].append(coordinates)
             trajectories[id_]["bboxes"].append(bbox)
@@ -367,7 +368,10 @@ def extract_frames(file_path,destination_path = "", save = False):
             frames[frame][id_] = {
                 "coordinates" : coordinates,
                 "bbox" : bbox,
-                "type" : type_
+                "type" : type_,
+                "scene" : line[1],
+                "dataset" : line[0]
+
                 }
             if save:
                 frames[frame]["frame"] = frame
