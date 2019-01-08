@@ -36,7 +36,7 @@ def main():
     # print(outliers)
     # for csv in csvs:
     #     print(csv)
-    conflicts,nb_collisions_total,nb_objects_total,ious_total,ious_conflict_total = helpers_a.collisions_in_scene(csv) 
+    # conflicts,nb_collisions_total,nb_objects_total,ious_total,ious_conflict_total = helpers_a.collisions_in_scene(csv) 
     #     print(time.time() - s)               
     # print(time.time() - s)
     # missing_values_multiple(csvs)
