@@ -41,38 +41,22 @@ def write_frame(frame,file_name,new_frame_id):
                 new_line.append(frame[key]["type"])
 
                 file_writer.writerow(new_line)
+def framerate_manager(framerates_json,csv_file,file_path,destination_root,new_rate = 2.5,temp_path = "./temp.txt"):   
+
     
-
-
-def main():
-    dir_list = ["main","new_rates"]
-   
-    csvs = [ f for f in get_dir_names(CSV,lower = False) if f not in dir_list]
-
-
-    csv_file = csvs[1]
-    file_path = CSV + csv_file
-
-    print(file_path)
-    json_file = open(FPS_PATH)
+    json_file = open(framerates_json)
     framerates = json.load(json_file)
-    temp_path = "./temp.txt"
-
-
+    
     name = csv_file.split(".")[0]
     former_rate = float(framerates[name])
-    new_rate = 2.5
+    
+    rate_ratio = int(former_rate/new_rate)
 
-
-    destination_file = CSV + "new_rates/"+ name + "_" +  str(former_rate)+"to" + str(new_rate) +".csv"
-
-
+    destination_file = destination_root + name + "_" +  str(former_rate)+"to" + str(new_rate) +".csv"
     if os.path.exists(destination_file):
         os.remove(destination_file)
 
-    print(destination_file)
-    rate_ratio = int(former_rate/new_rate)
-    print(rate_ratio)
+    
 
     extract_frames(file_path,temp_path,save=True)
     with open(temp_path) as frames:
@@ -81,9 +65,59 @@ def main():
             frame = json.loads(frame)
             if i % rate_ratio == 0:
                 write_frame(frame,destination_file,counter)
-                counter += 1
-    
+                counter += 1    
     os.remove(temp_path)
+
+def main():
+    dir_list = ["main","new_rates"]
+   
+    csvs = [ f for f in get_dir_names(CSV,lower = False) if f not in dir_list]
+
+
+    # csv_file = csvs[1]
+    # file_path = CSV + csv_file
+
+    # print(file_path)
+    
+
+
+    destination_root = CSV + "new_rates/"
+
+    s = time.time()
+
+    for csv_file in csvs:
+        print(csv_file)
+        file_path = CSV + csv_file
+
+        framerate_manager(FPS_PATH,csv_file,file_path,destination_root,temp_path = "./temp.txt")  
+        print(time.time() - s)
+    print(time.time() - s)
+    # json_file = open(FPS_PATH)
+    # framerates = json.load(json_file)
+    # temp_path = "./temp.txt"
+
+
+    # name = csv_file.split(".")[0]
+    # former_rate = float(framerates[name])
+    # new_rate = 2.5
+
+    # if os.path.exists(destination_file):
+    #     os.remove(destination_file)
+
+    # print(destination_file)
+    # rate_ratio = int(former_rate/new_rate)
+    # print(rate_ratio)
+
+    # extract_frames(file_path,temp_path,save=True)
+    # with open(temp_path) as frames:
+    #     counter = 0
+    #     for i,frame in enumerate(frames):
+    #         frame = json.loads(frame)
+    #         if i % rate_ratio == 0:
+    #             write_frame(frame,destination_file,counter)
+    #             counter += 1
+    
+    # os.remove(temp_path)
 
 
     # csv = CSV + "fsc_0.csv"
