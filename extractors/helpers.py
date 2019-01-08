@@ -286,7 +286,6 @@ def extract_trajectories(file_name,destination_path = "", save = False):
 
     with open(file_name) as file_:
         for line in file_:
-            # print(line)
 
             line = line.split(",")
             # print(line)

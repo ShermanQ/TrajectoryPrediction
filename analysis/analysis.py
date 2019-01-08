@@ -38,7 +38,8 @@ def write_frame(frame,file_name,new_frame_id):
                 for e in frame[key]["bbox"]:
                     new_line.append(e)
 
-                new_line.append(frame[key]["type"])
+                new_line.append(frame[key]["type"].split("\n")[0])
+
 
                 file_writer.writerow(new_line)
 def framerate_manager(framerates_json,csv_file,file_path,destination_root,new_rate = 2.5,temp_path = "./temp.txt"):   
@@ -76,6 +77,8 @@ def main():
 
     # csv_file = csvs[1]
     # file_path = CSV + csv_file
+    # destination_root = CSV + "new_rates/"
+    # framerate_manager(FPS_PATH,csv_file,file_path,destination_root,temp_path = "./temp.txt") 
 
     # print(file_path)
     
@@ -92,32 +95,6 @@ def main():
         framerate_manager(FPS_PATH,csv_file,file_path,destination_root,temp_path = "./temp.txt")  
         print(time.time() - s)
     print(time.time() - s)
-    # json_file = open(FPS_PATH)
-    # framerates = json.load(json_file)
-    # temp_path = "./temp.txt"
-
-
-    # name = csv_file.split(".")[0]
-    # former_rate = float(framerates[name])
-    # new_rate = 2.5
-
-    # if os.path.exists(destination_file):
-    #     os.remove(destination_file)
-
-    # print(destination_file)
-    # rate_ratio = int(former_rate/new_rate)
-    # print(rate_ratio)
-
-    # extract_frames(file_path,temp_path,save=True)
-    # with open(temp_path) as frames:
-    #     counter = 0
-    #     for i,frame in enumerate(frames):
-    #         frame = json.loads(frame)
-    #         if i % rate_ratio == 0:
-    #             write_frame(frame,destination_file,counter)
-    #             counter += 1
-    
-    # os.remove(temp_path)
 
 
     # csv = CSV + "fsc_0.csv"
