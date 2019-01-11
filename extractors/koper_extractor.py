@@ -33,9 +33,9 @@ def main():
         # ids = []
 
         # files_name = ["sequence1a.mat"]
-        for file_ in files_name:
+        for i,file_ in enumerate(files_name):
             # dict_ = {}
-            # print(file_)
+            
             
             current_file = sio.loadmat(DATA_PATH + file_)
 
@@ -65,7 +65,8 @@ def main():
                     row.append(DATASET) #dataset
                     row.append(DATASET) #scene
                     row.append(frame)   #frame
-                    row.append(int(object_[-2]))  # object_id
+                    row.append(int(object_[-2])+ i*1000)  # object_id
+                    
                     row.append(pm[0]) #x
                     row.append(pm[1]) #y
                     row.append(t[0]) #xl

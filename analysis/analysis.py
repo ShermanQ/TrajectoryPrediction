@@ -96,6 +96,14 @@ def main():
         print(time.time() - s)
     print(time.time() - s)
 
+  
+    # csv_file = "koper.csv"
+    # print(csv_file)
+    # file_path = CSV + csv_file
+
+    # framerate_manager(FPS_PATH,csv_file,file_path,destination_root,temp_path = "./temp.txt")  
+    # print(time.time() - s)
+
 
     # csv = CSV + "fsc_0.csv"
     # for csv in csvs:

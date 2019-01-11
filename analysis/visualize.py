@@ -29,7 +29,6 @@ def plot_trajectories(file_path, user_type = None,temp_path = "./temp.txt"):
     extract_trajectories(file_path,destination_path = temp_path, save = True)
 
     with open(temp_path) as trajectories:
-        fig = plt.figure()
         for i,trajectory in enumerate(trajectories):
             trajectory = json.loads(trajectory)
             coordinates = trajectory["coordinates"]
@@ -57,11 +56,11 @@ def plot_trajectories(file_path, user_type = None,temp_path = "./temp.txt"):
 
 def main():
 
-    csv_file = "new_rates/bad_30.0to2.5.csv"
+    csv_file = "new_rates/koper_12.5to2.5.csv"
     # csv_file = "koper.csv"
     file_path = CSV + csv_file
 
-    plot_trajectories(file_path, user_type = None)
+    plot_trajectories(file_path, user_type = "truck\n")
 
 
 if __name__ == "__main__":
