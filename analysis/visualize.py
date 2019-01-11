@@ -56,11 +56,11 @@ def plot_trajectories(file_path, user_type = None,temp_path = "./temp.txt"):
 
 def main():
 
-    csv_file = "new_rates/koper_12.5to2.5.csv"
-    # csv_file = "koper.csv"
+    csv_file = "new_rates/bad_30.0to2.5.csv"
+    # csv_file = "bad.csv"
     file_path = CSV + csv_file
 
-    plot_trajectories(file_path, user_type = "truck\n")
+    plot_trajectories(file_path, user_type = "car\n")
 
 
 if __name__ == "__main__":

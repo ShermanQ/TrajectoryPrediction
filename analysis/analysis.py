@@ -62,8 +62,10 @@ def framerate_manager(framerates_json,csv_file,file_path,destination_root,new_ra
     extract_frames(file_path,temp_path,save=True)
     with open(temp_path) as frames:
         counter = 0
-        for i,frame in enumerate(frames):
+        for frame in frames:
             frame = json.loads(frame)
+            i = frame["frame"]
+            # frame number 
             if i % rate_ratio == 0:
                 write_frame(frame,destination_file,counter)
                 counter += 1    

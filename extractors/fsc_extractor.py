@@ -12,7 +12,7 @@ ROOT = "./datasets/"
 DATASET = "fsc"
 DATA = ROOT + DATASET + "/"
 RADAR_SUFFIX = "radar_data.txt"
-SAMPLING_RATE = 4 #0.04 * 100
+SAMPLING_RATE = 20 #0.04 * 100
 CSV_PATH = "./csv/"
 MAIN = "main/"
 
