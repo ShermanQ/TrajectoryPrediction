@@ -67,65 +67,72 @@ def main():
     temp_path = "./temp.txt"
     helpers.extract_frames(file_path,temp_path,save = True)
 
-    min_,max_ = find_bounding_coordinates(temp_path)
+    try:
+        min_,max_ = find_bounding_coordinates(temp_path)
 
-    factor_div = 2.0
-    w,h = get_scene_image_size(min_,max_,factor_div = factor_div)
-    nb_agent = get_number_object(file_path)
-    colors = cm.rainbow(np.linspace(0, 100, nb_agent))
-    
-    new_color_index = 0
-    color_dict = {}
+        factor_div = 2.0
+        w,h = get_scene_image_size(min_,max_,factor_div = factor_div)
+        nb_agent = get_number_object(file_path)
+        colors = cm.rainbow(np.linspace(0, 100, nb_agent))
+        
+        new_color_index = 0
+        color_dict = {}
 
-    print(nb_agent)
+        print(nb_agent)
 
-    # Create a black image
-    img = np.zeros((w,h,3), np.uint8)
+        # Create a black image
+        img = np.zeros((w,h,3), np.uint8)
 
-    with open(temp_path) as frames:
-        for frame in frames:
-            frame = json.loads(frame)
+        with open(temp_path) as frames:
+            for frame in frames:
+                frame = json.loads(frame)
 
-            img1 = img.copy()
+                img1 = img.copy()
 
-            for id_ in frame:
-                if id_ != "frame":
+                for id_ in frame:
+                    if id_ != "frame":
 
-                    if id_ not in color_dict:
-                        # color_dict[id_] = tuple(colors[new_color_index][:3] * 255)
-                        color_dict[id_] = [int(r) for r in np.random.randint(low = 1, high = 255, size = 3 )]
+                        if id_ not in color_dict:
+                            # color_dict[id_] = tuple(colors[new_color_index][:3] * 255)
+                            color_dict[id_] = [int(r) for r in np.random.randint(low = 1, high = 255, size = 3 )]
 
+                            
+                            new_color_index += 1
+
+                        coordinates = frame[id_]["coordinates"]
+                        # print(type(color_dict[id_][0]))
                         
-                        new_color_index += 1
+                        
+                        cv2.circle(img1,tuple([int(p/factor_div) for p in coordinates]), 5, tuple(color_dict[id_]), -1)
+                
 
-                    coordinates = frame[id_]["coordinates"]
-                    # print(type(color_dict[id_][0]))
-                    
-                    
-                    cv2.circle(img1,tuple([int(p/factor_div) for p in coordinates]), 5, tuple(color_dict[id_]), -1)
-            
+                font = cv2.FONT_HERSHEY_SIMPLEX
 
-            font = cv2.FONT_HERSHEY_SIMPLEX
+                
+                text_pos = tuple(np.subtract([h,w],[100,25]))
+                
+                cv2.putText(img1, str(frame["frame"]), text_pos, font, 0.8, (255, 255, 255), 2, cv2.LINE_AA)
 
-            
-            text_pos = tuple(np.subtract([h,w],[100,25]))
-            
-            cv2.putText(img1, str(frame["frame"]), text_pos, font, 0.8, (255, 255, 255), 2, cv2.LINE_AA)
-
-            cv2.imshow('image1',img1)
-            cv2.waitKey(int(1000/30))
+                cv2.imshow('image1',img1)
+                cv2.waitKey(int(1000/30))
 
 
 
 
-    # cv2.imshow('image',img)
-    # cv2.waitKey(0)
-    cv2.destroyAllWindows()
+        # cv2.imshow('image',img)
+        # cv2.waitKey(0)
+        cv2.destroyAllWindows()
+        os.remove(temp_path)
+
+    except KeyboardInterrupt:
+        cv2.destroyAllWindows()
+        os.remove(temp_path)
+
 
     # Draw a diagonal blue line with thickness of 5 px
     # cv2.line(img,(0,0),(511,511),(255,0,0),5)
 
-    os.remove(temp_path)
+    
 
 if __name__ == "__main__":
     main()

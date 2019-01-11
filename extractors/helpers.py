@@ -381,7 +381,7 @@ def extract_frames(file_path,destination_path = "", save = False):
             if os.path.exists(destination_path):
                 os.remove(destination_path)
             with open(destination_path,"a") as scene_txt:
-                for key in frames:
+                for key in sorted(frames):
                     line = frames[key]
                     # line["frame"] = key
                     line = json.dumps(line)
