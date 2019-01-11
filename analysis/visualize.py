@@ -38,6 +38,7 @@ def plot_trajectories(file_path, user_type = None,temp_path = "./temp.txt"):
 
                 
                 plt.plot(x,y)
+                plt.show() 
 
             elif trajectory["user_type"] == user_type:
 
@@ -47,7 +48,7 @@ def plot_trajectories(file_path, user_type = None,temp_path = "./temp.txt"):
 
                 
                 plt.plot(x,y)
-        plt.show()    
+        # plt.show()    
         
         # print(i)
         os.remove(temp_path)
@@ -57,10 +58,10 @@ def plot_trajectories(file_path, user_type = None,temp_path = "./temp.txt"):
 def main():
 
     csv_file = "new_rates/bad_30.0to2.5.csv"
-    # csv_file = "bad.csv"
+    csv_file = "fsc_6.csv"
     file_path = CSV + csv_file
 
-    plot_trajectories(file_path, user_type = "car\n")
+    plot_trajectories(file_path, user_type = None)
 
 
 if __name__ == "__main__":
