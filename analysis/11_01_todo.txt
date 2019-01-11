@@ -11,9 +11,8 @@
 4/résoudre les problèmes si il y a lieu
 
 bad: pas en bird eye view, il faut trouver et appliquer l'homographie
-    quand on applique la diminution du framerate, ça créer des trajectoires incohérentes
-    faudrait-il prendre trajectoire par trajectoire et supprimer 1/n points plutôt que de prendre
-    toutes les frames et d'en garder 1/n
+    quand on applique la diminution du framerate, ça créer des trajectoires incohérentes --> réglé, il fallait ordonner les frames
+    
 
 fsc: ça n'a aucun sens, les trajectoires ne ressemblent pas à une intersection, pourtant
     il est probable que la projection soit correcte, à investiguer
@@ -25,4 +24,4 @@ fsc: ça n'a aucun sens, les trajectoires ne ressemblent pas à une intersection
 
 
 1h: xxxx
-1/2h : xxxxx
+1/2h : xxxxxx

@@ -72,13 +72,11 @@ def main():
 
         factor_div = 2.0
         w,h = get_scene_image_size(min_,max_,factor_div = factor_div)
-        nb_agent = get_number_object(file_path)
-        colors = cm.rainbow(np.linspace(0, 100, nb_agent))
+        
         
         new_color_index = 0
         color_dict = {}
 
-        print(nb_agent)
 
         # Create a black image
         img = np.zeros((w,h,3), np.uint8)
@@ -114,7 +112,7 @@ def main():
                 cv2.putText(img1, str(frame["frame"]), text_pos, font, 0.8, (255, 255, 255), 2, cv2.LINE_AA)
 
                 cv2.imshow('image1',img1)
-                cv2.waitKey(int(1000/30))
+                cv2.waitKey(int(1000/framerate))
 
 
 
