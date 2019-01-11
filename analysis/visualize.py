@@ -25,45 +25,44 @@ from matplotlib.lines import Line2D
 
 
 
-
-
-def main():
-
-    csv_file = "new_rates/bad_30.0to2.5.csv"
-    # csv_file = "koper.csv"
-    file_path = CSV + csv_file
-    temp_path = "./temp.txt"
+def plot_trajectories(file_path, user_type = None,temp_path = "./temp.txt"):
     extract_trajectories(file_path,destination_path = temp_path, save = True)
 
     with open(temp_path) as trajectories:
         fig = plt.figure()
-        ax = fig.add_subplot(111)
         for i,trajectory in enumerate(trajectories):
             trajectory = json.loads(trajectory)
             coordinates = trajectory["coordinates"]
-            # print(coordinates)
-            # print("----")
-            # print(coordinates)
-            # print(trajectory["user_type"])
-            if trajectory["user_type"] == "car\n":
+            if user_type == None:
+                x = [p[0] for p in coordinates]
+                y = [p[1] for p in coordinates]
+
+                
+                plt.plot(x,y)
+
+            elif trajectory["user_type"] == user_type:
 
                
                 x = [p[0] for p in coordinates]
                 y = [p[1] for p in coordinates]
 
                 
-                if i < 20:
-                    plt.plot(x,y)
-                    
-
-                
-                # sns.lineplot(x = "x", y = "y", data = pd.DataFrame(coordinates, columns = ["x","y"]), sort= False)
-            
-            
+                plt.plot(x,y)
         plt.show()    
         
-    print(i)
-    os.remove(temp_path)
+        # print(i)
+        os.remove(temp_path)
+        
+    return
+
+def main():
+
+    csv_file = "new_rates/bad_30.0to2.5.csv"
+    # csv_file = "koper.csv"
+    file_path = CSV + csv_file
+
+    plot_trajectories(file_path, user_type = None)
+
 
 if __name__ == "__main__":
     main()
