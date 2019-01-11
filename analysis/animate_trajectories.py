@@ -104,8 +104,17 @@ def main():
                     
                     cv2.circle(img1,tuple([int(p/factor_div) for p in coordinates]), 5, tuple(color_dict[id_]), -1)
             
+
+            font = cv2.FONT_HERSHEY_SIMPLEX
+
+            
+            text_pos = tuple(np.subtract([h,w],[100,25]))
+            
+            cv2.putText(img1, str(frame["frame"]), text_pos, font, 0.8, (255, 255, 255), 2, cv2.LINE_AA)
+
             cv2.imshow('image1',img1)
             cv2.waitKey(int(1000/30))
+
 
 
 
