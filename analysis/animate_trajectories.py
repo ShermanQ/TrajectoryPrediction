@@ -113,11 +113,11 @@ def main():
     file_path = CSV + "deathCircle1.csv"
     framerate = 30
     factor_div = 2.0
-    nb_last_steps = 100
+    nb_last_steps = 200
     new_color_index = 0
     color_dict = {}
     temp_path = "./temp.txt"
-    
+
     helpers.extract_frames(file_path,temp_path,save = True)
 
     try:
@@ -131,7 +131,7 @@ def main():
 
 
         # Create a black image
-        img = np.zeros((w,h,3), np.uint8)
+        img = np.zeros((h,w,3), np.uint8)
 
         last_frames = deque([])
 
@@ -151,10 +151,10 @@ def main():
 
                 img1,color_dict,new_color_index = plot_current_frame(frame,img1,color_dict,new_color_index,factor_div)
 
-                img1 = plot_last_steps(img1,frame,last_frames,color_dict)
+                img1 = plot_last_steps(img1,frame,last_frames,color_dict,factor_div=factor_div)
      
 
-                img1 = plot_frame_number(h,w, img1,frame)
+                img1 = plot_frame_number(w,h, img1,frame)
                 
 
                 cv2.imshow('image1',img1)
