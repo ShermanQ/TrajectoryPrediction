@@ -88,6 +88,23 @@ def plot_frame_number(h,w, img1,frame, size = 0.8, offset = [100,25], color = (2
 
     return img1
 
+def plot_last_steps(img1,frame,last_frames,color_dict,frequency_points = 5,factor_div = 2.0, line_thickness = 1,point_thickness = 2):
+    for id_ in frame:
+        if id_ != "frame":
+            points = []
+            for f in last_frames:
+                if id_ in f:
+                    points.append([int(p/factor_div) for p in f[id_]["coordinates"]])
+                    
+
+            for i,p in enumerate(points):
+                if i % frequency_points == 0:
+                    cv2.circle(img1,tuple(p), point_thickness, tuple(color_dict[id_]), -1)
+
+            pts = np.array(points, np.int32)
+            pts = pts.reshape((-1,1,2))
+            cv2.polylines(img1,[pts],False,tuple(color_dict[id_]),thickness = line_thickness)
+    return img1
 
 
 def main():
@@ -95,34 +112,36 @@ def main():
     file_path = CSV + "new_rates/deathCircle1_30.0to2.5.csv"
     file_path = CSV + "deathCircle1.csv"
     framerate = 30
-
+    factor_div = 2.0
+    nb_last_steps = 100
+    new_color_index = 0
+    color_dict = {}
     temp_path = "./temp.txt"
+    
     helpers.extract_frames(file_path,temp_path,save = True)
 
     try:
         min_,max_ = find_bounding_coordinates(temp_path)
 
-        factor_div = 2.0
-        nb_last_steps = 100
+        
         w,h = get_scene_image_size(min_,max_,factor_div = factor_div)
         
         
-        new_color_index = 0
-        color_dict = {}
+        
 
 
         # Create a black image
         img = np.zeros((w,h,3), np.uint8)
 
-        queue = deque([])
+        last_frames = deque([])
 
         with open(temp_path) as frames:
             for frame in frames:
                 frame = json.loads(frame)
 
-                if len(queue) == nb_last_steps:
-                    queue.popleft()
-                queue.append(frame)
+                if len(last_frames) == nb_last_steps:
+                    last_frames.popleft()
+                last_frames.append(frame)
 
                 
 
@@ -132,23 +151,8 @@ def main():
 
                 img1,color_dict,new_color_index = plot_current_frame(frame,img1,color_dict,new_color_index,factor_div)
 
-                for id_ in frame:
-                    if id_ != "frame":
-                        points = []
-                        for f in queue:
-                            if id_ in f:
-                                points.append([int(p/factor_div) for p in f[id_]["coordinates"]])
-                                
-
-                        for i,p in enumerate(points):
-                            if i%5 == 0:
-                                cv2.circle(img1,tuple(p), 2, tuple(color_dict[id_]), -1)
-
-                        pts = np.array(points, np.int32)
-                        pts = pts.reshape((-1,1,2))
-                        cv2.polylines(img1,[pts],False,tuple(color_dict[id_]),thickness = 1)
-
-                #plot points      
+                img1 = plot_last_steps(img1,frame,last_frames,color_dict)
+     
 
                 img1 = plot_frame_number(h,w, img1,frame)
                 
