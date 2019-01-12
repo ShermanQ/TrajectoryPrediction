@@ -9,6 +9,7 @@ import extractors.helpers as helpers
 import csv
 import json
 import matplotlib.cm as cm
+from collections import deque
 
 ROOT = "./../"
 CSV = ROOT + "extractors/csv/"
@@ -58,6 +59,37 @@ def get_number_object(file_path):
     return len(dict_.keys())
 
 
+def plot_current_frame(frame,img1,color_dict,new_color_index,factor_div):
+
+   
+    for id_ in frame:
+        if id_ != "frame":
+
+            if id_ not in color_dict:
+                # color_dict[id_] = tuple(colors[new_color_index][:3] * 255)
+                color_dict[id_] = [int(r) for r in np.random.randint(low = 1, high = 255, size = 3 )]
+
+                
+                new_color_index += 1
+
+            coordinates = frame[id_]["coordinates"]
+            # print(type(color_dict[id_][0]))
+            
+            
+            cv2.circle(img1,tuple([int(p/factor_div) for p in coordinates]), 5, tuple(color_dict[id_]), -1)
+    return img1,color_dict,new_color_index
+
+def plot_frame_number(h,w, img1,frame, size = 0.8, offset = [100,25], color = (255, 255, 255),  font = cv2.FONT_HERSHEY_SIMPLEX):
+    
+                
+    text_pos = tuple(np.subtract([h,w],offset))
+    
+    cv2.putText(img1, str(frame["frame"]), text_pos, font, size, color, 2, cv2.LINE_AA)
+
+    return img1
+
+
+
 def main():
 
     file_path = CSV + "new_rates/deathCircle1_30.0to2.5.csv"
@@ -71,6 +103,7 @@ def main():
         min_,max_ = find_bounding_coordinates(temp_path)
 
         factor_div = 2.0
+        nb_last_steps = 100
         w,h = get_scene_image_size(min_,max_,factor_div = factor_div)
         
         
@@ -81,44 +114,48 @@ def main():
         # Create a black image
         img = np.zeros((w,h,3), np.uint8)
 
+        queue = deque([])
+
         with open(temp_path) as frames:
             for frame in frames:
                 frame = json.loads(frame)
 
+                if len(queue) == nb_last_steps:
+                    queue.popleft()
+                queue.append(frame)
+
+                
+
+
                 img1 = img.copy()
+
+
+                img1,color_dict,new_color_index = plot_current_frame(frame,img1,color_dict,new_color_index,factor_div)
 
                 for id_ in frame:
                     if id_ != "frame":
+                        points = []
+                        for f in queue:
+                            if id_ in f:
+                                points.append([int(p/factor_div) for p in f[id_]["coordinates"]])
+                                
 
-                        if id_ not in color_dict:
-                            # color_dict[id_] = tuple(colors[new_color_index][:3] * 255)
-                            color_dict[id_] = [int(r) for r in np.random.randint(low = 1, high = 255, size = 3 )]
+                        for i,p in enumerate(points):
+                            if i%5 == 0:
+                                cv2.circle(img1,tuple(p), 2, tuple(color_dict[id_]), -1)
 
-                            
-                            new_color_index += 1
+                        pts = np.array(points, np.int32)
+                        pts = pts.reshape((-1,1,2))
+                        cv2.polylines(img1,[pts],False,tuple(color_dict[id_]),thickness = 1)
 
-                        coordinates = frame[id_]["coordinates"]
-                        # print(type(color_dict[id_][0]))
-                        
-                        
-                        cv2.circle(img1,tuple([int(p/factor_div) for p in coordinates]), 5, tuple(color_dict[id_]), -1)
+                #plot points      
+
+                img1 = plot_frame_number(h,w, img1,frame)
                 
-
-                font = cv2.FONT_HERSHEY_SIMPLEX
-
-                
-                text_pos = tuple(np.subtract([h,w],[100,25]))
-                
-                cv2.putText(img1, str(frame["frame"]), text_pos, font, 0.8, (255, 255, 255), 2, cv2.LINE_AA)
 
                 cv2.imshow('image1',img1)
                 cv2.waitKey(int(1000/framerate))
 
-
-
-
-        # cv2.imshow('image',img)
-        # cv2.waitKey(0)
         cv2.destroyAllWindows()
         os.remove(temp_path)
 
@@ -127,8 +164,6 @@ def main():
         os.remove(temp_path)
 
 
-    # Draw a diagonal blue line with thickness of 5 px
-    # cv2.line(img,(0,0),(511,511),(255,0,0),5)
 
     
 
