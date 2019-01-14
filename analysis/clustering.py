@@ -119,7 +119,7 @@ def multi_step_clustering(trajectories,extractors,clusterers):
     # trajectories = extract_trajectories(file_path)
     multistep_clusters = []
     multistep_clusters.append({})
-    multistep_clusters[0]["0"] = [key for key in trajectories]
+    multistep_clusters[0][0] = [key for key in trajectories] ##########################################################################################################
 
     clusters_hierarchy = []
 
@@ -158,7 +158,6 @@ def multi_step_clustering(trajectories,extractors,clusterers):
 def display_clusters(trajectories,clusters,img,factor_div, nb_columns = 8, mosaic = True,save = False):
     
     nb_clusters = len(clusters.keys())
-    print(nb_clusters)
     # get one color for each cluster
     colors = get_random_colors(nb_clusters)
     
@@ -175,6 +174,8 @@ def display_clusters(trajectories,clusters,img,factor_div, nb_columns = 8, mosai
         trajectories_coordinates = get_coordinates(trajectories,ids)
         # scale those coordinates according to factor div, for visualisation purpose
         trajectories_coordinates = scale_coordinates(trajectories_coordinates,factor_div)
+        
+
 
         # draw every trajectory
         for points in trajectories_coordinates:
@@ -248,7 +249,32 @@ def display_multi_step_clustering(multistep_clusters,img,trajectories,factor_div
     cv2.imshow('image1',img)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
-    
+
+def display_parent_children(trajectories,two_step_clusters,last_step_hierarchy,parent_id,img,factor_div,save = False):
+
+    parent_ids = two_step_clusters[0][parent_id]
+    children_clusters_ids = last_step_hierarchy[parent_id]
+
+    current_id = 0
+    clusters = {}
+
+    clusters[current_id] = parent_ids
+    current_id += 1
+
+    for child_cl in children_clusters_ids:
+        child_ids = two_step_clusters[1][child_cl]
+        clusters[current_id] = child_ids
+        current_id += 1
+
+    img = display_clusters(trajectories,clusters,img,factor_div, mosaic = True,save = True)
+
+    if save:
+        return img
+
+    cv2.imshow('image1',img)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
 def main():
 
 
@@ -277,8 +303,10 @@ def main():
 
     multistep_clusters,cluster_hierarchy = multi_step_clustering(trajectories,extractors,clusterers)
 
-    print(cluster_hierarchy)
-    display_clusters(trajectories,multistep_clusters[2],img,factor_div=2.0, mosaic= True)
+
+    display_clusters(trajectories,multistep_clusters[1],img,factor_div=2.0, mosaic= True)
+
+    display_parent_children(trajectories,multistep_clusters[1:],cluster_hierarchy[-1],0,img,2.0)
 
     # display_multi_step_clustering(multistep_clusters,img,trajectories,2.0)
 

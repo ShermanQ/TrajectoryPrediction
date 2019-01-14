@@ -9,6 +9,11 @@ import numpy as np
 from scipy.spatial.distance import euclidean
 
 
+
+
+
+
+
 """
     Input: Extracted csv file of a dataset
     Output: Number of line containing missing value, 
