@@ -82,19 +82,20 @@ def multi_step_clustering(trajectories,extractors,clusterers):
         multistep_clusters.append(new_clusters)
     return multistep_clusters
 
-def display_clusters_aao(trajectories,clusters,img,factor_div, nb_columns = 8):
+def display_clusters(trajectories,clusters,img,factor_div, nb_columns = 8, mosaic = True):
     
     nb_clusters = len(clusters.keys())
     print(nb_clusters)
     # get one color for each cluster
     colors = get_random_colors(nb_clusters)
-
+    
     # storages for each cluster image
     lines = []
     line = []
-
+    img1 = img.copy()
     for i,cluster in enumerate(clusters):
-        img1 = img.copy()
+        if mosaic:
+            img1 = img.copy()
         ids = clusters[cluster]
 
         # get the coordinates from the trajectories of the cluster
@@ -108,33 +109,29 @@ def display_clusters_aao(trajectories,clusters,img,factor_div, nb_columns = 8):
             pts = pts.reshape((-1,1,2))
             cv2.polylines(img1,[pts],False,colors[i])
 
+        if mosaic:
+            # resize cluster image to one quarter of its original size
+            img1 = cv2.resize(img1, (0, 0), None, 0.25, 0.25)
+
+            # if the end of the line is reached, create a new line
+            if i % nb_columns == 0 and i != 0:  
+
+                lines.append(np.hstack(tuple(line)))
+                line = []
+            line.append(img1)
         
-        # resize cluster image to one quarter of its original size
-        img1 = cv2.resize(img1, (0, 0), None, 0.25, 0.25)
+    if mosaic:
+        # if line is not empty, fill line with empty images to match previous line size
+        if len(line)>0:
+            while len(line) < nb_columns:
+                line.append(cv2.resize(img, (0, 0), None, 0.25, 0.25))
 
-        # if the end of the line is reached, create a new line
-        if i % nb_columns == 0 and i != 0:  
-
-            lines.append(np.hstack(tuple(line)))
-            line = []
-        line.append(img1)
-        
-
-    # if line is not empty, fill line with empty images to match previous line size
-    if len(line)>0:
-        while len(line) < nb_columns:
-            line.append(cv2.resize(img, (0, 0), None, 0.25, 0.25))
-
-    lines.append(np.hstack(tuple(line)))
-
-    
-    # stack lines vertically
-    mosaic = np.vstack(tuple(lines))
-
-
-    cv2.imshow('image1',mosaic)
-
-    # cv2.imshow('image1',img1)
+        lines.append(np.hstack(tuple(line)))        
+        # stack lines vertically
+        mosaic = np.vstack(tuple(lines))
+        cv2.imshow('image1',mosaic)
+    else:
+        cv2.imshow('image1',img1)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
@@ -181,7 +178,7 @@ def main():
     clusterers = [Clusterer(selected_clusterer= 0,nb_clusters= 20),Clusterer(nb_clusters= 5, selected_clusterer= 0 )]
     extractors = [Extractor(0),Extractor(0)]
     multistep_clusters = multi_step_clustering(trajectories,extractors,clusterers)
-    display_clusters_aao(trajectories,multistep_clusters[1],img,factor_div=2.0)
+    display_clusters(trajectories,multistep_clusters[1],img,factor_div=2.0, mosaic= True)
 
 
 
