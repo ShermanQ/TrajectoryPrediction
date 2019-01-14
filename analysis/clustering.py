@@ -82,7 +82,7 @@ def multi_step_clustering(trajectories,extractors,clusterers):
         multistep_clusters.append(new_clusters)
     return multistep_clusters
 
-def display_clusters(trajectories,clusters,img,factor_div, nb_columns = 8, mosaic = True):
+def display_clusters(trajectories,clusters,img,factor_div, nb_columns = 8, mosaic = True,save = False):
     
     nb_clusters = len(clusters.keys())
     print(nb_clusters)
@@ -129,8 +129,12 @@ def display_clusters(trajectories,clusters,img,factor_div, nb_columns = 8, mosai
         lines.append(np.hstack(tuple(line)))        
         # stack lines vertically
         mosaic = np.vstack(tuple(lines))
+        if save:
+            return mosaic
         cv2.imshow('image1',mosaic)
     else:
+        if save:
+            return img1
         cv2.imshow('image1',img1)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
@@ -156,6 +160,17 @@ def get_coordinates(trajectories,ids):
         trajectories_coordinates.append(trajectories[id_]["coordinates"])
     return trajectories_coordinates
 
+def display_multi_step_clustering(multistep_clusters,img,trajectories,factor_div):
+    images = []
+    for clusters in multistep_clusters:
+        img1 = display_clusters(trajectories,clusters,img,factor_div, mosaic = False,save = True)
+        img1 = cv2.resize(img1, (0, 0), None, 0.5, 0.5)
+        images.append(img1)
+    img = np.hstack(tuple(images))
+    cv2.imshow('image1',img)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+    
 def main():
 
 
@@ -178,7 +193,9 @@ def main():
     clusterers = [Clusterer(selected_clusterer= 0,nb_clusters= 20),Clusterer(nb_clusters= 5, selected_clusterer= 0 )]
     extractors = [Extractor(0),Extractor(0)]
     multistep_clusters = multi_step_clustering(trajectories,extractors,clusterers)
-    display_clusters(trajectories,multistep_clusters[1],img,factor_div=2.0, mosaic= True)
+    # display_clusters(trajectories,multistep_clusters[1],img,factor_div=2.0, mosaic= True)
+
+    display_multi_step_clustering(multistep_clusters,img,trajectories,2.0)
 
 
 
