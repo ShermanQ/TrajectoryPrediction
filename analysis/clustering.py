@@ -3,9 +3,14 @@ import numpy as np
 import sys 
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from extractors.helpers import get_dir_names,extract_frames,bb_intersection_over_union,extract_trajectories
+
+import extractors.helpers as helpers
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler,MinMaxScaler
+
+import cv2
+import helpers_v as vis
+
 
 ROOT = "./../"
 CSV = ROOT + "extractors/csv/"
@@ -46,8 +51,8 @@ class Clusterer:
 
         return clusters
 
-def multi_step_clustering(file_path,extractors,clusterers):
-    trajectories = extract_trajectories(file_path)
+def multi_step_clustering(trajectories,extractors,clusterers):
+    # trajectories = extract_trajectories(file_path)
     multistep_clusters = []
     multistep_clusters.append({})
     multistep_clusters[0]["0"] = [key for key in trajectories]
@@ -60,9 +65,8 @@ def multi_step_clustering(file_path,extractors,clusterers):
         cluster_nb = 0
         new_clusters = {}
         for key in clusters:
-            trajectories_coordinates = []
-            for id_ in clusters[key]:
-                trajectories_coordinates.append(trajectories[id_]["coordinates"])
+            trajectories_coordinates = get_coordinates(trajectories,clusters[key])
+            
             features = extractor.extract(trajectories_coordinates)
             trajectories_label = clusterer.cluster(features)
 
@@ -78,16 +82,106 @@ def multi_step_clustering(file_path,extractors,clusterers):
         multistep_clusters.append(new_clusters)
     return multistep_clusters
 
+def display_clusters_aao(trajectories,clusters,img,factor_div, nb_columns = 8):
+    
+    nb_clusters = len(clusters.keys())
+    print(nb_clusters)
+    # get one color for each cluster
+    colors = get_random_colors(nb_clusters)
+
+    # storages for each cluster image
+    lines = []
+    line = []
+
+    for i,cluster in enumerate(clusters):
+        img1 = img.copy()
+        ids = clusters[cluster]
+
+        # get the coordinates from the trajectories of the cluster
+        trajectories_coordinates = get_coordinates(trajectories,ids)
+        # scale those coordinates according to factor div, for visualisation purpose
+        trajectories_coordinates = scale_coordinates(trajectories_coordinates,factor_div)
+
+        # draw every trajectory
+        for points in trajectories_coordinates:
+            pts = np.array(points, np.int32)
+            pts = pts.reshape((-1,1,2))
+            cv2.polylines(img1,[pts],False,colors[i])
+
+        
+        # resize cluster image to one quarter of its original size
+        img1 = cv2.resize(img1, (0, 0), None, 0.25, 0.25)
+
+        # if the end of the line is reached, create a new line
+        if i % nb_columns == 0 and i != 0:  
+
+            lines.append(np.hstack(tuple(line)))
+            line = []
+        line.append(img1)
+        
+
+    # if line is not empty, fill line with empty images to match previous line size
+    if len(line)>0:
+        while len(line) < nb_columns:
+            line.append(cv2.resize(img, (0, 0), None, 0.25, 0.25))
+
+    lines.append(np.hstack(tuple(line)))
+
+    
+    # stack lines vertically
+    mosaic = np.vstack(tuple(lines))
+
+
+    cv2.imshow('image1',mosaic)
+
+    # cv2.imshow('image1',img1)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
+def scale_coordinates(trajectories_coordinates,factor_div):
+    return [[[p[0]/factor_div, p[1]/factor_div]  for p in t ] for t in trajectories_coordinates ]
+
+def get_random_colors(nb):
+    colors = []
+    color = tuple([int(r) for r in np.random.randint(low = 1, high = 255, size = 3 )])
+    colors.append(color)
+
+    for _ in range(1,nb):
+        new_color = tuple([int(r) for r in np.random.randint(low = 1, high = 255, size = 3 )])
+        while new_color in colors:
+            new_color = tuple([int(r) for r in np.random.randint(low = 1, high = 255, size = 3 )])
+        colors.append(new_color)
+    return colors
+
+def get_coordinates(trajectories,ids):
+    trajectories_coordinates = []
+    for id_ in ids:
+        trajectories_coordinates.append(trajectories[id_]["coordinates"])
+    return trajectories_coordinates
+
 def main():
 
 
     file_path = CSV + "new_rates/deathCircle1_30.0to2.5.csv"
     
+    # print(sorted(multistep_clusters[2][0]))
 
-    clusterers = [Clusterer(selected_clusterer= 0),Clusterer(nb_clusters= 5, selected_clusterer= 0 )]
+    ##############################
+    temp_path = "./temp.txt"
+    helpers.extract_frames(file_path,temp_path,save = True)
+    min_,max_ = vis.find_bounding_coordinates(temp_path)
+
+    w,h = vis.get_scene_image_size(min_,max_,factor_div = 2.0)
+    img = np.zeros((h,w,3), np.uint8)
+    os.remove(temp_path)
+    ###############################
+    trajectories = helpers.extract_trajectories(file_path)
+    
+
+    clusterers = [Clusterer(selected_clusterer= 0,nb_clusters= 20),Clusterer(nb_clusters= 5, selected_clusterer= 0 )]
     extractors = [Extractor(0),Extractor(0)]
-    multistep_clusters = multi_step_clustering(file_path,extractors,clusterers)
-
+    multistep_clusters = multi_step_clustering(trajectories,extractors,clusterers)
+    display_clusters_aao(trajectories,multistep_clusters[1],img,factor_div=2.0)
 
 
 
