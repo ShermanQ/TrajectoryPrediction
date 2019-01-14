@@ -293,7 +293,7 @@ def extract_trajectories(file_name,destination_path = "", save = False):
             # for i,l in enumerate(line[:-1]):
             #     print(i,l)
 
-            id_ = line[3]
+            id_ = int(line[3])
             # print(id_)
             coordinates = [float(line[4]),float(line[5])]
             bbox = [float(line[6]),float(line[7]),float(line[8]),float(line[9])]
@@ -354,7 +354,7 @@ def extract_frames(file_path,destination_path = "", save = False):
         for line in file_:
             line = line.split(",")
             
-            id_ = line[3]
+            id_ = int(line[3])
             # print(id_)
             coordinates = [float(line[4]),float(line[5])]
             bbox = [float(line[6]),float(line[7]),float(line[8]),float(line[9])]
