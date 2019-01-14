@@ -10,44 +10,47 @@ from sklearn.preprocessing import StandardScaler,MinMaxScaler
 ROOT = "./../"
 CSV = ROOT + "extractors/csv/"
 
-def extract_first_last_point(trajectories):
-    features = []
-    for trajectory in trajectories:
-        first_point = trajectory[0]
-        last_point = trajectory[-1]
-        features.append([first_point[0],first_point[1],last_point[0],last_point[1]])
+class ExtractorFirstLast:
+    def __init__(self):
+        pass
+ 
 
-    return features
+    def extract(self,trajectories):
+        features = []
+        for trajectory in trajectories:
+            first_point = trajectory[0]
+            last_point = trajectory[-1]
+            features.append([first_point[0],first_point[1],last_point[0],last_point[1]])
+        return features
 
-def trajectories_clustering_feature_based(features,n_clusters = 10, random_state = 0):
+class ClusteringKMeans:
+    def __init__(self,nb_clusters = 20 ,random_state = 0):
+        self.nb_clusters = nb_clusters
+        self.random_state = random_state
+
+    def cluster(self,features):
+        
+        cl = KMeans(n_clusters= self.nb_clusters, random_state= self.random_state)
     
-    cl = KMeans(n_clusters= n_clusters, random_state= random_state)
-  
-    # std = StandardScaler()
-    std = MinMaxScaler()
+        # std = StandardScaler()
+        std = MinMaxScaler()
 
-    features_std = std.fit_transform(features)
+        features_std = std.fit_transform(features)
 
-    clusters = cl.fit_predict(features_std)
-    
+        clusters = cl.fit_predict(features_std)
+        
 
-    return clusters
+        return clusters
 
-def multi_step_clustering(file_path,features_extraction_functions,clustering_functions):
+def multi_step_clustering(file_path,extractors,clusterers):
     trajectories = extract_trajectories(file_path)
     multistep_clusters = []
     multistep_clusters.append({})
-    # clusters = {}
     multistep_clusters[0]["0"] = [key for key in trajectories]
 
 
-    for feature_extractor,clustering_function in zip(features_extraction_functions,clustering_functions):
-        print(feature_extractor)
-
-        # feature_extractor = features_extraction_functions[step]
-        # clustering_function = clustering_functions[step]
-        
-
+    for extractor,clusterer in zip(extractors,clusterers):
+       
         clusters = multistep_clusters[-1]
 
         cluster_nb = 0
@@ -56,8 +59,8 @@ def multi_step_clustering(file_path,features_extraction_functions,clustering_fun
             trajectories_coordinates = []
             for id_ in clusters[key]:
                 trajectories_coordinates.append(trajectories[id_]["coordinates"])
-            features = feature_extractor(trajectories_coordinates)
-            trajectories_label = clustering_function(features)
+            features = extractor.extract(trajectories_coordinates)
+            trajectories_label = clusterer.cluster(features)
 
             sub_clusters = {}
 
@@ -77,13 +80,10 @@ def main():
     file_path = CSV + "new_rates/deathCircle1_30.0to2.5.csv"
     
 
-    clustering_functions = [trajectories_clustering_feature_based,trajectories_clustering_feature_based]
-    features_extraction_functions = [extract_first_last_point,extract_first_last_point]
-    multistep_clusters = multi_step_clustering(file_path,features_extraction_functions,clustering_functions)
+    clusterers = [ClusteringKMeans(),ClusteringKMeans(nb_clusters= 5 )]
+    extractors = [ExtractorFirstLast(),ExtractorFirstLast()]
+    multistep_clusters = multi_step_clustering(file_path,extractors,clusterers)
 
-
-    print(len(multistep_clusters))
-    print(sorted(multistep_clusters[2][0]))
 
 
 
