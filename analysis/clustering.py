@@ -10,12 +10,15 @@ from sklearn.preprocessing import StandardScaler,MinMaxScaler
 ROOT = "./../"
 CSV = ROOT + "extractors/csv/"
 
-class ExtractorFirstLast:
-    def __init__(self):
-        pass
- 
-
+class Extractor:
+    def __init__(self,selected_extractor = 0):
+        self.selected_extractor = selected_extractor
+        
     def extract(self,trajectories):
+        if self.selected_extractor == 0:
+            return self.extract_first_last(trajectories)
+
+    def extract_first_last(self,trajectories):
         features = []
         for trajectory in trajectories:
             first_point = trajectory[0]
@@ -23,22 +26,23 @@ class ExtractorFirstLast:
             features.append([first_point[0],first_point[1],last_point[0],last_point[1]])
         return features
 
-class ClusteringKMeans:
-    def __init__(self,nb_clusters = 20 ,random_state = 0):
+class Clusterer:
+    def __init__(self,selected_clusterer = 0,nb_clusters = 20 ,random_state = 0):
         self.nb_clusters = nb_clusters
         self.random_state = random_state
+        self.selected_clusterer = selected_clusterer
 
     def cluster(self,features):
+        if self.selected_clusterer == 0:
+            return self.cluster_kmeans(features)
+
+    def cluster_kmeans(self,features):
         
-        cl = KMeans(n_clusters= self.nb_clusters, random_state= self.random_state)
-    
+        cl = KMeans(n_clusters= self.nb_clusters, random_state= self.random_state)    
         # std = StandardScaler()
         std = MinMaxScaler()
-
         features_std = std.fit_transform(features)
-
-        clusters = cl.fit_predict(features_std)
-        
+        clusters = cl.fit_predict(features_std)        
 
         return clusters
 
@@ -80,8 +84,8 @@ def main():
     file_path = CSV + "new_rates/deathCircle1_30.0to2.5.csv"
     
 
-    clusterers = [ClusteringKMeans(),ClusteringKMeans(nb_clusters= 5 )]
-    extractors = [ExtractorFirstLast(),ExtractorFirstLast()]
+    clusterers = [Clusterer(selected_clusterer= 0),Clusterer(nb_clusters= 5, selected_clusterer= 0 )]
+    extractors = [Extractor(0),Extractor(0)]
     multistep_clusters = multi_step_clustering(file_path,extractors,clusterers)
 
 
