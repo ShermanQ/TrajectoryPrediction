@@ -1,19 +1,7 @@
 import numpy as np 
-
-import sys 
-import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-import extractors.helpers as helpers
-import helpers_c as cl
-from sklearn.cluster import KMeans,DBSCAN,SpectralClustering
-from sklearn.preprocessing import StandardScaler,MinMaxScaler
-
 import cv2
-import helpers_v as vis
-import scipy
-import pandas as pd
-import fastdtw
+
+# import fastdtw
 
 def multi_step_clustering(trajectories,extractors,clusterers):
     # trajectories = extract_trajectories(file_path)
@@ -54,7 +42,7 @@ def multi_step_clustering(trajectories,extractors,clusterers):
         multistep_clusters.append(new_clusters)
     return multistep_clusters,clusters_hierarchy
 
-def display_clusters(trajectories,clusters,img,factor_div, nb_columns = 8, mosaic = True,save = False):
+def display_clusters(trajectories,clusters,img,offset,factor_div, nb_columns = 8, mosaic = True,save = False):
     
     nb_clusters = len(clusters.keys())
     # get one color for each cluster
@@ -72,7 +60,7 @@ def display_clusters(trajectories,clusters,img,factor_div, nb_columns = 8, mosai
         # get the coordinates from the trajectories of the cluster
         trajectories_coordinates = get_coordinates(trajectories,ids)
         # scale those coordinates according to factor div, for visualisation purpose
-        trajectories_coordinates = scale_coordinates(trajectories_coordinates,factor_div)
+        trajectories_coordinates = scale_coordinates(trajectories_coordinates,offset,factor_div)
         
 
 
@@ -115,8 +103,14 @@ def display_clusters(trajectories,clusters,img,factor_div, nb_columns = 8, mosai
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
-def scale_coordinates(trajectories_coordinates,factor_div):
-    return [[[p[0]/factor_div, p[1]/factor_div]  for p in t ] for t in trajectories_coordinates ]
+def scale_coordinates(trajectories_coordinates,offset,factor_div):
+    scaled_trajectories = []
+    for coordinates in trajectories_coordinates:
+        scaled_coordinates = [p/factor_div for p in coordinates]
+        offset_coordinates = np.add(scaled_coordinates,offset).tolist()
+
+        scaled_trajectories.append(offset_coordinates)
+    return scaled_trajectories
 
 def get_random_colors(nb):
     colors = []
@@ -136,10 +130,10 @@ def get_coordinates(trajectories,ids):
         trajectories_coordinates.append(trajectories[id_]["coordinates"])
     return trajectories_coordinates
 
-def display_multi_step_clustering(multistep_clusters,img,trajectories,factor_div,save = False):
+def display_multi_step_clustering(multistep_clusters,img,trajectories,offset,factor_div,save = False):
     images = []
     for clusters in multistep_clusters:
-        img1 = display_clusters(trajectories,clusters,img,factor_div, mosaic = False,save = True)
+        img1 = display_clusters(trajectories,clusters,img,offset,factor_div, mosaic = False,save = True)
         img1 = cv2.resize(img1, (0, 0), None, 0.5, 0.5)
         images.append(img1)
     img = np.hstack(tuple(images))
@@ -149,7 +143,7 @@ def display_multi_step_clustering(multistep_clusters,img,trajectories,factor_div
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
-def display_parent_children(trajectories,two_step_clusters,last_step_hierarchy,parent_id,img,factor_div,save = False):
+def display_parent_children(trajectories,two_step_clusters,last_step_hierarchy,parent_id,img,offset,factor_div,save = False):
 
     parent_ids = two_step_clusters[0][parent_id]
     children_clusters_ids = last_step_hierarchy[parent_id]
@@ -165,7 +159,7 @@ def display_parent_children(trajectories,two_step_clusters,last_step_hierarchy,p
         clusters[current_id] = child_ids
         current_id += 1
 
-    img = display_clusters(trajectories,clusters,img,factor_div, mosaic = True,save = True)
+    img = display_clusters(trajectories,clusters,img,offset,factor_div, mosaic = True,save = True)
 
     if save:
         return img

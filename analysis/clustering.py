@@ -12,12 +12,6 @@ from Extractor import Extractor
 from Clusterer import Clusterer
 
 
-# import cv2
-
-# import scipy
-# import pandas as pd
-# import fastdtw
-
 
 ROOT = "./../"
 CSV = ROOT + "extractors/csv/"
@@ -66,11 +60,11 @@ def main():
     multistep_clusters,cluster_hierarchy = cl.multi_step_clustering(trajectories,extractors,clusterers)
 
 
-    # cl.display_clusters(trajectories,multistep_clusters[1],img,factor_div=factor_div, mosaic= True)
+    cl.display_clusters(trajectories,multistep_clusters[1],img,offset,factor_div=factor_div, mosaic= True)
 
-    # cl.display_parent_children(trajectories,multistep_clusters[1:],cluster_hierarchy[-1],0,img,factor_div)
+    cl.display_parent_children(trajectories,multistep_clusters[1:],cluster_hierarchy[-1],0,img,offset,factor_div)
 
-    # cl.display_multi_step_clustering(multistep_clusters,img,trajectories,factor_div)
+    cl.display_multi_step_clustering(multistep_clusters,img,trajectories,offset,factor_div)
     
     # ##########################################
     # e = Extractor(selected_extractor = 6,gamma= 1.0)
