@@ -21,7 +21,7 @@ def multi_step_clustering(trajectories,extractors,clusterers):
 
             sub_cluster_hierarchy = []
             trajectories_coordinates = get_coordinates(trajectories,clusters[key])
-            
+            # print(len(trajectories_coordinates))
             features = extractor.extract(trajectories_coordinates)
             trajectories_label = clusterer.cluster(features)
 

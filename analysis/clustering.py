@@ -25,8 +25,15 @@ CSV = ROOT + "extractors/csv/"
 def main():
 
     target_size = 1000
-    # file_path = CSV + "new_rates/bad_30.0to2.5.csv"
-    file_path = CSV + "new_rates/deathCircle1_30.0to2.5.csv"
+    file_path = CSV + "new_rates/bad_30.0to2.5.csv"
+    # file_path = CSV + "new_rates/deathCircle1_30.0to2.5.csv"
+    # file_path = CSV + "new_rates/fsc_4_20.0to2.5.csv"
+    # file_path = CSV + "new_rates/koper_12.5to2.5.csv"
+    # file_path = CSV + "new_rates/lankershim_inter3_10.0to2.5.csv"
+
+    
+
+    
     
     # print(sorted(multistep_clusters[2][0]))
 
@@ -51,18 +58,19 @@ def main():
     trajectories = helpers.extract_trajectories(file_path)
     
 
-    clusterers = [Clusterer(selected_clusterer= 1),Clusterer(selected_clusterer= 1 )]
-    extractors = [Extractor(4),Extractor(3)]
+    # clusterers = [Clusterer(selected_clusterer= 1),Clusterer(selected_clusterer= 1 )]
+    # extractors = [Extractor(0),Extractor(1)]
 
-    # clusterers = [Clusterer(selected_clusterer= 1)]
-    # extractors = [Extractor(4)]
+    clusterers = [Clusterer(selected_clusterer= 1)]
+    extractors = [Extractor(4)]
 
     multistep_clusters,cluster_hierarchy = cl.multi_step_clustering(trajectories,extractors,clusterers)
 
 
     cl.display_clusters(trajectories,multistep_clusters[1],img,offset,factor_div=factor_div, mosaic= True)
 
-    cl.display_parent_children(trajectories,multistep_clusters[1:],cluster_hierarchy[-1],0,img,offset,factor_div)
+    if len(cluster_hierarchy) > 1:
+        cl.display_parent_children(trajectories,multistep_clusters[1:],cluster_hierarchy[-1],0,img,offset,factor_div)
 
     cl.display_multi_step_clustering(multistep_clusters,img,trajectories,offset,factor_div)
     

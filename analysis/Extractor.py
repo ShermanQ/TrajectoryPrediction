@@ -46,19 +46,21 @@ class Extractor:
         features = []
         for trajectory in trajectories:
             speed = [scipy.spatial.distance.euclidean(trajectory[i-1],trajectory[i]) for i in range(1,len(trajectory))]
-            stats = self.get_stats(speed)
-            features.append(stats)
+            if len(speed) > 2:
+                stats = self.get_stats(speed)
+                features.append(stats)
         return features
 
     def extract_positions(self,trajectories):
         features = []
         for trajectory in trajectories:
-            x = [p[0] for p in trajectory]
-            y = [p[1] for p in trajectory]
-            stats_x = self.get_stats(x)
-            stats_y = self.get_stats(y)
-            stats = stats_x + stats_y
-            features.append(stats)
+            if len(trajectory) > 2:
+                x = [p[0] for p in trajectory]
+                y = [p[1] for p in trajectory]
+                stats_x = self.get_stats(x)
+                stats_y = self.get_stats(y)
+                stats = stats_x + stats_y
+                features.append(stats)
         return features
 
     # if gamma is -1, returns the distance matrix, else compute the affinity matrix
@@ -70,14 +72,14 @@ class Extractor:
                 trajectory1 = np.array(trajectories[i])
                 trajectory2 = np.array(trajectories[j])
                 distance, _ = fastdtw.fastdtw(trajectory1,trajectory2, dist = scipy.spatial.distance.euclidean)
-
+                if i == j:
+                    distance = 0.
                 if self.gamma + 1 > 0:
                     distance = np.exp(-self.gamma * distance ** 2)
 
 
                 d[i,j] = distance
                 d[j,i] = distance
-
         return d
     
     def get_stats(self,sequence):
@@ -86,5 +88,7 @@ class Extractor:
         kurtosis = scipy.stats.kurtosis(sequence)
         stats.append(skewness)
         stats.append(kurtosis)
+        if np.nan in stats:
+            print(stats)
         return stats
             
