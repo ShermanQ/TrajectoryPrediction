@@ -22,6 +22,22 @@ NB_FRAME = 3000
 
 PRINT_EVERY = 300
 
+
+
+from skimage.transform import ProjectiveTransform
+
+HOMOGRAPHY = "datasets/bad/homography/"
+# def compute_homography_data(real_corners,cam_corners,save = True):
+#     real = np.loadtxt(real_corners)
+#     cam = np.loadtxt(cam_corners)
+#     transformer = ProjectiveTransform()
+#     transformer.estimate(real,cam)
+#     homography = transformer.params
+#     if not save:    
+#         return homography
+#     np.savetxt(HOMOGRAPHY + "homography.txt",homography)
+#     return
+
 def main():
     s = time.time()
 
@@ -29,7 +45,9 @@ def main():
     if os.path.exists(bad_csv):
         os.remove(bad_csv)
   
-        
+    homography =  np.loadtxt(HOMOGRAPHY + "homography.txt")
+    transformer = ProjectiveTransform(matrix = homography)
+
     COUNTER = 0
     print("Computing frame to line")
     frame_to_line = {}
@@ -92,17 +110,30 @@ def main():
                                             x = (bbox[0] + bbox[2])/2.0
                                             y = (bbox[1] + bbox[3])/2.0 # middle of bounding box
                                             # y = bbox[3] # paper version
+                                            point = [x,y]
+                                            top_left = [bbox[0],bbox[1]]
+                                            bottom_down = [bbox[2],bbox[3]]
+                                            
+                                            point = transformer.inverse(point)[0]
+                                            
+
+                                            top_left = transformer.inverse(top_left)[0]
+                                            bottom_down = transformer.inverse(bottom_down)[0]
+
+
+
+
                                             new_line = []
                                             new_line.append(DATASET) # dataset label
                                             new_line.append(DATASET) # subscene label
                                             new_line.append(bframe) #frame
                                             new_line.append(trajectory_id) #id
-                                            new_line.append(x) #x
-                                            new_line.append(y) #y
-                                            new_line.append(bbox[0])# xmin. The top left x-coordinate of the bounding box.
-                                            new_line.append(bbox[1])# ymin The top left y-coordinate of the bounding box.
-                                            new_line.append(bbox[2])# xmax. The bottom right x-coordinate of the bounding box
-                                            new_line.append(bbox[3])# ymax. The bottom right y-coordinate of the bounding box
+                                            new_line.append(point[0]) #x
+                                            new_line.append(point[1]) #y
+                                            new_line.append(top_left[0])# xmin. The top left x-coordinate of the bounding box.
+                                            new_line.append(top_left[1])# ymin The top left y-coordinate of the bounding box.
+                                            new_line.append(bottom_down[0])# xmax. The bottom right x-coordinate of the bounding box
+                                            new_line.append(bottom_down[1])# ymax. The bottom right y-coordinate of the bounding box
                                             new_line.append(dict_classes[class_id]) # label type of agent   
 
 
