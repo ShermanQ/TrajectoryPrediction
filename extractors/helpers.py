@@ -3,6 +3,7 @@ import numpy as np
 
 import sys
 import csv
+import time
 
 
 """
@@ -146,23 +147,16 @@ def parse_boxes_line(row):
 def frame_corrector(subscene_path):
     with open(subscene_path,"r") as a:
 
-        start_frame = None
-        # last_frame = 0.
-
-        # min_step = 10000
+        start_frame = time.time()
+        
         for k,line in enumerate(a):
 
             frame = float(line.split(" ")[0])
-            if k == 0:
+            # if k == 0:
+                # start_frame = frame
+            if frame < start_frame:
                 start_frame = frame
-            # step = frame - last_frame
-            # if step < min_step:
-            #     min_step = step
-            
-            # last_frame = frame
-        # min_step = round(min_step,5)
-        # gap = round(last_frame-start_frame,5)
-        # nb_frame = int(gap/min_step)
+  
     return start_frame
 
 
