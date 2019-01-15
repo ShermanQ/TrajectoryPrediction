@@ -5,7 +5,7 @@
     fsc - problème de projection?
     ngsim x
     koper x
-2'/ estimation du temps nécessaire pour coder l'animation des trajectoires
+2'/ estimation du temps nécessaire pour coder l'animation des trajectoires x
 3/ Quelles unités de trajectoires?
 
 4/résoudre les problèmes si il y a lieu
@@ -18,7 +18,7 @@ fsc: ça n'a aucun sens, les trajectoires ne ressemblent pas à une intersection
     il est probable que la projection soit correcte, à investiguer
 
 
-5/ Clustering multicouche
+5/ Clustering multicouche x
 
 
 
