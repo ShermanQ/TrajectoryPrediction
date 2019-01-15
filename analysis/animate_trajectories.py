@@ -19,24 +19,35 @@ CSV = ROOT + "extractors/csv/"
 
 def main():
 
-    file_path = CSV + "new_rates/deathCircle1_30.0to2.5.csv"
-    file_path = CSV + "deathCircle1.csv"
+    file_path = CSV + "new_rates/gates8_30.0to2.5.csv"
+    file_path = CSV + "fsc_5.csv"
     framerate = 30
-    factor_div = 2.0
+    # factor_div = 3/2
     nb_last_steps = 200
     new_color_index = 0
     color_dict = {}
     temp_path = "./temp.txt"
+    target_size = 1000
+
+    offset = [0,0]
 
     helpers.extract_frames(file_path,temp_path,save = True)
 
     try:
         min_,max_ = vis.find_bounding_coordinates(temp_path)
+        w,h = vis.get_scene_image_size(min_,max_)
 
-        
-        w,h = vis.get_scene_image_size(min_,max_,factor_div = factor_div)
-        
-        
+        print(min_,max_)
+        print(w,h)
+        factor_div  = np.max([w,h]) / target_size
+        w,h = int(w/factor_div),int(h/factor_div)
+
+        offset = np.divide(min_,-factor_div)
+
+        print(factor_div)
+        print(offset)
+        print(w,h)
+
         
 
 
@@ -59,9 +70,9 @@ def main():
                 img1 = img.copy()
 
 
-                img1,color_dict,new_color_index = vis.plot_current_frame(frame,img1,color_dict,new_color_index,factor_div)
+                img1,color_dict,new_color_index = vis.plot_current_frame(frame,img1,color_dict,new_color_index,factor_div,offset)
 
-                img1 = vis.plot_last_steps(img1,frame,last_frames,color_dict,factor_div=factor_div)
+                img1 = vis.plot_last_steps(img1,frame,last_frames,color_dict,factor_div=factor_div,offset = offset)
      
 
                 img1 = vis.plot_frame_number(w,h, img1,frame)
