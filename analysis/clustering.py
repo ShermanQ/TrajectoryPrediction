@@ -5,20 +5,23 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import extractors.helpers as helpers
-from sklearn.cluster import KMeans,DBSCAN
+from sklearn.cluster import KMeans,DBSCAN,SpectralClustering
 from sklearn.preprocessing import StandardScaler,MinMaxScaler
 
 import cv2
 import helpers_v as vis
 import scipy
 import pandas as pd
+import fastdtw
+
 
 ROOT = "./../"
 CSV = ROOT + "extractors/csv/"
 
 class Extractor:
-    def __init__(self,selected_extractor = 0):
+    def __init__(self,selected_extractor = 0,gamma = -1):
         self.selected_extractor = selected_extractor
+        self.gamma = gamma
         
     def extract(self,trajectories):
         if self.selected_extractor == 0:
@@ -31,6 +34,8 @@ class Extractor:
             return self.extract_speed(trajectories)
         elif self.selected_extractor == 4:
             return self.extract_positions(trajectories)
+        elif self.selected_extractor == 5:
+            return self.extract_dtw(trajectories)
 
     def extract_first_last(self,trajectories):
         features = []
@@ -70,6 +75,25 @@ class Extractor:
             stats = stats_x + stats_y
             features.append(stats)
         return features
+
+    # if gamma is -1, returns the distance matrix, else compute the affinity matrix
+    def extract_dtw(self,trajectories):
+        d = np.zeros(shape=(len(trajectories),len(trajectories)))
+
+        for i in range(len(trajectories)):
+            for j in range(i ,len(trajectories)):
+                trajectory1 = np.array(trajectories[i])
+                trajectory2 = np.array(trajectories[j])
+                distance, _ = fastdtw.fastdtw(trajectory1,trajectory2, dist = scipy.spatial.distance.euclidean)
+
+                if self.gamma + 1 > 0:
+                    distance = np.exp(-self.gamma * distance ** 2)
+
+
+                d[i,j] = distance
+                d[j,i] = distance
+
+        return d
     
     def get_stats(self,sequence):
         stats = pd.Series(sequence).describe().values.tolist()
@@ -94,6 +118,10 @@ class Clusterer:
             return self.cluster_kmeans(features)
         elif self.selected_clusterer == 1:
             return self.cluster_dbscan(features)
+        elif self.selected_clusterer == 2:
+            return self.cluster_dbscan_dtw(features)
+        elif self.selected_clusterer == 3:
+            return self.cluster_spectral_dtw(features)
 
     def cluster_kmeans(self,features,std = StandardScaler()):
         
@@ -115,12 +143,26 @@ class Clusterer:
 
         return clusters
 
+    def cluster_dbscan_dtw(self,distance_matrix):
+        
+        cl = DBSCAN(eps= self.eps, min_samples= self.min_samples,metric="precomputed")  
+        clusters = cl.fit_predict(distance_matrix)        
+
+        return clusters
+
+    def cluster_spectral_dtw(self,distance_matrix):
+        
+        cl = SpectralClustering(n_clusters = self.nb_clusters,affinity="precomputed")  
+        clusters = cl.fit_predict(distance_matrix)        
+
+        return clusters
+    
+
 def multi_step_clustering(trajectories,extractors,clusterers):
     # trajectories = extract_trajectories(file_path)
     multistep_clusters = []
     multistep_clusters.append({})
-    multistep_clusters[0][0] = [key for key in trajectories] ##########################################################################################################
-
+    multistep_clusters[0][0] = [key for key in trajectories] 
     clusters_hierarchy = []
 
     for extractor,clusterer in zip(extractors,clusterers):
@@ -292,25 +334,40 @@ def main():
     img = np.zeros((h,w,3), np.uint8)
     os.remove(temp_path)
     ###############################
-    trajectories = helpers.extract_trajectories(file_path)
+    # trajectories = helpers.extract_trajectories(file_path)
     
 
-    clusterers = [Clusterer(selected_clusterer= 1),Clusterer(selected_clusterer= 1 )]
-    extractors = [Extractor(4),Extractor(3)]
+    # clusterers = [Clusterer(selected_clusterer= 1),Clusterer(selected_clusterer= 1 )]
+    # extractors = [Extractor(4),Extractor(3)]
 
-    # clusterers = [Clusterer(selected_clusterer= 1)]
-    # extractors = [Extractor(4)]
+    # # clusterers = [Clusterer(selected_clusterer= 1)]
+    # # extractors = [Extractor(4)]
 
-    multistep_clusters,cluster_hierarchy = multi_step_clustering(trajectories,extractors,clusterers)
+    # multistep_clusters,cluster_hierarchy = multi_step_clustering(trajectories,extractors,clusterers)
 
 
-    display_clusters(trajectories,multistep_clusters[1],img,factor_div=2.0, mosaic= True)
+    # display_clusters(trajectories,multistep_clusters[1],img,factor_div=2.0, mosaic= True)
 
-    display_parent_children(trajectories,multistep_clusters[1:],cluster_hierarchy[-1],0,img,2.0)
+    # display_parent_children(trajectories,multistep_clusters[1:],cluster_hierarchy[-1],0,img,2.0)
 
     # display_multi_step_clustering(multistep_clusters,img,trajectories,2.0)
+    
+    ###########################################
+    # e = Extractor(selected_extractor = 6,gamma= 1.0)
+    # trajectories = [
+    #     [[1,1],[2,2],[3,3]],
+    #     [[0,1],[0,2],[0,3]],
+    #     [[1,4],[5,2],[3,3]],
+    #     [[0,0],[2,2],[3,3]],
+    # ]
 
+    # d = e.extract_dtw(trajectories)
+    # print(d)
 
+    # c = Clusterer(selected_clusterer=3,nb_clusters=2)
+    # clusters = c.cluster(d)
+
+    # print(clusters)
 
 if __name__ == "__main__":
     main()
