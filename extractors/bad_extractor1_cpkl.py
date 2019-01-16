@@ -94,12 +94,13 @@ def main():
     ####################################
 
     ### Reduce framerate ###
-    # framerate = 30.
-    # new_rate = 10.
-    # detection_path = ROOT + DATASET +"/" + "detections.csv"
+    framerate = 30.
+    new_rate = 10.
+    detection_path = ROOT + DATASET +"/" + "detections.csv"
     # detection_sampled_path = ROOT + DATASET +"/" + "detections_sampled"
     # detection_sampled_path += "_" + str(int(framerate))+"to"+ str(int(new_rate))+".csv"
-    # reduce_observations_framerate(framerate,new_rate,detection_path,detection_sampled_path)
+    detection_sampled_path = ROOT + DATASET +"/"+"trajectories.csv"
+    reduce_observations_framerate(framerate,new_rate,detection_path,detection_sampled_path)
     ####################################
     
     
