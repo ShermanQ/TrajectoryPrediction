@@ -42,17 +42,6 @@ def find_bounding_coordinates(frames_path):
 def get_scene_image_size(min_,max_):
     s = np.subtract(max_,min_)
     return s[0],s[1]
-    # fx = max_[0] + E
-    # fy = max_[1] + E
-
-    # fx = max_[0]
-    # fy = max_[1]
-    # # if min_[0] < 0:
-    # fx -= min_[0]
-    # # if min_[1] < 0:
-    # fy -= min_[1]
-    # # return int(fx/factor_div),int(fy/factor_div)
-    # return fx,fy
 
 def get_number_object(file_path):
     dict_ = {}

@@ -175,9 +175,9 @@ def main():
 
     cpkl_to_csv(ROOT + DATASET +"/" + "init.csv",directories,['trajectory_label', 'class', 'box','frame'],INIT_SUFFIX,line_init)   
 
-    # print("Loading trajectories from cpkl to csv")                
+    print("Loading trajectories from cpkl to csv")                
                        
-    # cpkl_to_csv(ROOT + DATASET +"/" + "trajectories.csv",directories,['y', 'x', 'label','initial_state','frame'],TRAJECTORIES_SUFFIX,line_trajectory)                   
+    cpkl_to_csv(ROOT + DATASET +"/" + "trajectories.csv",directories,['y', 'x', 'label','initial_state','frame'],TRAJECTORIES_SUFFIX,line_trajectory)                   
                      
 
     print("Done!")

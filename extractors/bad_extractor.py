@@ -17,7 +17,7 @@ TRAJECTORIES_PATH = DATA + "trajectories.csv"
 dict_classes = {'7': 'car', '15':'pedestrian', '6': 'car', '14': 'pedestrian'}
 CSV_PATH = "./csv/"
 
-NB_FRAME = 3000
+NB_FRAME = 1000
 
 
 PRINT_EVERY = 300
@@ -37,6 +37,15 @@ HOMOGRAPHY = "datasets/bad/homography/"
 #         return homography
 #     np.savetxt(HOMOGRAPHY + "homography.txt",homography)
 #     return
+
+def apply_homography_box(box,homography):
+    new_box = []
+    transformer = ProjectiveTransform(matrix = homography)
+    for p in transformer.inverse(box[:2])[0]:
+        new_box.append(p)
+    for p in transformer.inverse(box[2:])[0]:
+        new_box.append(p)
+    return new_box
 
 def main():
     s = time.time()
@@ -80,6 +89,11 @@ def main():
                 if line_count_init != 0:
                     trajectory_id,class_id,box,frame = parse_init_line(row)
 
+                    ######################
+                    # print(box)
+                    box = apply_homography_box(box,homography)
+                    # print(box)
+                    #######################
 
 
                     if trajectory_id%PRINT_EVERY == 0:
@@ -103,6 +117,13 @@ def main():
                                 # print(bboxes,available_boxes[bframe])
                                 k = 0
                                 for bbox,is_available in zip(bboxes,available_boxes[bframe]):
+
+                                    ######################
+                                    # print(bbox)
+                                    bbox = apply_homography_box(bbox,homography)
+                                    # print(bbox)
+                                    #######################
+
                                     if is_available:
                                         o = iou(box,bbox)
                                         if  o > 0.9 :
@@ -114,11 +135,11 @@ def main():
                                             top_left = [bbox[0],bbox[1]]
                                             bottom_down = [bbox[2],bbox[3]]
                                             
-                                            point = transformer.inverse(point)[0]
+                                            # point = transformer.inverse(point)[0]
                                             
 
-                                            top_left = transformer.inverse(top_left)[0]
-                                            bottom_down = transformer.inverse(bottom_down)[0]
+                                            # top_left = transformer.inverse(top_left)[0]
+                                            # bottom_down = transformer.inverse(bottom_down)[0]
 
 
 
