@@ -29,6 +29,7 @@ def main():
     color_dict = {}
     temp_path = "./temp.txt"
     target_size = 1000
+    margin = 10
 
     offset = [0,0]
 
@@ -38,12 +39,18 @@ def main():
         min_,max_ = vis.find_bounding_coordinates(temp_path)
         w,h = vis.get_scene_image_size(min_,max_)
 
+        print(min_,max_)
+        print(w,h)
         factor_div  = np.max([w,h]) / target_size
-        w,h = int(w/factor_div),int(h/factor_div)
+
+        w,h = int(w/factor_div) + margin,int(h/factor_div)+margin
 
         offset = np.divide(min_,-factor_div)
 
+        print(factor_div)
+        print(offset)
 
+        print(w,h)
         
 
 

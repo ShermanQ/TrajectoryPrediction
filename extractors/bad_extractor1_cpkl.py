@@ -85,6 +85,7 @@ def main():
     # save_path = ROOT + DATASET +"/" + "detections.csv"
 
     # directories = helpers.get_dir_names(DATA,lower = False,ordered = True,descending = False)
+   
     # boxes_files = [DATA + dir_ + "/" + dir_ + BOXES_SUFFIX for dir_ in directories]
     # scene_lengths = get_scene_lengths(boxes_files)
 
@@ -93,7 +94,7 @@ def main():
     # detections_to_csv(save_path,trajectories_files,scene_lengths)
     ####################################
 
-    ### Reduce framerate ###
+    # ### Reduce framerate ###
     framerate = 30.
     new_rate = 10.
     detection_path = ROOT + DATASET +"/" + "detections.csv"
@@ -102,7 +103,7 @@ def main():
     detection_sampled_path = ROOT + DATASET +"/"+"trajectories.csv"
     reduce_observations_framerate(framerate,new_rate,detection_path,detection_sampled_path)
     ####################################
-    
+    return
     
 if __name__ == "__main__":
     main()

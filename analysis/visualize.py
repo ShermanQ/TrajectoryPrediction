@@ -58,7 +58,7 @@ def plot_trajectories(file_path, user_type = None,temp_path = "./temp.txt"):
 def main():
 
     csv_file = "new_rates/bad_30.0to2.5.csv"
-    # csv_file = "fsc_6.csv"
+    csv_file = "bad.csv"
     file_path = CSV + csv_file
 
     plot_trajectories(file_path, user_type = "car\n")

@@ -24,7 +24,7 @@ NB_FRAME = 1000
 
 PRINT_EVERY = 300
 
-FRAMERATE = 30
+FRAMERATE = 10
 
 def add_traj(trajectories,row,current_trajectories,trajectory_counter):
     current_trajectories.append(trajectory_counter)
@@ -64,6 +64,34 @@ def old_trajectories(current_trajectories,trajectories,inactivity,current_frame)
         else:
             new_current.append(c)
     return ids,new_current
+
+def persist_trajectories(outdated_trajectories,trajectories,writer):
+    for c in outdated_trajectories:
+        type_ = trajectories[c]["type"]
+        trajectory_id = c 
+        unknown = -1
+        
+        for point,bframe in zip(trajectories[c]["coordinates"],trajectories[c]["frames"]):
+            new_line = []
+            new_line.append(DATASET) # dataset label
+            new_line.append(DATASET) # subscene label
+            new_line.append(bframe) #frame
+            new_line.append(trajectory_id) #id
+            new_line.append(point[0]) #x
+            new_line.append(point[1]) #y
+            new_line.append(unknown)# xmin. The top left x-coordinate of the bounding box.
+            new_line.append(unknown)# ymin The top left y-coordinate of the bounding box.
+            new_line.append(unknown)# xmax. The bottom right x-coordinate of the bounding box
+            new_line.append(unknown)# ymax. The bottom right y-coordinate of the bounding box
+            new_line.append(type_) # label type of agent   
+            writer.writerow(new_line)
+
+        del trajectories[c]
+def compute_map(prior,x, mean, cov ):
+    map_ = stats.multivariate_normal.pdf(x,mean=mean,cov=cov) * prior
+    return map_
+import matplotlib.pyplot as plt
+
 def main():
     s = time.time()
 
@@ -80,81 +108,113 @@ def main():
     # ids of the available trajectories
     current_trajectories = []
 
+
+
     # covariance matrix for x,y,theta,deltat(s)
-    cov = [0.001,0.001,1.57, 1.0/FRAMERATE ]
+    cov = [0.005,0.005,1.57/10., 5.0/FRAMERATE ]
+    cov = [0.005,0.005,3.0/FRAMERATE]
+    cov = [0.005,0.005]
 
     # the consecutive number of not updated frame for a trajectory
-    inactivity = 50
+    inactivity = 150
 
-    probability_threshold = 0.2
+    probability_threshold = 0.
 
-    with open(TRAJECTORIES_PATH) as csv_file:
-        traj_reader = csv.reader(csv_file, delimiter=',')
-        for i,row in enumerate(traj_reader):
+    ctr,ctr1,ctr2,i = 0,0,0,0 # proba eliminated # no trajectory left # different type
+ 
+    # bad_csv = "/home/laurent/Documents/master/extractors/csv/bad.csv"
+    with open(bad_csv,"a+") as csv_file:
+        writer = csv.writer(csv_file)
 
-            if i% 100000 == 0:
-                print(i)
-                print(len(trajectories.keys()))
-                print(time.time()-s)
+        with open(TRAJECTORIES_PATH) as csv_file:
+        # with open("/home/laurent/Documents/master/extractors/datasets/bad/trajectories.csv") as csv_file:
 
-            x1,y1,init,frame1 = float(row[0]),float(row[1]),row[3],int(row[4])
-          
+            traj_reader = csv.reader(csv_file, delimiter=',')
+            for i,row in enumerate(traj_reader):
 
-            # update current_trajectories by removing the old trajectories
-            outdated_trajectories,current_trajectories = old_trajectories(current_trajectories,trajectories,inactivity,frame1)
-            for c in outdated_trajectories:
-                del trajectories[c]
+                if i% 50000 == 0:
+                    print(i,ctr,ctr1,ctr2,time.time()-s)
+
+                x1,y1,init,frame1,type1 = float(row[0]),float(row[1]),row[3],int(row[4]),row[2]
             
 
-            # if no trajectories available, the observation necessarily belongs to a new one
-            # this will be removed when the adding of a new trajectory will only depend on the true value on the row
+                # update current_trajectories by removing the old trajectories
+                outdated_trajectories,current_trajectories = old_trajectories(current_trajectories,trajectories,inactivity,frame1)
+                # when a trajectory is outdated, write its content in destination file and delete it from the memory
+                persist_trajectories(outdated_trajectories,trajectories,writer)
+                
 
-            # if len(current_trajectories) == 0:
-            ## add new trajectory only if init is true
-            if init == "True":           
-                trajectory_counter = add_traj(trajectories,row,current_trajectories,trajectory_counter)
+                # if no trajectories available, the observation necessarily belongs to a new one
+                # this will be removed when the adding of a new trajectory will only depend on the true value on the row
 
-            else:
-                # to get rid of the problem: manuel label late in comparison to detection
-                if len(current_trajectories) != 0:
-                    # initialize probabilities to 0
-                    probabilities = np.zeros(len(current_trajectories))
-                    
-                    # for each currently available trajectory
-                    for k,c in enumerate(current_trajectories):
+                # if len(current_trajectories) == 0:
+                ## add new trajectory only if init is true
+                if init == "True":           
+                    trajectory_counter = add_traj(trajectories,row,current_trajectories,trajectory_counter)
+                elif len(current_trajectories) == 0:
+                    ctr1 +=1
+                else:
+                    # to get rid of the problem: manuel label late in comparison to detection
+                    if len(current_trajectories) != 0:
+                        # initialize probabilities to 0
+                        probabilities = np.zeros(len(current_trajectories))
+                        prior = 1./float(len(current_trajectories))
+                        xs = []
+                        types = []
+                        # for each currently available trajectory
+                        for k,c in enumerate(current_trajectories):
 
-                        # get selected trajectory data
-                        x0,y0,frame0 = trajectories[c]["coordinates"][-1][0],trajectories[c]["coordinates"][-1][1],trajectories[c]["frames"][-1]
-
-                        # if the frame of the new row is anterior to the last frame of the selected trajectory, the belonging proba stays 0
-                        if frame0 < frame1:
+                            # get selected trajectory data
+                            x0,y0 = trajectories[c]["coordinates"][-1][0],trajectories[c]["coordinates"][-1][1]
+                            type0,frame0 = trajectories[c]["type"],trajectories[c]["frames"][-1]
+                            # if the frame of the new row is anterior to the last frame of the selected trajectory, the belonging proba stays 0
+                            # if frame0 < frame1:
                             theta0 = old_angle(trajectories[c]["coordinates"])
                             theta1 = angle([x0,y0],[x1,y1])
                             t0 = float(frame0)/float(FRAMERATE)
                             t1 = float(frame1)/float(FRAMERATE)
 
-                            mean = [x0,y0,theta0,t0]
-                            x = [x1,y1,theta1,t1]
+                            # mean = [x0,y0,theta0,t0]
+                            # x = [x1,y1,theta1,t1]
 
+                            # mean = [x0,y0,1./FRAMERATE]
+                            # x = [x1,y1,t1-t0]
+                            mean = [x0,y0]
+                            x = [x1,y1]
+                            xs.append(mean)
+                            types.append(type0)
+                            
                             # compute for the selected trajectory the probability of belonging
-                            probabilities[k] = stats.multivariate_normal.pdf(x,mean=mean,cov=cov) # this is not between 0 and 1
-                    # print(probabilities)
-                    # get the index of the most likely trajectory
-                    choice = best_trajectory(current_trajectories,probabilities,probability_threshold)
-                    # print(choice)
-                    if choice != -1:
-                        trajectories[choice]["coordinates"].append([x1,y1])
-                        trajectories[choice]["frames"].append(frame1)
-                    # if no trajectory was selected, add a new one
-                    # this will be removed when the adding of a new trajectory will only depend on the true value on the row
-                    # else:
-                        
-                    #     trajectory_counter = add_traj(trajectories,row,current_trajectories,trajectory_counter)
+                            probabilities[k] = compute_map(prior,x, mean, cov )
+                            # stats.multivariate_normal.pdf(x,mean=mean,cov=cov)
+                                
+                                
 
-                    # print("nb traj: " + str(len(trajectories.keys())))
+                       # normalize maps to get probability
+                        # if np.sum(probabilities) > 0:
+                        if len(current_trajectories) > 1:
+                            probabilities /= np.sum(probabilities)
+                        # get the index of the most likely trajectory
+                        choice = best_trajectory(current_trajectories,probabilities,probability_threshold)
 
+                        if choice != -1 :
+                            
+                            if types[np.argmax(probabilities)] == type1:
+                                
+                                trajectories[choice]["coordinates"].append([x1,y1])
+                                trajectories[choice]["frames"].append(frame1)
+                            else:
+                                ctr2 += 1
+
+                        else:
+                            ctr += 1
+
+        persist_trajectories(current_trajectories,trajectories,writer)
+    
+    print(ctr,i)
 
 
     print(time.time()-s)
+    
 if __name__ == "__main__":
     main()
