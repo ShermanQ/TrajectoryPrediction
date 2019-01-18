@@ -38,15 +38,26 @@ def add_traj(trajectories,row,current_trajectories,trajectory_counter):
     return trajectory_counter
 
 
-def angle(p0,p1):
-    diff = np.subtract(p1,p0)
-    return np.arctan2(diff[1],diff[0])
-def old_angle(coordinates):
-    if len(coordinates) < 2:
-        return np.random.uniform(low = -1.57,high = 1.57)
-    else:
-        return angle(coordinates[-2],coordinates[-1])
+# def angle(p0,p1):
+#     diff = np.subtract(p1,p0)
+#     return np.arctan2(diff[1],diff[0])
+# def old_angle(coordinates):
+#     if len(coordinates) < 2:
+#         return np.random.uniform(low = -1.57,high = 1.57)
+#     else:
+#         return angle(coordinates[-2],coordinates[-1])
 
+def reel_angle(coordinates,v1):
+    if len(coordinates) < 2:
+        return 0.
+    else:
+        return angle1(np.subtract(coordinates[-1],coordinates[-2]),np.subtract(v1,coordinates[-1]))
+def angle1(v0,v1):
+    v0 /= np.linalg.norm(v0)
+    v1 /= np.linalg.norm(v1)
+
+    angle = np.arccos(np.dot(v0,v1))
+    return angle
 
 def best_trajectory(current_trajectories,probabilities,probability_threshold):
     best_proba = np.max(probabilities)
@@ -116,18 +127,18 @@ def main():
     cov = [0.005,0.005]
 
     # the consecutive number of not updated frame for a trajectory
-    inactivity = 150
+    inactivity = 500
 
     probability_threshold = 0.
 
     ctr,ctr1,ctr2,i = 0,0,0,0 # proba eliminated # no trajectory left # different type
  
-    # bad_csv = "/home/laurent/Documents/master/extractors/csv/bad.csv"
+    bad_csv = "/home/laurent/Documents/master/extractors/csv/bad.csv"
     with open(bad_csv,"a+") as csv_file:
         writer = csv.writer(csv_file)
 
+        TRAJECTORIES_PATH = "/home/laurent/Documents/master/extractors/datasets/bad/trajectories.csv"
         with open(TRAJECTORIES_PATH) as csv_file:
-        # with open("/home/laurent/Documents/master/extractors/datasets/bad/trajectories.csv") as csv_file:
 
             traj_reader = csv.reader(csv_file, delimiter=',')
             for i,row in enumerate(traj_reader):
@@ -136,7 +147,7 @@ def main():
                     print(i,ctr,ctr1,ctr2,time.time()-s)
 
                 x1,y1,init,frame1,type1 = float(row[0]),float(row[1]),row[3],int(row[4]),row[2]
-            
+                
 
                 # update current_trajectories by removing the old trajectories
                 outdated_trajectories,current_trajectories = old_trajectories(current_trajectories,trajectories,inactivity,frame1)
@@ -144,41 +155,42 @@ def main():
                 persist_trajectories(outdated_trajectories,trajectories,writer)
                 
 
-                # if no trajectories available, the observation necessarily belongs to a new one
-                # this will be removed when the adding of a new trajectory will only depend on the true value on the row
+                correct_trajectories = []
 
-                # if len(current_trajectories) == 0:
+                for cur in current_trajectories:
+                    if trajectories[cur]["type"] == type1 and trajectories[cur]["frames"][-1] < frame1:
+                        correct_trajectories.append(cur)
+                
+     
                 ## add new trajectory only if init is true
                 if init == "True":           
                     trajectory_counter = add_traj(trajectories,row,current_trajectories,trajectory_counter)
-                elif len(current_trajectories) == 0:
+                elif len(correct_trajectories) == 0:
+
                     ctr1 +=1
                 else:
                     # to get rid of the problem: manuel label late in comparison to detection
-                    if len(current_trajectories) != 0:
-                        # initialize probabilities to 0
-                        probabilities = np.zeros(len(current_trajectories))
-                        prior = 1./float(len(current_trajectories))
+                    if len(correct_trajectories) != 0:
+                    
+                        probabilities = np.zeros(len(correct_trajectories))
+                        prior = 1./float(len(correct_trajectories))
+                        
                         xs = []
                         types = []
                         # for each currently available trajectory
-                        for k,c in enumerate(current_trajectories):
+                        for k,c in enumerate(correct_trajectories):
+
 
                             # get selected trajectory data
                             x0,y0 = trajectories[c]["coordinates"][-1][0],trajectories[c]["coordinates"][-1][1]
                             type0,frame0 = trajectories[c]["type"],trajectories[c]["frames"][-1]
                             # if the frame of the new row is anterior to the last frame of the selected trajectory, the belonging proba stays 0
-                            # if frame0 < frame1:
-                            theta0 = old_angle(trajectories[c]["coordinates"])
-                            theta1 = angle([x0,y0],[x1,y1])
-                            t0 = float(frame0)/float(FRAMERATE)
-                            t1 = float(frame1)/float(FRAMERATE)
+               
+                            # t0 = float(frame0)/float(FRAMERATE)
+                            # t1 = float(frame1)/float(FRAMERATE)
 
-                            # mean = [x0,y0,theta0,t0]
-                            # x = [x1,y1,theta1,t1]
-
-                            # mean = [x0,y0,1./FRAMERATE]
-                            # x = [x1,y1,t1-t0]
+                            # angle = reel_angle(trajectories[c]["coordinates"],[x1,y1])
+                        
                             mean = [x0,y0]
                             x = [x1,y1]
                             xs.append(mean)
@@ -186,16 +198,16 @@ def main():
                             
                             # compute for the selected trajectory the probability of belonging
                             probabilities[k] = compute_map(prior,x, mean, cov )
-                            # stats.multivariate_normal.pdf(x,mean=mean,cov=cov)
                                 
                                 
 
                        # normalize maps to get probability
-                        # if np.sum(probabilities) > 0:
-                        if len(current_trajectories) > 1:
+              
+                        if len(correct_trajectories) > 0:
                             probabilities /= np.sum(probabilities)
                         # get the index of the most likely trajectory
-                        choice = best_trajectory(current_trajectories,probabilities,probability_threshold)
+                        choice = best_trajectory(correct_trajectories,probabilities,probability_threshold)
+
 
                         if choice != -1 :
                             

@@ -96,7 +96,7 @@ def main():
 
     # ### Reduce framerate ###
     framerate = 30.
-    new_rate = 10.
+    new_rate = 30.
     detection_path = ROOT + DATASET +"/" + "detections.csv"
     # detection_sampled_path = ROOT + DATASET +"/" + "detections_sampled"
     # detection_sampled_path += "_" + str(int(framerate))+"to"+ str(int(new_rate))+".csv"
