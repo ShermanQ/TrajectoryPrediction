@@ -187,7 +187,7 @@ def parse_line_fsc(line,scene_name, dataset_name,min_step,start_frame):
     x = -1
     y = -1
 
-    if "" != line[3] and "" != line[-1]: #domaine de définition dans le fichier et domaine d'application de la formule?
+    if "" != line[3] and "" != line[-1]: #domaine de definition dans le fichier et domaine d'application de la formule?
         
         r = float(line[3])     
         theta = float(line[-1])

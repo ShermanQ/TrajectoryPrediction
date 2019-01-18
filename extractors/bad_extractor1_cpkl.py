@@ -1,6 +1,6 @@
 import os
 import helpers
-# import cPickle
+import cPickle
 import csv
 import numpy as np
 
@@ -36,7 +36,7 @@ def get_scene_lengths(boxes_files_names):
     Can only be run with python2
 
 """
-def detections_to_csv(save_path,trajectories_files,scene_lengths):
+def detections_to_csv(save_path,trajectories_files,scene_lengths,height,width):
     if os.path.exists(save_path):
         os.remove(save_path)
     with open(save_path,"a") as csv_file:
@@ -47,11 +47,20 @@ def detections_to_csv(save_path,trajectories_files,scene_lengths):
                 for frame in frames:
                     for detection in frame:
                         line = []
-                        for key in detection:
-                            line.append(detection[key])
-                        local_frame = int(line[-1])
+                        x = float(detection["x"]) * width
+                        y = float(detection["y"]) * height
+
+                        label = detection["cls_label"]
+                        state = detection["is_initial_state"]
+                        local_frame = int(detection["t"])
+                        
+
                         global_frame = local_frame + np.sum(scene_lengths[:i])
-                        line[-1] = int(global_frame)
+                        line.append(x)
+                        line.append(y)
+                        line.append(label)
+                        line.append(state)
+                        line.append(int(global_frame))
                         writer.writerow(line)
 
 """
@@ -80,21 +89,22 @@ def reduce_observations_framerate(framerate,new_rate,detection_path,detection_sa
 
 
 def main():
+    height,width = 720, 1280
 
     ### Extract cpkl trajectories to csv ###
-    # save_path = ROOT + DATASET +"/" + "detections.csv"
+    save_path = ROOT + DATASET +"/" + "detections.csv"
 
-    # directories = helpers.get_dir_names(DATA,lower = False,ordered = True,descending = False)
+    directories = helpers.get_dir_names(DATA,lower = False,ordered = True,descending = False)
    
-    # boxes_files = [DATA + dir_ + "/" + dir_ + BOXES_SUFFIX for dir_ in directories]
-    # scene_lengths = get_scene_lengths(boxes_files)
+    boxes_files = [DATA + dir_ + "/" + dir_ + BOXES_SUFFIX for dir_ in directories]
+    scene_lengths = get_scene_lengths(boxes_files)
 
-    # trajectories_files = [DATA + dir_ + "/" + dir_ + TRAJECTORIES_SUFFIX for dir_ in directories]
+    trajectories_files = [DATA + dir_ + "/" + dir_ + TRAJECTORIES_SUFFIX for dir_ in directories]
     
-    # detections_to_csv(save_path,trajectories_files,scene_lengths)
+    detections_to_csv(save_path,trajectories_files,scene_lengths,height,width,transpos)
     ####################################
 
-    # ### Reduce framerate ###
+    # # ### Reduce framerate ###
     framerate = 30.
     new_rate = 30.
     detection_path = ROOT + DATASET +"/" + "detections.csv"

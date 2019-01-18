@@ -18,6 +18,10 @@ INIT_PATH = DATA + "init.csv"
 TRAJECTORIES_PATH = DATA + "trajectories.csv"
 dict_classes = {'7': 'car', '15':'pedestrian', '6': 'car', '14': 'pedestrian'}
 CSV_PATH = "./csv/"
+HOMOGRAPHY = "datasets/bad/homography/"
+
+
+from skimage.transform import ProjectiveTransform
 
 NB_FRAME = 1000
 
@@ -26,11 +30,22 @@ PRINT_EVERY = 300
 
 FRAMERATE = 10
 
+# def add_traj(trajectories,row,current_trajectories,trajectory_counter):
+#     current_trajectories.append(trajectory_counter)
+#     trajectories[trajectory_counter] = {
+#         "coordinates":[[float(row[0]),float(row[1])]],
+#         "frames":[int(row[4])],
+#         "type": row[2]
+#         }
+#     trajectory_counter += 1
+#     # return trajectories,current_trajectories,trajectory_counter
+#     return trajectory_counter
+
 def add_traj(trajectories,row,current_trajectories,trajectory_counter):
     current_trajectories.append(trajectory_counter)
     trajectories[trajectory_counter] = {
-        "coordinates":[[float(row[0]),float(row[1])]],
-        "frames":[int(row[4])],
+        "coordinates":[[row[0],row[1]]],
+        "frames":[row[4]],
         "type": row[2]
         }
     trajectory_counter += 1
@@ -100,10 +115,18 @@ def persist_trajectories(outdated_trajectories,trajectories,writer):
         del trajectories[c]
 def compute_map(prior,x, mean, cov ):
     map_ = stats.multivariate_normal.pdf(x,mean=mean,cov=cov) * prior
+    if map_ == np.nan:
+        print("dgghtgrf")
     return map_
-import matplotlib.pyplot as plt
+
+
 
 def main():
+
+    # homography =  np.loadtxt(HOMOGRAPHY + "homography.txt")
+    homography = np.loadtxt("/home/laurent/Documents/master/extractors/datasets/bad/homography/homography.txt")
+    transformer = ProjectiveTransform(matrix = homography)
+
     s = time.time()
 
     bad_csv = CSV_PATH + DATASET + ".csv"
@@ -124,10 +147,10 @@ def main():
     # covariance matrix for x,y,theta,deltat(s)
     cov = [0.005,0.005,1.57/10., 5.0/FRAMERATE ]
     cov = [0.005,0.005,3.0/FRAMERATE]
-    cov = [0.005,0.005]
+    cov = [10,10]
 
     # the consecutive number of not updated frame for a trajectory
-    inactivity = 500
+    inactivity = 750
 
     probability_threshold = 0.
 
@@ -146,9 +169,11 @@ def main():
                 if i% 50000 == 0:
                     print(i,ctr,ctr1,ctr2,time.time()-s)
 
-                x1,y1,init,frame1,type1 = float(row[0]),float(row[1]),row[3],int(row[4]),row[2]
+                p1,init,frame1,type1 = [float(row[0]),float(row[1])],row[3],int(row[4]),row[2]
+                # p1 = transformer.inverse(p1)[0]
+                x1,y1 = p1[0],p1[1]
                 
-
+                row = [x1,y1,type1,init,frame1]
                 # update current_trajectories by removing the old trajectories
                 outdated_trajectories,current_trajectories = old_trajectories(current_trajectories,trajectories,inactivity,frame1)
                 # when a trajectory is outdated, write its content in destination file and delete it from the memory
@@ -204,14 +229,18 @@ def main():
                                 
 
                        # normalize maps to get probability
-              
+                        bprops = probabilities
                         if len(correct_trajectories) > 0:
+                            
                             probabilities /= np.sum(probabilities)
+                        
+                            
                         # get the index of the most likely trajectory
                         choice = best_trajectory(correct_trajectories,probabilities,probability_threshold)
 
 
                         if choice != -1 :
+                           
                             
                             if frame1 > trajectories[choice]["frames"][-1] :
                                 
@@ -222,6 +251,11 @@ def main():
 
                         else:
                             ctr += 1
+                            print(ctr,frame1)
+                            print(prior)
+                            print(probabilities)
+                            print(xs)
+                            print(mean)
 
         persist_trajectories(current_trajectories,trajectories,writer)
     
