@@ -158,7 +158,9 @@ def main():
                 correct_trajectories = []
 
                 for cur in current_trajectories:
-                    if trajectories[cur]["type"] == type1 and trajectories[cur]["frames"][-1] < frame1:
+                    # if trajectories[cur]["type"] == type1 and trajectories[cur]["frames"][-1] < frame1:
+                    if trajectories[cur]["type"] == type1 and trajectories[cur]["frames"][-1] <= frame1 :
+
                         correct_trajectories.append(cur)
                 
      
@@ -211,7 +213,7 @@ def main():
 
                         if choice != -1 :
                             
-                            if types[np.argmax(probabilities)] == type1:
+                            if frame1 > trajectories[choice]["frames"][-1] :
                                 
                                 trajectories[choice]["coordinates"].append([x1,y1])
                                 trajectories[choice]["frames"].append(frame1)
