@@ -21,7 +21,6 @@ CSV_PATH = "./csv/"
 HOMOGRAPHY = "datasets/bad/homography/"
 
 
-from skimage.transform import ProjectiveTransform
 
 NB_FRAME = 1000
 
@@ -53,26 +52,26 @@ def add_traj(trajectories,row,current_trajectories,trajectory_counter):
     return trajectory_counter
 
 
-# def angle(p0,p1):
-#     diff = np.subtract(p1,p0)
-#     return np.arctan2(diff[1],diff[0])
-# def old_angle(coordinates):
-#     if len(coordinates) < 2:
-#         return np.random.uniform(low = -1.57,high = 1.57)
-#     else:
-#         return angle(coordinates[-2],coordinates[-1])
-
-def reel_angle(coordinates,v1):
+def angle(p0,p1):
+    diff = np.subtract(p1,p0)
+    return np.arctan2(diff[1],diff[0])
+def old_angle(coordinates):
     if len(coordinates) < 2:
         return 0.
     else:
-        return angle1(np.subtract(coordinates[-1],coordinates[-2]),np.subtract(v1,coordinates[-1]))
-def angle1(v0,v1):
-    v0 /= np.linalg.norm(v0)
-    v1 /= np.linalg.norm(v1)
+        return angle(coordinates[-2],coordinates[-1])
 
-    angle = np.arccos(np.dot(v0,v1))
-    return angle
+# def reel_angle(coordinates,v1):
+#     if len(coordinates) < 2:
+#         return 0.
+#     else:
+#         return angle1(np.subtract(coordinates[-1],coordinates[-2]),np.subtract(v1,coordinates[-1]))
+# def angle1(v0,v1):
+#     v0 /= np.linalg.norm(v0)
+#     v1 /= np.linalg.norm(v1)
+
+#     angle = np.arccos(np.dot(v0,v1))
+#     return angle
 
 def best_trajectory(current_trajectories,probabilities,probability_threshold):
     best_proba = np.max(probabilities)
@@ -114,18 +113,64 @@ def persist_trajectories(outdated_trajectories,trajectories,writer):
 
         del trajectories[c]
 def compute_map(prior,x, mean, cov ):
-    map_ = stats.multivariate_normal.pdf(x,mean=mean,cov=cov) * prior
-    if map_ == np.nan:
-        print("dgghtgrf")
+    map_ = np.exp(stats.multivariate_normal.logpdf(x,mean=mean,cov=cov)) * prior
+    
     return map_
+
+
+def euclidean_angle_distance(angle_1,angle_2):
+
+    return np.abs((angle_1+np.pi - angle_2)%(2*np.pi)-np.pi)
+
+
+import math
+def measure_probability(cov, mean, state):
+
+
+    x_delta = mean[0] - state[0]
+    y_delta = mean[1] - state[1]
+    # angle_delta = euclidean_angle_distance(mean[2], state[2])
+    
+    # lane_validity_delta = mean[3] - state[3]
+    cov = np.linalg.inv(np.diag(cov))
+    normalization_cst = np.linalg.det(2*math.pi* cov) ** (-0.5)
+
+    # dif_state = [x_delta, y_delta, angle_delta]
+    dif_state = [x_delta, y_delta]
+
+    dt = np.dot(cov, dif_state)
+
+    prob = np.exp(-1.*np.dot(dif_state, dt ))
+
+    prob /= normalization_cst
+    
+    
+    return prob
+
+# def measure_probability(cov, mean, state):
+
+
+#     x_delta = mean[0] - state[0]
+#     y_delta = mean[1] - state[1]
+#     angle_delta = euclidean_angle_distance(mean[2], state[2])
+    
+#     # lane_validity_delta = mean[3] - state[3]
+#     cov = np.diag(cov)
+
+#     dif_state = [x_delta, y_delta, angle_delta]
+#     dt = np.dot(cov, dif_state)
+
+#     prob = -1.*np.dot(dif_state, dt )
+
+#     # prob /= normalization_cst
+    
+    
+#     return prob
 
 
 
 def main():
 
-    # homography =  np.loadtxt(HOMOGRAPHY + "homography.txt")
-    homography = np.loadtxt("/home/laurent/Documents/master/extractors/datasets/bad/homography/homography.txt")
-    transformer = ProjectiveTransform(matrix = homography)
 
     s = time.time()
 
@@ -147,10 +192,11 @@ def main():
     # covariance matrix for x,y,theta,deltat(s)
     cov = [0.005,0.005,1.57/10., 5.0/FRAMERATE ]
     cov = [0.005,0.005,3.0/FRAMERATE]
-    cov = [10,10]
+    # height,width = 720, 1280
+    cov = [0.5,0.5]
 
     # the consecutive number of not updated frame for a trajectory
-    inactivity = 750
+    inactivity = 100
 
     probability_threshold = 0.
 
@@ -165,13 +211,16 @@ def main():
 
             traj_reader = csv.reader(csv_file, delimiter=',')
             for i,row in enumerate(traj_reader):
-
+                if i == 167:
+                    print(167)
                 if i% 50000 == 0:
                     print(i,ctr,ctr1,ctr2,time.time()-s)
 
                 p1,init,frame1,type1 = [float(row[0]),float(row[1])],row[3],int(row[4]),row[2]
                 # p1 = transformer.inverse(p1)[0]
                 x1,y1 = p1[0],p1[1]
+
+                
                 
                 row = [x1,y1,type1,init,frame1]
                 # update current_trajectories by removing the old trajectories
@@ -217,6 +266,9 @@ def main():
                             # t1 = float(frame1)/float(FRAMERATE)
 
                             # angle = reel_angle(trajectories[c]["coordinates"],[x1,y1])
+                            angle = old_angle(trajectories[c]["coordinates"])
+                            n_angle =  old_angle([trajectories[c]["coordinates"][-1],[x1,y1]])
+                            
                         
                             mean = [x0,y0]
                             x = [x1,y1]
@@ -224,13 +276,13 @@ def main():
                             types.append(type0)
                             
                             # compute for the selected trajectory the probability of belonging
-                            probabilities[k] = compute_map(prior,x, mean, cov )
+                            # probabilities[k] = compute_map(prior,x, mean, cov )
+                            probabilities[k] = measure_probability(cov, mean, x) * prior
                                 
                                 
 
                        # normalize maps to get probability
-                        bprops = probabilities
-                        if len(correct_trajectories) > 0:
+                        if np.sum(probabilities) > 0:
                             
                             probabilities /= np.sum(probabilities)
                         
@@ -251,11 +303,7 @@ def main():
 
                         else:
                             ctr += 1
-                            print(ctr,frame1)
-                            print(prior)
-                            print(probabilities)
-                            print(xs)
-                            print(mean)
+           
 
         persist_trajectories(current_trajectories,trajectories,writer)
     

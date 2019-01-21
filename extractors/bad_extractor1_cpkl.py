@@ -3,6 +3,8 @@ import helpers
 import cPickle
 import csv
 import numpy as np
+from skimage.transform import ProjectiveTransform
+
 
 DATASET = "bad"
 ROOT = "./datasets/"
@@ -36,19 +38,26 @@ def get_scene_lengths(boxes_files_names):
     Can only be run with python2
 
 """
-def detections_to_csv(save_path,trajectories_files,scene_lengths,height,width):
+def detections_to_csv(save_path,trajectories_files,scene_lengths,height,width,homography,center = [878,444]):
     if os.path.exists(save_path):
         os.remove(save_path)
     with open(save_path,"a") as csv_file:
         writer = csv.writer(csv_file)
+        transformer = ProjectiveTransform(matrix = homography)
         for i,trajectory_file in enumerate(trajectories_files):
             with open(trajectory_file,"rb") as detections_file:
                 frames = cPickle.load(detections_file)
                 for frame in frames:
                     for detection in frame:
                         line = []
-                        x = float(detection["x"]) * width
-                        y = float(detection["y"]) * height
+                        p = [float(detection["x"]) * width,float(detection["y"]) * height]
+                        p = np.subtract(p,center).tolist()
+                        p[1] *= -1.
+
+                        p = transformer.inverse(p)[0]
+                        x = p[0]
+                        y = p[1]
+                        
 
                         label = detection["cls_label"]
                         state = detection["is_initial_state"]
@@ -91,17 +100,24 @@ def reduce_observations_framerate(framerate,new_rate,detection_path,detection_sa
 def main():
     height,width = 720, 1280
 
+    # homography = np.loadtxt("/home/laurent/Documents/master/extractors/datasets/bad/homography/homography.txt")
+    homography = np.loadtxt("/home/laurent/Documents/master/extractors/datasets/bad/homography/homography.txt")
+
+    
+
     ### Extract cpkl trajectories to csv ###
     save_path = ROOT + DATASET +"/" + "detections.csv"
 
     directories = helpers.get_dir_names(DATA,lower = False,ordered = True,descending = False)
+    # directories = [directories[0]]
+    # directories = directories[:10]
    
     boxes_files = [DATA + dir_ + "/" + dir_ + BOXES_SUFFIX for dir_ in directories]
     scene_lengths = get_scene_lengths(boxes_files)
 
     trajectories_files = [DATA + dir_ + "/" + dir_ + TRAJECTORIES_SUFFIX for dir_ in directories]
     
-    detections_to_csv(save_path,trajectories_files,scene_lengths,height,width,transpos)
+    detections_to_csv(save_path,trajectories_files,scene_lengths,height,width,homography)
     ####################################
 
     # # ### Reduce framerate ###

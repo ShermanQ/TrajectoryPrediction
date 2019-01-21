@@ -21,7 +21,7 @@ def main():
 
     file_path = CSV + "new_rates/gates8_30.0to2.5.csv"
     file_path = CSV + "bad.csv"
-    framerate = 30
+    framerate = 10
     # factor_div = 3/2
     plot_last_step = True
     nb_last_steps = 200
