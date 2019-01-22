@@ -100,6 +100,11 @@ def reduce_observations_framerate(framerate,new_rate,detection_path,detection_sa
 def main():
     height,width = 720, 1280
 
+    # theta = 1.156657776318685
+    # R = [[np.cos(theta),-np.sin(theta)],
+    #     [np.sin(theta),np.cos(theta)]
+    # ]
+
     # homography = np.loadtxt("/home/laurent/Documents/master/extractors/datasets/bad/homography/homography.txt")
     homography = np.loadtxt("/home/laurent/Documents/master/extractors/datasets/bad/homography/homography.txt")
 
@@ -109,7 +114,7 @@ def main():
     save_path = ROOT + DATASET +"/" + "detections.csv"
 
     directories = helpers.get_dir_names(DATA,lower = False,ordered = True,descending = False)
-    # directories = [directories[0]]
+    directories = [directories[0]]
     # directories = directories[:10]
    
     boxes_files = [DATA + dir_ + "/" + dir_ + BOXES_SUFFIX for dir_ in directories]

@@ -40,12 +40,13 @@ FRAMERATE = 10
 #     # return trajectories,current_trajectories,trajectory_counter
 #     return trajectory_counter
 
-def add_traj(trajectories,row,current_trajectories,trajectory_counter):
+def add_traj(trajectories,row,current_trajectories,trajectory_counter,starting_lane):
     current_trajectories.append(trajectory_counter)
     trajectories[trajectory_counter] = {
         "coordinates":[[row[0],row[1]]],
         "frames":[row[4]],
-        "type": row[2]
+        "type": row[2],
+        "start_lane":starting_lane
         }
     trajectory_counter += 1
     # return trajectories,current_trajectories,trajectory_counter
@@ -166,8 +167,76 @@ def measure_probability(cov, mean, state):
     
     
 #     return prob
+        # 2 # 1  #
+        #   #    #
+    ####################
+    # 3 # 6 #  8 # 3
+    ####################
+    # 4 # 5 #  7 # 4
+    ####################
+        # 2 # 1  #
+        #   #    #
+def get_starting_lane(start_point):
+    x = start_point[0]
+    y = start_point[1]
+    if in_the_middle(x,y):
+        return get_middle_quadrant(start_point)
+    else:
+        if y < -5.:
+            return 1
+        elif y > 5.:
+            return 2
+        elif x > 5.:
+            return 3
+        elif x < -5.:
+            return 4
+def in_the_middle(x,y):
+    return (x > -5 and x < 5) and (y > -5 and y < 5)
 
+def get_middle_quadrant(point):
+    x = point[0]
+    y = point [1]
+    if in_the_middle(x,y):
+        if x < 0:
+            if y < 0:
+                return 5
+            else:
+                return 6
+        elif x > 0:
+            if y < 0:
+                return 7
+            else:
+                return 8
 
+def get_current_lane(current_point):
+    x = current_point[0]
+    y = current_point[1]
+
+    if in_the_middle(x,y):
+        return get_middle_quadrant(current_point)
+    else:
+        if x > 0 and x < 5:
+            if y > 0:
+                return 11
+            else:
+                return 1
+        elif x > -5 and x < 0:
+            if y > 0:
+                return 2
+            else:
+                return 9
+            
+        elif y > 0 and y < 5:
+            if x > 0:
+                return 3
+            else:
+                return 12
+        elif y > -5 and y < 0:
+            if x > 0:
+                return 10
+            else:
+                return 4
+  
 
 def main():
 
@@ -187,7 +256,37 @@ def main():
     # ids of the available trajectories
     current_trajectories = []
 
+    available_transitions = {
+        1 : [7,1],
+        2 : [6,2],
+        3 : [8,3],
+        4 : [5,4],
+        5 : [9,7,5],
+        6 : [12,5,6],
+        7 : [10,8,7],
+        8 : [11,6,8],
+        9: [9],
+        10: [10],
+        11: [11],
+        12: [12]
+    }
+    
 
+    # key is the starting lane, list is authorized lanes considering the starting one 
+    start_transitions = {
+        1 : [7,8,6,3,4,11,1],
+        2 : [6,3,5,7,4,9,2],
+        3 : [8,11,6,5,9,12,3],
+        4 : [5,9,7,8,11,10,4],
+        5 : [9,7,10,8,11,5],
+        6 : [12,5,9,7,10,6],
+        7 : [8,6,12,11,10,7],
+        8 : [11,6,12,5,9,8],
+        9: [9],
+        10: [10],
+        11: [11],
+        12: [12]
+    }
 
     # covariance matrix for x,y,theta,deltat(s)
     cov = [0.005,0.005,1.57/10., 5.0/FRAMERATE ]
@@ -199,6 +298,7 @@ def main():
     inactivity = 100
 
     probability_threshold = 0.
+    distance_threshold = 50.0
 
     ctr,ctr1,ctr2,i = 0,0,0,0 # proba eliminated # no trajectory left # different type
  
@@ -213,7 +313,7 @@ def main():
             for i,row in enumerate(traj_reader):
                 if i == 167:
                     print(167)
-                if i% 50000 == 0:
+                if i% 100 == 0:
                     print(i,ctr,ctr1,ctr2,time.time()-s)
 
                 p1,init,frame1,type1 = [float(row[0]),float(row[1])],row[3],int(row[4]),row[2]
@@ -230,17 +330,25 @@ def main():
                 
 
                 correct_trajectories = []
+                lane1 = get_current_lane(p1)
 
                 for cur in current_trajectories:
                     # if trajectories[cur]["type"] == type1 and trajectories[cur]["frames"][-1] < frame1:
-                    if trajectories[cur]["type"] == type1 and trajectories[cur]["frames"][-1] <= frame1 :
-
-                        correct_trajectories.append(cur)
+                    dist = np.linalg.norm(np.subtract(p1,trajectories[cur]["coordinates"][-1]))
+                    start_lane0 = trajectories[cur]["start_lane"]
+                    if trajectories[cur]["type"] == type1:
+                        if trajectories[cur]["frames"][-1] <= frame1:
+                            if dist < distance_threshold:
+                                if type1 == "pedestrian" or (lane1 in start_transitions[start_lane0] and lane1 in available_transitions[start_lane0]):
+                                    correct_trajectories.append(cur)
                 
      
                 ## add new trajectory only if init is true
-                if init == "True":           
-                    trajectory_counter = add_traj(trajectories,row,current_trajectories,trajectory_counter)
+                if init == "True":       
+                    starting_lane = get_starting_lane(p1) 
+                    if type1 == "pedestrian":
+                           starting_lane = -1
+                    trajectory_counter = add_traj(trajectories,row,current_trajectories,trajectory_counter,starting_lane)
                 elif len(correct_trajectories) == 0:
 
                     ctr1 +=1
@@ -253,6 +361,8 @@ def main():
                         
                         xs = []
                         types = []
+
+                        
                         # for each currently available trajectory
                         for k,c in enumerate(correct_trajectories):
 
@@ -260,6 +370,8 @@ def main():
                             # get selected trajectory data
                             x0,y0 = trajectories[c]["coordinates"][-1][0],trajectories[c]["coordinates"][-1][1]
                             type0,frame0 = trajectories[c]["type"],trajectories[c]["frames"][-1]
+                            
+                            
                             # if the frame of the new row is anterior to the last frame of the selected trajectory, the belonging proba stays 0
                
                             # t0 = float(frame0)/float(FRAMERATE)
@@ -276,8 +388,8 @@ def main():
                             types.append(type0)
                             
                             # compute for the selected trajectory the probability of belonging
-                            # probabilities[k] = compute_map(prior,x, mean, cov )
-                            probabilities[k] = measure_probability(cov, mean, x) * prior
+                            probabilities[k] = compute_map(prior,x, mean, cov )
+                            # probabilities[k] = measure_probability(cov, mean, x) * prior
                                 
                                 
 
