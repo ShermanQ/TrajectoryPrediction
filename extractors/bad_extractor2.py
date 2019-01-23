@@ -72,7 +72,7 @@ def persist_trajectories(outdated_trajectories,trajectories,writer):
 
         del trajectories[c]
 def compute_map(prior,x, mean, cov ):
-    map_ = np.exp(stats.multivariate_normal.logpdf(x,mean=mean,cov=cov)) * prior
+    map_ = stats.multivariate_normal.pdf(x,mean=mean,cov=cov) * prior
     
     return map_
 
@@ -90,19 +90,59 @@ def get_nb_frames(filepath):
     return nb
 
 def add_frame(rows,trajectories,current_trajectories,cov,counter):
-    available_points = [i for i in range(len(rows))]
-    probas = {}
+    available_points = {}
+    available_trajectories = {}
 
-    # add new trajectories
-    for i,row in enumerate(rows):
+    for i, row in enumerate(rows):
+        available_points[i] = row
+    for c in current_trajectories:
+        available_trajectories[c] = trajectories[c]
+    
+    delete_rows = []
+    for key in available_points:
+        row = available_points[key]
         if row[3] == "True":
             counter = add_traj(trajectories,row,current_trajectories,counter)
-        available_points.remove(i)
-    # for c in current_trajectories:
-    #     trajectory = trajectories[c]
+            delete_rows.append(key)
+    for key in delete_rows:
+        del available_points[key]
 
 
+    # if no point left stop
+    if len(available_points.keys()) == 0 :
+        return counter
+    # if no trajectory left stop
+    if len(available_trajectories.keys()) == 0 :
+        return counter
 
+    # i: points_id  j: trajectories ids
+    probas = np.zeros((len(available_points),len(current_trajectories)))
+    prior = 1./ len(current_trajectories)
+    
+    
+    for i,key in enumerate(available_points):
+        row = available_points[key]
+        mean = [row[0],row[1]]
+
+        for j,key1 in enumerate(available_trajectories):
+            trajectory = available_trajectories[key1]
+            x = trajectory["coordinates"][-1]
+            proba = compute_map(prior,x, mean, cov )
+            
+            probas[i][j] = proba
+    nb_points = len(available_points.keys())
+    while nb_points > 0:
+        idx = np.unravel_index(probas.argmax(), probas.shape)
+        i = [key for key in available_points.keys()][idx[0]]
+        j = [key for key in available_trajectories.keys()][idx[1]]
+
+        row = available_points[i]
+        trajectories[j]["coordinates"].append([row[0],row[1]])
+        trajectories[j]["frames"].append(row[4])
+
+        probas[idx[0],:] = -1
+        probas[:,idx[1]] = -1
+        nb_points -=1
 
     return counter
 
@@ -130,7 +170,9 @@ def main():
     #####
     # covariance matrix for x,y,theta,deltat(s)
     # height,width = 720, 1280
-    cov = [0.5,0.5]
+    desired_width = 3.0 # meters
+    var = (desired_width/2.0) ** 2
+    cov = [var,var]
 
     # the consecutive number of not updated frame for a trajectory
     inactivity = 100
@@ -183,7 +225,7 @@ def main():
                 ped_current_trajectories = [id_ for id_ in current_trajectories if trajectories[id_]["type"] == "pedestrian"]
                 # add frames for pedestrians and cars respectively
                 trajectory_counter = add_frame(car_rows,trajectories,car_current_trajectories,cov,trajectory_counter)
-                trajectory_counter = add_frame(ped_rows,trajectories,ped_current_trajectories,cov,trajectory_counter)
+                # trajectory_counter = add_frame(ped_rows,trajectories,ped_current_trajectories,cov,trajectory_counter)
 
                 # in case where new trajectories were added
                 current_trajectories = car_current_trajectories + ped_current_trajectories

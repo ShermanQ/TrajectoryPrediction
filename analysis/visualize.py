@@ -131,25 +131,28 @@ def plot_trajectories(file_path, user_type = None,temp_path = "./temp.txt"):
     plt.gca().add_line(line)
 
     with open(temp_path) as trajectories:
+        ids = [1,3,4]
         for i,trajectory in enumerate(trajectories):
             trajectory = json.loads(trajectory)
             coordinates = trajectory["coordinates"]
-            if user_type == None:
-                x = [p[0] for p in coordinates]
-                y = [p[1] for p in coordinates]
+            id_ = trajectory["id"]
+            if id_ in ids:
+                if user_type == None:
+                    x = [p[0] for p in coordinates]
+                    y = [p[1] for p in coordinates]
+
+                    
+                    plt.plot(x,y)
+                    # plt.show() 
+
+                elif trajectory["user_type"] == user_type:
 
                 
-                plt.plot(x,y)
-                # plt.show() 
+                    x = [p[0] for p in coordinates]
+                    y = [p[1] for p in coordinates]
 
-            elif trajectory["user_type"] == user_type:
-
-               
-                x = [p[0] for p in coordinates]
-                y = [p[1] for p in coordinates]
-
-                
-                plt.plot(x,y)
+                    
+                    plt.plot(x,y)
         plt.show()    
         
         # print(i)
@@ -162,8 +165,10 @@ def main():
     csv_file = "new_rates/bad_30.0to2.5.csv"
     csv_file = "bad.csv"
     file_path = CSV + csv_file
+    user = "car\n"
+    # user = "pedestrian\n"
 
-    plot_trajectories(file_path, user_type = "car\n")
+    plot_trajectories(file_path, user_type = user)
 
 
 if __name__ == "__main__":
