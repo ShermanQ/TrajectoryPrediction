@@ -131,7 +131,9 @@ def plot_trajectories(file_path, user_type = None,temp_path = "./temp.txt"):
     plt.gca().add_line(line)
 
     with open(temp_path) as trajectories:
-        ids = [1,3,4]
+        ids = [4]
+        # ids = [0,1,2,3,4,5,6]
+
         for i,trajectory in enumerate(trajectories):
             trajectory = json.loads(trajectory)
             coordinates = trajectory["coordinates"]

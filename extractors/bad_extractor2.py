@@ -23,10 +23,13 @@ HOMOGRAPHY = "datasets/bad/homography/"
 
 def add_traj(trajectories,row,current_trajectories,trajectory_counter):
     current_trajectories.append(trajectory_counter)
+    angle = origin_angle([row[0],row[1]])
+
     trajectories[trajectory_counter] = {
         "coordinates":[[row[0],row[1]]],
         "frames":[row[4]],
-        "type": row[2]
+        "type": row[2],
+        "angles": [angle]
         }
     trajectory_counter += 1
     # return trajectories,current_trajectories,trajectory_counter
@@ -76,6 +79,13 @@ def compute_map(prior,x, mean, cov ):
     
     return map_
 
+def origin_angle(point):
+    ux = [1,0]
+    point /= np.linalg.norm(point)
+    prod = np.dot(ux,point)
+    angle = np.arccos(prod)
+    return angle
+
 def get_nb_frames(filepath):
     nb = 0
     with open(filepath) as csv_file:
@@ -88,7 +98,7 @@ def get_nb_frames(filepath):
                 start_frame = frame
         nb = frame - start_frame + 1
     return nb
-
+import copy
 def add_frame(rows,trajectories,current_trajectories,cov,counter):
     available_points = {}
     available_trajectories = {}
@@ -122,11 +132,16 @@ def add_frame(rows,trajectories,current_trajectories,cov,counter):
     
     for i,key in enumerate(available_points):
         row = available_points[key]
-        mean = [row[0],row[1]]
+        x = [row[0],row[1]]
+        ax = origin_angle(x)
+        x.append(ax)
 
         for j,key1 in enumerate(available_trajectories):
             trajectory = available_trajectories[key1]
-            x = trajectory["coordinates"][-1]
+            am = trajectory["angles"][-1]
+            mean = copy.copy(trajectory["coordinates"][-1])
+            mean.append(am)
+
             proba = compute_map(prior,x, mean, cov )
             
             probas[i][j] = proba
@@ -137,9 +152,12 @@ def add_frame(rows,trajectories,current_trajectories,cov,counter):
         j = [key for key in available_trajectories.keys()][idx[1]]
 
         row = available_points[i]
+        x = [row[0],row[1]]
+        ax = origin_angle(x)
+
         trajectories[j]["coordinates"].append([row[0],row[1]])
         trajectories[j]["frames"].append(row[4])
-
+        trajectories[j]["angles"].append(ax)
         probas[idx[0],:] = -1
         probas[:,idx[1]] = -1
         nb_points -=1
@@ -170,9 +188,13 @@ def main():
     #####
     # covariance matrix for x,y,theta,deltat(s)
     # height,width = 720, 1280
-    desired_width = 3.0 # meters
+    desired_width = 2.0 # meters
+    desired_angle =  0.17
     var = (desired_width/2.0) ** 2
+    var_angle = (desired_angle/2.0) ** 2
     cov = [var,var]
+    cov = [var,var,var_angle]
+
 
     # the consecutive number of not updated frame for a trajectory
     inactivity = 100
@@ -197,7 +219,8 @@ def main():
             frame0 = row[4]
             frame = frame0
             while frame < nb_frames:
-                if frame == 1253:
+                print(frame)
+                if frame == 245:
                     print("dg")
                 # update current_trajectories by removing the old trajectories
                 outdated_trajectories,current_trajectories = old_trajectories(current_trajectories,trajectories,inactivity,frame)
