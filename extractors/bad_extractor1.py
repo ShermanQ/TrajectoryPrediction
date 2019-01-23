@@ -274,14 +274,14 @@ def main():
 
     # key is the starting lane, list is authorized lanes considering the starting one 
     start_transitions = {
-        1 : [7,8,6,3,4,11,1],
-        2 : [6,3,5,7,4,9,2],
-        3 : [8,11,6,5,9,12,3],
-        4 : [5,9,7,8,11,10,4],
-        5 : [9,7,10,8,11,5],
-        6 : [12,5,9,7,10,6],
-        7 : [8,6,12,11,10,7],
-        8 : [11,6,12,5,9,8],
+        1 : [1,7,10,8,11,6,12],
+        2 : [2,6,12,5,9,7,10],
+        3 : [3,8,6,12,5,9],
+        4 : [4,5,7,10,8,11],
+        5 : [5,9,7,10,8,11],
+        6 : [6,12,5,9,7,10],
+        7 : [7,10,8,11,6,12],
+        8 : [8,11,6,12,5,9],
         9: [9],
         10: [10],
         11: [11],
@@ -339,7 +339,7 @@ def main():
                     if trajectories[cur]["type"] == type1:
                         if trajectories[cur]["frames"][-1] <= frame1:
                             if dist < distance_threshold:
-                                if type1 == "pedestrian" or (lane1 in start_transitions[start_lane0] and lane1 in available_transitions[start_lane0]):
+                                if type1 == "pedestrian" or (lane1 in start_transitions[start_lane0] ):
                                     correct_trajectories.append(cur)
                 
      

@@ -22,11 +22,113 @@ import pandas as pd
 
 
 from matplotlib.lines import Line2D      
-
+from matplotlib.patches import Polygon
 
 
 def plot_trajectories(file_path, user_type = None,temp_path = "./temp.txt"):
     extract_trajectories(file_path,destination_path = temp_path, save = True)
+
+    param = 5
+    depth = 20
+
+    #5
+    line = plt.Polygon([
+        [-param,-param],
+        [0,-param],
+        [0,0],
+        [-param,0]
+    ],color = "black",fill = False)
+    plt.gca().add_line(line)
+    #7
+    line = plt.Polygon([
+        [0,0],
+        [param,0],
+        [param,-param],
+        [0,-param]
+    ],color = "black",fill = False)
+    plt.gca().add_line(line)
+    #8
+    line = plt.Polygon([
+        [0,0],
+        [param,0],
+        [param,param],
+        [0,param]
+    ],color = "black",fill = False)
+    plt.gca().add_line(line)
+    #6
+    line = plt.Polygon([
+        [0,0],
+        [0,param],
+        [-param,param],
+        [-param,0]
+    ],color = "black",fill = False)
+    plt.gca().add_line(line)
+    #4
+    line = plt.Polygon([
+        [-depth,-param],
+        [-param,-param],
+        [-param,0],
+        [-depth,0]
+    ],color = "black",fill = False,closed = False)
+    plt.gca().add_line(line)
+    #12
+    line = plt.Polygon([
+        [-depth,0],
+        [-param,0],
+        [-param,param],
+        [-depth,param]
+    ],color = "black",fill = False,closed = False)
+    plt.gca().add_line(line)
+    #9
+    line = plt.Polygon([
+        [-param,-depth],
+        [-param,-param],
+        [0,-param],
+        [0,-depth]
+    ],color = "black",fill = False,closed = False)
+    plt.gca().add_line(line)
+    #1
+    line = plt.Polygon([
+        [0,-depth],
+        [0,-param],
+        [param,-param],
+        [param,-depth]
+    ],color = "black",fill = False,closed = False)
+    plt.gca().add_line(line)
+
+    #3
+    line = plt.Polygon([
+        [depth,param],
+        [param,param],
+        [param,0],
+        [depth,0]
+    ],color = "black",fill = False,closed = False)
+    plt.gca().add_line(line)
+    #10
+    line = plt.Polygon([
+        [depth,0],
+        [param,0],
+        [param,-param],
+        [depth,-param]
+    ],color = "black",fill = False,closed = False)
+    plt.gca().add_line(line)
+
+    #2
+    line = plt.Polygon([
+        [-param,depth],
+        [-param,param],
+        [0,param],
+        [0,depth]
+    ],color = "black",fill = False,closed = False)
+    plt.gca().add_line(line)
+    #11
+    line = plt.Polygon([
+        [0,depth],
+        [0,param],
+        [param,param],
+        [param,depth]
+    ],color = "black",fill = False,closed = False)
+    plt.gca().add_line(line)
 
     with open(temp_path) as trajectories:
         for i,trajectory in enumerate(trajectories):
