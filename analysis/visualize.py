@@ -41,49 +41,36 @@ def plot_street(param,depth):
     for line in lines:
         plt.gca().add_line(line)
  
-    
+def plot_coordinates(coordinates):
+    x = [p[0] for p in coordinates]
+    y = [p[1] for p in coordinates]
+    plt.plot(x,y)   
 
-def plot_trajectories(file_path, user_type = None,temp_path = "./temp.txt"):
+def plot_trajectories(file_path, user_type = None,selected_subscenes = [],plot_context = True,temp_path = "./temp.txt"):
     extract_trajectories(file_path,destination_path = temp_path, save = True)
 
     param = 5
     depth = 20
-
-    #5
-    
-    plot_street(param,depth)
+    if plot_context:
+        plot_street(param,depth)
     with open(temp_path) as trajectories:
-        # ids = [4,5]
-        # ids = [0,1,2,3,4,5,6]
-
         for i,trajectory in enumerate(trajectories):
             trajectory = json.loads(trajectory)
             coordinates = trajectory["coordinates"]
-            id_ = trajectory["id"]
-            # if id_ in ids:
-            id_scene = 4
-            if trajectory["scene"] == "minute number: "+str(id_scene):
+            scene = trajectory["scene"]
+
+            if not selected_subscenes :
                 if user_type == None:
-                    x = [p[0] for p in coordinates]
-                    y = [p[1] for p in coordinates]
-
-                    
-                    plt.plot(x,y)
-                    # plt.show() 
-
+                    plot_coordinates(coordinates)  
                 elif trajectory["user_type"] == user_type:
-
-                
-                    x = [p[0] for p in coordinates]
-                    y = [p[1] for p in coordinates]
-
-                    
-                    plt.plot(x,y)
+                    plot_coordinates(coordinates)    
+            elif scene in selected_subscenes:
+                if user_type == None:
+                    plot_coordinates(coordinates)  
+                elif trajectory["user_type"] == user_type:
+                    plot_coordinates(coordinates)  
         plt.show()    
-        
-        # print(i)
-        os.remove(temp_path)
-        
+        os.remove(temp_path)        
     return
 
 def main():
@@ -93,8 +80,14 @@ def main():
     file_path = CSV + csv_file
     user = "car\n"
     # user = "pedestrian\n"
-
-    plot_trajectories(file_path, user_type = user)
+    
+    # id_scene = 1
+    prefix = "minute number: "
+    ids = [1]
+    selected_subscenes = [prefix + str(i) for i in ids]
+    # selected_subscenes = []
+    #         +str(id_scene)
+    plot_trajectories(file_path, user_type = user,selected_subscenes= selected_subscenes)
 
 
 if __name__ == "__main__":
