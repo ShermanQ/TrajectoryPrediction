@@ -99,7 +99,7 @@ def get_nb_frames(filepath):
         nb = frame - start_frame + 1
     return nb
 import copy
-def add_frame(rows,trajectories,current_trajectories,cov,counter):
+def add_frame(rows,trajectories,current_trajectories,cov,counter,distance_threshold):
     available_points = {}
     available_trajectories = {}
 
@@ -126,8 +126,8 @@ def add_frame(rows,trajectories,current_trajectories,cov,counter):
         return counter
 
     # i: points_id  j: trajectories ids
-    probas = np.zeros((len(available_points),len(current_trajectories)))
-    prior = 1./ len(current_trajectories)
+    probas = np.zeros((len(available_points.keys()),len(available_trajectories.keys())))
+    prior = 1./ len(available_trajectories.keys())    #prior = 1./ len(available_points) #
     
     
     for i,key in enumerate(available_points):
@@ -155,9 +155,11 @@ def add_frame(rows,trajectories,current_trajectories,cov,counter):
         x = [row[0],row[1]]
         ax = origin_angle(x)
 
-        trajectories[j]["coordinates"].append([row[0],row[1]])
-        trajectories[j]["frames"].append(row[4])
-        trajectories[j]["angles"].append(ax)
+        dist = np.linalg.norm(np.subtract(x,trajectories[j]["coordinates"][-1]))
+        if dist < distance_threshold:
+            trajectories[j]["coordinates"].append([row[0],row[1]])
+            trajectories[j]["frames"].append(row[4])
+            trajectories[j]["angles"].append(ax)
         probas[idx[0],:] = -1
         probas[:,idx[1]] = -1
         nb_points -=1
@@ -192,6 +194,7 @@ def main():
     desired_angle =  0.17
     var = (desired_width/2.0) ** 2
     var_angle = (desired_angle/2.0) ** 2
+    distance_threshold = 15.0
     cov = [var,var]
     cov = [var,var,var_angle]
 
@@ -219,9 +222,8 @@ def main():
             frame0 = row[4]
             frame = frame0
             while frame < nb_frames:
-                print(frame)
-                if frame == 245:
-                    print("dg")
+                if frame == 707:
+                    pass
                 # update current_trajectories by removing the old trajectories
                 outdated_trajectories,current_trajectories = old_trajectories(current_trajectories,trajectories,inactivity,frame)
                 # when a trajectory is outdated, write its content in destination file and delete it from the memory
@@ -247,8 +249,8 @@ def main():
                 car_current_trajectories = [id_ for id_ in current_trajectories if trajectories[id_]["type"] == "car"]
                 ped_current_trajectories = [id_ for id_ in current_trajectories if trajectories[id_]["type"] == "pedestrian"]
                 # add frames for pedestrians and cars respectively
-                trajectory_counter = add_frame(car_rows,trajectories,car_current_trajectories,cov,trajectory_counter)
-                # trajectory_counter = add_frame(ped_rows,trajectories,ped_current_trajectories,cov,trajectory_counter)
+                trajectory_counter = add_frame(car_rows,trajectories,car_current_trajectories,cov,trajectory_counter,distance_threshold)
+                trajectory_counter = add_frame(ped_rows,trajectories,ped_current_trajectories,cov,trajectory_counter,distance_threshold)
 
                 # in case where new trajectories were added
                 current_trajectories = car_current_trajectories + ped_current_trajectories
