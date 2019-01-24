@@ -354,6 +354,7 @@ def extract_frames(file_path,destination_path = "", save = False):
             bbox = [float(line[6]),float(line[7]),float(line[8]),float(line[9])]
             frame = int(line[2])
             type_ = line[10]
+            
 
             if frame not in frames:
                 frames[frame] = {}

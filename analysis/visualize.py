@@ -131,30 +131,30 @@ def plot_trajectories(file_path, user_type = None,temp_path = "./temp.txt"):
     plt.gca().add_line(line)
 
     with open(temp_path) as trajectories:
-        ids = [4,5]
-        ids = [0,1,2,3,4,5,6]
+        # ids = [4,5]
+        # ids = [0,1,2,3,4,5,6]
 
         for i,trajectory in enumerate(trajectories):
             trajectory = json.loads(trajectory)
             coordinates = trajectory["coordinates"]
             id_ = trajectory["id"]
-            if id_ in ids:
-                if user_type == None:
-                    x = [p[0] for p in coordinates]
-                    y = [p[1] for p in coordinates]
-
-                    
-                    plt.plot(x,y)
-                    # plt.show() 
-
-                elif trajectory["user_type"] == user_type:
+            # if id_ in ids:
+            if user_type == None:
+                x = [p[0] for p in coordinates]
+                y = [p[1] for p in coordinates]
 
                 
-                    x = [p[0] for p in coordinates]
-                    y = [p[1] for p in coordinates]
+                plt.plot(x,y)
+                # plt.show() 
 
-                    
-                    plt.plot(x,y)
+            elif trajectory["user_type"] == user_type:
+
+            
+                x = [p[0] for p in coordinates]
+                y = [p[1] for p in coordinates]
+
+                
+                plt.plot(x,y)
         plt.show()    
         
         # print(i)

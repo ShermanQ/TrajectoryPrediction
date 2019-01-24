@@ -21,7 +21,7 @@ def main():
 
     file_path = CSV + "new_rates/gates8_30.0to2.5.csv"
     file_path = CSV + "bad.csv"
-    framerate = 10
+    framerate = 30
     # factor_div = 3/2
     plot_last_step = True
     nb_last_steps = 200
@@ -62,7 +62,7 @@ def main():
         with open(temp_path) as frames:
             for frame in frames:
                 frame = json.loads(frame)
-
+                # print(frame)
                 if len(last_frames) == nb_last_steps:
                     last_frames.popleft()
                 last_frames.append(frame)
@@ -81,6 +81,11 @@ def main():
 
                 img1 = vis.plot_frame_number(w,h, img1,frame)
                 
+                if file_path == CSV + "bad.csv":
+                    img1 = vis.plot_scene_name(w,h, img1,frame)
+
+
+
 
                 cv2.imshow('image1',img1)
                 cv2.waitKey(int(1000/framerate))

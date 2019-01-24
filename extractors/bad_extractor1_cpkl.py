@@ -70,6 +70,7 @@ def detections_to_csv(save_path,trajectories_files,scene_lengths,height,width,ho
                         line.append(label)
                         line.append(state)
                         line.append(int(global_frame))
+                        line.append("minute number: " + str(i))
                         writer.writerow(line)
 
 """
@@ -93,7 +94,9 @@ def reduce_observations_framerate(framerate,new_rate,detection_path,detection_sa
             reader = csv.reader(detection_file)
             for row in reader:
                 if row[3] == 'True' or int(row[4]) % ratio == 0:
-                    row[-1] = int(float(row[-1])/ratio)
+                    # row[-1] = int(float(row[-1])/ratio)
+                    row[-2] = int(float(row[-2])/ratio)
+
                     writer.writerow(row) 
 
 
@@ -114,8 +117,8 @@ def main():
     save_path = ROOT + DATASET +"/" + "detections.csv"
 
     directories = helpers.get_dir_names(DATA,lower = False,ordered = True,descending = False)
-    directories = [directories[0]]
-    # directories = directories[:10]
+    # directories = [directories[0]]
+    directories = directories[:5]
    
     boxes_files = [DATA + dir_ + "/" + dir_ + BOXES_SUFFIX for dir_ in directories]
     scene_lengths = get_scene_lengths(boxes_files)

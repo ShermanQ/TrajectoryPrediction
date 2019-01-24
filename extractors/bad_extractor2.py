@@ -21,15 +21,16 @@ CSV_PATH = "./csv/"
 HOMOGRAPHY = "datasets/bad/homography/"
 
 
-def add_traj(trajectories,row,current_trajectories,trajectory_counter):
+def add_traj(trajectories,row,current_trajectories,trajectory_counter): ###########
     current_trajectories.append(trajectory_counter)
     angle = origin_angle([row[0],row[1]])
-
+    subscene = row[5]
     trajectories[trajectory_counter] = {
         "coordinates":[[row[0],row[1]]],
         "frames":[row[4]],
         "type": row[2],
-        "angles": [angle]
+        "angles": [angle],
+        "subscene" : subscene                                                   #############                 
         }
     trajectory_counter += 1
     # return trajectories,current_trajectories,trajectory_counter
@@ -51,17 +52,49 @@ def old_trajectories(current_trajectories,trajectories,inactivity,current_frame)
         else:
             new_current.append(c)
     return ids,new_current
+def linear_interpolation(coordinates,frames):
+    new_coordinates = []
+    new_frames = []
 
-def persist_trajectories(outdated_trajectories,trajectories,writer):
+    for i in range(1,len(frames)):
+        point = [coordinates[i-1][0],coordinates[i-1][1]]
+        frame = frames[i-1]
+        new_coordinates.append(point)
+        new_frames.append(frame)
+
+        if frames[i-1] + 1 < frames[i] :
+            offset = frames[i] - frames[i-1] -1
+            x0 = coordinates[i-1][0]
+            y0 = coordinates[i-1][1]
+            x1 = coordinates[i][0]
+            y1 = coordinates[i][1]
+            dx = (x1 - x0)/float(offset)
+            dy = (y1 - y0)/float(offset)
+            for j in range(offset):
+                new_point = [x0 + (j+1) * dx, y0 + (j+1) * dy ]
+                new_frame = frames[i-1] + j + 1
+                new_coordinates.append(new_point)
+                new_frames.append(new_frame)
+    return new_coordinates,new_frames
+
+def persist_trajectories(outdated_trajectories,trajectories,writer,interpolate = True):
     for c in outdated_trajectories:
         type_ = trajectories[c]["type"]
+        subscene = trajectories[c]["subscene"]                      ######################
         trajectory_id = c 
         unknown = -1
         
-        for point,bframe in zip(trajectories[c]["coordinates"],trajectories[c]["frames"]):
+        coordinates = trajectories[c]["coordinates"]
+        frames = trajectories[c]["frames"]
+
+        if interpolate:
+            coordinates,frames = linear_interpolation(coordinates,frames)
+                
+
+        for point,bframe in zip(coordinates,frames):
             new_line = []
             new_line.append(DATASET) # dataset label
-            new_line.append(DATASET) # subscene label
+            new_line.append(subscene) # subscene label                       ###########################
             new_line.append(bframe) #frame
             new_line.append(trajectory_id) #id
             new_line.append(point[0]) #x
@@ -217,13 +250,15 @@ def main():
             traj_reader = csv.reader(csv_file, delimiter=',')
 
             row = next(traj_reader)
-            row = [float(row[0]),float(row[1]),row[2],row[3],int(row[4])]
+            row = [float(row[0]),float(row[1]),row[2],row[3],int(row[4]),row[5]]
 
             frame0 = row[4]
             frame = frame0
             while frame < nb_frames:
-                if frame == 707:
-                    pass
+                if frame % 50000 == 0:
+                    print(frame)
+                    print(time.time() - s)
+                    
                 # update current_trajectories by removing the old trajectories
                 outdated_trajectories,current_trajectories = old_trajectories(current_trajectories,trajectories,inactivity,frame)
                 # when a trajectory is outdated, write its content in destination file and delete it from the memory
@@ -234,7 +269,7 @@ def main():
                 try:
                     while frame == frame0:
                         row = next(traj_reader)
-                        row = [float(row[0]),float(row[1]),row[2],row[3],int(row[4])]
+                        row = [float(row[0]),float(row[1]),row[2],row[3],int(row[4]),row[5]]
                         frame = row[4]
                         if frame == frame0:
                             rows.append(row)
@@ -256,121 +291,6 @@ def main():
                 current_trajectories = car_current_trajectories + ped_current_trajectories
                 
         persist_trajectories(current_trajectories,trajectories,writer)
-   
-
-    #         for i,row in enumerate(traj_reader):
-    #             if i == 167:
-    #                 print(167)
-    #             if i% 100 == 0:
-    #                 print(i,ctr,ctr1,ctr2,time.time()-s)
-
-    #             p1,init,frame1,type1 = [float(row[0]),float(row[1])],row[3],int(row[4]),row[2]
-    #             # p1 = transformer.inverse(p1)[0]
-    #             x1,y1 = p1[0],p1[1]
-
-                
-                
-    #             row = [x1,y1,type1,init,frame1]
-    #             # update current_trajectories by removing the old trajectories
-    #             outdated_trajectories,current_trajectories = old_trajectories(current_trajectories,trajectories,inactivity,frame1)
-    #             # when a trajectory is outdated, write its content in destination file and delete it from the memory
-    #             persist_trajectories(outdated_trajectories,trajectories,writer)
-                
-
-    #             correct_trajectories = []
-    #             lane1 = get_current_lane(p1)
-
-    #             for cur in current_trajectories:
-    #                 # if trajectories[cur]["type"] == type1 and trajectories[cur]["frames"][-1] < frame1:
-    #                 dist = np.linalg.norm(np.subtract(p1,trajectories[cur]["coordinates"][-1]))
-    #                 start_lane0 = trajectories[cur]["start_lane"]
-    #                 if trajectories[cur]["type"] == type1:
-    #                     if trajectories[cur]["frames"][-1] <= frame1:
-    #                         if dist < distance_threshold:
-    #                             if type1 == "pedestrian" or (lane1 in start_transitions[start_lane0] ):
-    #                                 correct_trajectories.append(cur)
-                
-     
-    #             ## add new trajectory only if init is true
-    #             if init == "True":       
-    #                 starting_lane = get_starting_lane(p1) 
-    #                 if type1 == "pedestrian":
-    #                        starting_lane = -1
-    #                 trajectory_counter = add_traj(trajectories,row,current_trajectories,trajectory_counter,starting_lane)
-    #             elif len(correct_trajectories) == 0:
-
-    #                 ctr1 +=1
-    #             else:
-    #                 # to get rid of the problem: manuel label late in comparison to detection
-    #                 if len(correct_trajectories) != 0:
-                    
-    #                     probabilities = np.zeros(len(correct_trajectories))
-    #                     prior = 1./float(len(correct_trajectories))
-                        
-    #                     xs = []
-    #                     types = []
-
-                        
-    #                     # for each currently available trajectory
-    #                     for k,c in enumerate(correct_trajectories):
-
-
-    #                         # get selected trajectory data
-    #                         x0,y0 = trajectories[c]["coordinates"][-1][0],trajectories[c]["coordinates"][-1][1]
-    #                         type0,frame0 = trajectories[c]["type"],trajectories[c]["frames"][-1]
-                            
-                            
-    #                         # if the frame of the new row is anterior to the last frame of the selected trajectory, the belonging proba stays 0
-               
-    #                         # t0 = float(frame0)/float(FRAMERATE)
-    #                         # t1 = float(frame1)/float(FRAMERATE)
-
-    #                         # angle = reel_angle(trajectories[c]["coordinates"],[x1,y1])
-    #                         angle = old_angle(trajectories[c]["coordinates"])
-    #                         n_angle =  old_angle([trajectories[c]["coordinates"][-1],[x1,y1]])
-                            
-                        
-    #                         mean = [x0,y0]
-    #                         x = [x1,y1]
-    #                         xs.append(mean)
-    #                         types.append(type0)
-                            
-    #                         # compute for the selected trajectory the probability of belonging
-    #                         probabilities[k] = compute_map(prior,x, mean, cov )
-    #                         # probabilities[k] = measure_probability(cov, mean, x) * prior
-                                
-                                
-
-    #                    # normalize maps to get probability
-    #                     if np.sum(probabilities) > 0:
-                            
-    #                         probabilities /= np.sum(probabilities)
-                        
-                            
-    #                     # get the index of the most likely trajectory
-    #                     choice = best_trajectory(correct_trajectories,probabilities,probability_threshold)
-
-
-    #                     if choice != -1 :
-                           
-                            
-    #                         if frame1 > trajectories[choice]["frames"][-1] :
-                                
-    #                             trajectories[choice]["coordinates"].append([x1,y1])
-    #                             trajectories[choice]["frames"].append(frame1)
-    #                         else:
-    #                             ctr2 += 1
-
-    #                     else:
-    #                         ctr += 1
-           
-
-    #     persist_trajectories(current_trajectories,trajectories,writer)
-    
-    # print(ctr,i)
-
-
-    # print(time.time()-s)
-    
+ 
 if __name__ == "__main__":
     main()

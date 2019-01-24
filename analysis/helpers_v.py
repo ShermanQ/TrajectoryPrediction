@@ -87,6 +87,15 @@ def plot_frame_number(h,w, img1,frame, size = 0.8, offset = [100,25], color = (2
 
     return img1
 
+def plot_scene_name(h,w, img1,frame, size = 0.8, offset = [400,25], color = (255, 255, 255),  font = cv2.FONT_HERSHEY_SIMPLEX):
+    
+    scene = frame[[key for key in frame.keys()][0]]["scene"]            
+    text_pos = tuple(np.subtract([h,w],offset))
+    
+    cv2.putText(img1, scene, text_pos, font, size, color, 2, cv2.LINE_AA)
+
+    return img1
+
 def plot_last_steps(img1,frame,last_frames,color_dict,frequency_points = 5,factor_div = 2.0, line_thickness = 1,point_thickness = 2,offset = [0.,0.]):
     for id_ in frame:
         if id_ != "frame":
