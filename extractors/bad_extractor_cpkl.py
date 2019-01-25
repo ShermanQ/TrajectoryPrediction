@@ -2,192 +2,142 @@ import os
 import helpers
 import cPickle
 import csv
+import numpy as np
+from skimage.transform import ProjectiveTransform
+
 
 DATASET = "bad"
 ROOT = "./datasets/"
-DATA = ROOT + DATASET + "/data"
+DATA = ROOT + DATASET + "/data/"
 BOXES_SUFFIX = "_bboxes.cpkl"
 TRAJECTORIES_SUFFIX = "_trajectories.cpkl"
 INIT_SUFFIX = "_init_labels.cpkl"
-TRAJECTORY_COUNTER = 0
-SCENE_LENGTHS = []
-CURRENT_SCENE = 0
 
-def get_scene_lengths(directories_path):
-    directories = helpers.get_dir_names(directories_path,lower = False,ordered = True,descending = False)
+"""
+    In: boxes_files_names: list of relative paths to the bboxes files
+    Out: a list containing the number of frame per scene
+    Go through every directory in bad dataset and compute the number of frames in it
+    Can only be run with python2
 
-    scene_lengths = [0]
-    for i,dir_ in enumerate(directories):
-        bboxes_path = DATA + "/" + dir_ + "/" + dir_ + BOXES_SUFFIX
-        
-
-        with open(bboxes_path,"rb") as bboxes_file:
+"""
+def get_scene_lengths(boxes_files_names):
+    scene_lengths = []
+    for file_name in boxes_files_names:
+        with open(file_name,"rb") as bboxes_file:
             bboxes = cPickle.load(bboxes_file)
             scene_lengths.append(len(bboxes))
     return scene_lengths
 
-def line_boxes(box,fieldnames,counter):
-    line = [box.tolist()]
-    line.append(counter)
+"""
+    In: 
+        save_path: csv file to save the extracted detections
+        trajectories_files: list of relative paths to the trajectories files
+        scene_lengths: a list containing the number of frame per scene
 
-    new_line = {}
-    for i,key in enumerate(fieldnames):
-        new_line[key] = line[i]
-    return new_line
+    Summarize every detections in the save_path csv_file
+    Can only be run with python2
 
-def line_init(init,fieldnames,counter):
-    global TRAJECTORY_COUNTER
-    line = [TRAJECTORY_COUNTER]
-    for key in init:
-        if key == "bbox":
-            line.append(init[key].tolist())
-        elif key != "trajectory_label":
-            line.append(init[key])
-    line.append(counter)
-
-    new_line = {}
-    for i,key in enumerate(fieldnames):
-        new_line[key] = line[i]
-
-    TRAJECTORY_COUNTER += 1
-    return new_line
-
-def line_trajectory(trajectory,fieldnames,counter):
-    global SCENE_LENGTHS
-    global CURRENT_SCENE
-    # print(trajectory)
-
-    if SCENE_LENGTHS == []:
-        # print("in")
-        return
-    line = []
-    for key in trajectory:
-        if key != "t":
-            line.append(trajectory[key])
-
-    t = str(int(trajectory["t"]) + SCENE_LENGTHS[CURRENT_SCENE] )
-
-    line.append(t)
-    # print(line)
-
-    new_line = {}
-    for i,key in enumerate(fieldnames):
-        new_line[key] = line[i]
-
-
-    return new_line
-
-
-
-def cpkl_to_csv_alt(save_path,directories,fieldnames,suffix,line_function):
-
-    global CURRENT_SCENE
-    CURRENT_SCENE = 0
-    counter = 0
+"""
+def detections_to_csv(save_path,trajectories_files,scene_lengths,height,width,homography,center = [878,444]):
     if os.path.exists(save_path):
         os.remove(save_path)
-    with open(save_path,"a") as csv_scene:
-        # writer_scene = csv.writer(csv_scene)
-        
-        writer = csv.DictWriter(csv_scene, fieldnames=fieldnames)
-        writer.writeheader()
+    with open(save_path,"a") as csv_file:
+        writer = csv.writer(csv_file)
+        transformer = ProjectiveTransform(matrix = homography)
+        for i,trajectory_file in enumerate(trajectories_files):
+            with open(trajectory_file,"rb") as detections_file:
+                frames = cPickle.load(detections_file)
+                for frame in frames:
+                    for detection in frame:
+                        line = []
+                        p = [float(detection["x"]) * width,float(detection["y"]) * height]
+                        p = np.subtract(p,center).tolist()
+                        p[1] *= -1.
 
-        for i,dir_ in enumerate(directories):
-            bboxes_path = DATA + "/" + dir_ + "/" + dir_ + suffix
-                
+                        p = transformer.inverse(p)[0]
+                        x = p[0]
+                        y = p[1]
+                        
 
-            with open(bboxes_path,"rb") as bboxes_file:
-                bboxes = cPickle.load(bboxes_file)
+                        label = detection["cls_label"]
+                        state = detection["is_initial_state"]
+                        local_frame = int(detection["t"])
+                        
 
-                
-                for boxes in bboxes:
-                    
-                    # for box in boxes:
-                    if boxes != []:
-                        # print("null")    
-                        new_line = line_function(boxes,fieldnames,counter)
+                        global_frame = local_frame + np.sum(scene_lengths[:i])
+                        line.append(x)
+                        line.append(y)
+                        line.append(label)
+                        line.append(state)
+                        line.append(int(global_frame))
+                        line.append("minute number: " + str(i))
+                        writer.writerow(line)
 
-                        # # print(new_line)
-                        writer.writerow(new_line)
-                    counter += 1
-            CURRENT_SCENE += 1
+"""
+    IN:
+        framerate: old framerate
+        new_rate: new frame rate
+        detection_path: path to csv file where trajectories observation were put
+        detection_sampled_path: target file to store resampled observations
 
-def line_boxes_alt(boxes,fieldnames,counter):
-    boxes = [box.tolist() for box in boxes]
-    
-    line = [boxes]
-    line.append(counter)
+        save all observations where init = True and one over new_rate/framerate frame
+"""
+def reduce_observations_framerate(framerate,new_rate,detection_path,detection_sampled_path):
+    ratio = int(framerate / new_rate)   
 
-    new_line = {}
-    for i,key in enumerate(fieldnames):
-        new_line[key] = line[i]
-    return new_line
+    if os.path.exists(detection_sampled_path):
+        os.remove(detection_sampled_path)
 
-def cpkl_to_csv(save_path,directories,fieldnames,suffix,line_function):
+    with open(detection_sampled_path,"a") as csv_file:
+        writer = csv.writer(csv_file)
+        with open(detection_path) as detection_file:
+            reader = csv.reader(detection_file)
+            for row in reader:
+                if row[3] == 'True' or int(row[4]) % ratio == 0:
+                    # row[-1] = int(float(row[-1])/ratio)
+                    row[-2] = int(float(row[-2])/ratio)
 
-    global CURRENT_SCENE
-    CURRENT_SCENE = 0
-    counter = 0
-    if os.path.exists(save_path):
-        os.remove(save_path)
-    with open(save_path,"a") as csv_scene:
-        # writer_scene = csv.writer(csv_scene)
-        
-        writer = csv.DictWriter(csv_scene, fieldnames=fieldnames)
-        writer.writeheader()
-
-        for i,dir_ in enumerate(directories):
-            bboxes_path = DATA + "/" + dir_ + "/" + dir_ + suffix
-                
-
-            with open(bboxes_path,"rb") as bboxes_file:
-                bboxes = cPickle.load(bboxes_file)
-
-
-                for boxes in bboxes:
-                    for box in boxes:
-
-                        new_line = line_function(box,fieldnames,counter)
-
-                        # print(new_line)
-                        writer.writerow(new_line)
-                    counter += 1
-            CURRENT_SCENE += 1
+                    writer.writerow(row) 
 
 
 def main():
+    height,width = 720, 1280
 
-    print("Getting scene lengths...")
-    global SCENE_LENGTHS
-    SCENE_LENGTHS = get_scene_lengths(DATA)
+    # theta = 1.156657776318685
+    # R = [[np.cos(theta),-np.sin(theta)],
+    #     [np.sin(theta),np.cos(theta)]
+    # ]
 
-
-
-    print("Done!")
-    print("Loading directories names")
-    directories = helpers.get_dir_names(DATA,lower = False,ordered = True,descending = False)
-
-    print("Loading boxes from cpkl to csv")
-
-    cpkl_to_csv_alt(ROOT + DATASET +"/" + "boxes.csv",directories,['boxes','frame'],BOXES_SUFFIX,line_boxes_alt)
-
-    print("Loading init from cpkl to csv")
-
-    cpkl_to_csv(ROOT + DATASET +"/" + "init.csv",directories,['trajectory_label', 'class', 'box','frame'],INIT_SUFFIX,line_init)   
-
-    print("Loading trajectories from cpkl to csv")                
-                       
-    cpkl_to_csv(ROOT + DATASET +"/" + "trajectories.csv",directories,['y', 'x', 'label','initial_state','frame'],TRAJECTORIES_SUFFIX,line_trajectory)                   
-                     
-
-    print("Done!")
-
-
+    # homography = np.loadtxt("/home/laurent/Documents/master/extractors/datasets/bad/homography/homography.txt")
+    homography = np.loadtxt("/home/laurent/Documents/master/extractors/datasets/bad/homography/homography.txt")
 
     
 
- 
+    ### Extract cpkl trajectories to csv ###
+    save_path = ROOT + DATASET +"/" + "detections.csv"
 
-        
+    directories = helpers.get_dir_names(DATA,lower = False,ordered = True,descending = False)
+    # directories = [directories[0]]
+    # directories = directories[:15]
+   
+    boxes_files = [DATA + dir_ + "/" + dir_ + BOXES_SUFFIX for dir_ in directories]
+    scene_lengths = get_scene_lengths(boxes_files)
+
+    trajectories_files = [DATA + dir_ + "/" + dir_ + TRAJECTORIES_SUFFIX for dir_ in directories]
+    
+    detections_to_csv(save_path,trajectories_files,scene_lengths,height,width,homography)
+    ####################################
+
+    # # ### Reduce framerate ###
+    framerate = 30.
+    new_rate = 30.
+    detection_path = ROOT + DATASET +"/" + "detections.csv"
+    # detection_sampled_path = ROOT + DATASET +"/" + "detections_sampled"
+    # detection_sampled_path += "_" + str(int(framerate))+"to"+ str(int(new_rate))+".csv"
+    detection_sampled_path = ROOT + DATASET +"/"+"trajectories.csv"
+    reduce_observations_framerate(framerate,new_rate,detection_path,detection_sampled_path)
+    ####################################
+    return
+    
 if __name__ == "__main__":
     main()

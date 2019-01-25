@@ -81,7 +81,8 @@ def main():
     csv_file = "bad.csv"
     file_path = CSV + csv_file
     user = "car\n"
-    # user = "pedestrian\n"
+    user = "pedestrian\n"
+    user = None
     
     # id_scene = 1
     prefix = "minute number: "
