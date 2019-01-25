@@ -118,7 +118,7 @@ def main():
 
     directories = helpers.get_dir_names(DATA,lower = False,ordered = True,descending = False)
     # directories = [directories[0]]
-    directories = directories[:5]
+    directories = directories[:15]
    
     boxes_files = [DATA + dir_ + "/" + dir_ + BOXES_SUFFIX for dir_ in directories]
     scene_lengths = get_scene_lengths(boxes_files)

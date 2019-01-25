@@ -24,19 +24,21 @@ import pandas as pd
 from matplotlib.lines import Line2D      
 from matplotlib.patches import Polygon
 def plot_street(param,depth):
+    delta_y = -1.5
+    delta_x = 0.
     lines = [
-        plt.Polygon([[-param,-param],[0,-param],[0,0],[-param,0]],color = "black",fill = False), #5
-        plt.Polygon([[0,0],[param,0],[param,-param],[0,-param]],color = "black",fill = False),#7
-        plt.Polygon([[0,0],[param,0],[param,param],[0,param]],color = "black",fill = False),#8
-        plt.Polygon([[0,0],[0,param],[-param,param],[-param,0]],color = "black",fill = False),#6
-        plt.Polygon([[-depth,-param],[-param,-param],[-param,0],[-depth,0]],color = "black",fill = False,closed = False),#4
-        plt.Polygon([[-depth,0],[-param,0],[-param,param],[-depth,param]],color = "black",fill = False,closed = False),#12
-        plt.Polygon([[-param,-depth],[-param,-param],[0,-param],[0,-depth]],color = "black",fill = False,closed = False),#9
-        plt.Polygon([[0,-depth],[0,-param],[param,-param],[param,-depth]],color = "black",fill = False,closed = False),#1
-        plt.Polygon([[depth,param],[param,param],[param,0],[depth,0]],color = "black",fill = False,closed = False),#3
-        plt.Polygon([[depth,0],[param,0],[param,-param],[depth,-param]],color = "black",fill = False,closed = False),#10
-        plt.Polygon([[-param,depth],[-param,param],[0,param],[0,depth]],color = "black",fill = False,closed = False),#2
-        plt.Polygon([[0,depth],[0,param],[param,param],[param,depth]],color = "black",fill = False,closed = False) #11
+        plt.Polygon([[-param + delta_x,-param + delta_y],[0 + delta_x,-param + delta_y],[0 + delta_x,0 + delta_y],[-param + delta_x,0 + delta_y]],color = "black",fill = False), #5
+        plt.Polygon([[0 + delta_x,0+ delta_y],[param + delta_x,0+ delta_y],[param + delta_x,-param+ delta_y],[0 + delta_x,-param+ delta_y]],color = "black",fill = False),#7
+        plt.Polygon([[0 + delta_x,0+ delta_y],[param + delta_x,0+ delta_y],[param + delta_x,param+ delta_y],[0 + delta_x,param+ delta_y]],color = "black",fill = False),#8
+        plt.Polygon([[0 + delta_x,0+ delta_y],[0 + delta_x,param+ delta_y],[-param + delta_x,param+ delta_y],[-param + delta_x,0+ delta_y]],color = "black",fill = False),#6
+        plt.Polygon([[-depth + delta_x,-param+ delta_y],[-param + delta_x,-param+ delta_y],[-param + delta_x,0+ delta_y],[-depth + delta_x,0+ delta_y]],color = "black",fill = False,closed = False),#4
+        plt.Polygon([[-depth + delta_x,0+ delta_y],[-param + delta_x,0+ delta_y],[-param + delta_x,param+ delta_y],[-depth + delta_x,param+ delta_y]],color = "black",fill = False,closed = False),#12
+        plt.Polygon([[-param + delta_x,-depth+ delta_y],[-param + delta_x,-param+ delta_y],[0 + delta_x,-param+ delta_y],[0 + delta_x,-depth+ delta_y]],color = "black",fill = False,closed = False),#9
+        plt.Polygon([[0 + delta_x,-depth+ delta_y],[0 + delta_x,-param+ delta_y],[param + delta_x,-param+ delta_y],[param + delta_x,-depth+ delta_y]],color = "black",fill = False,closed = False),#1
+        plt.Polygon([[depth + delta_x,param+ delta_y],[param + delta_x,param+ delta_y],[param + delta_x,0+ delta_y],[depth + delta_x,0+ delta_y]],color = "black",fill = False,closed = False),#3
+        plt.Polygon([[depth + delta_x,0+ delta_y],[param + delta_x,0+ delta_y],[param + delta_x,-param+ delta_y],[depth + delta_x,-param+ delta_y]],color = "black",fill = False,closed = False),#10
+        plt.Polygon([[-param + delta_x,depth+ delta_y],[-param + delta_x,param+ delta_y],[0 + delta_x,param+ delta_y],[0 + delta_x,depth+ delta_y]],color = "black",fill = False,closed = False),#2
+        plt.Polygon([[0 + delta_x,depth+ delta_y],[0 + delta_x,param+ delta_y],[param + delta_x,param+ delta_y],[param + delta_x,depth+ delta_y]],color = "black",fill = False,closed = False) #11
     ]
     for line in lines:
         plt.gca().add_line(line)
@@ -85,7 +87,7 @@ def main():
     prefix = "minute number: "
     ids = [1]
     selected_subscenes = [prefix + str(i) for i in ids]
-    # selected_subscenes = []
+    selected_subscenes = []
     #         +str(id_scene)
     plot_trajectories(file_path, user_type = user,selected_subscenes= selected_subscenes)
 

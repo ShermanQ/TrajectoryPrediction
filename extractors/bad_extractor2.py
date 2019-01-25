@@ -25,12 +25,14 @@ def add_traj(trajectories,row,current_trajectories,trajectory_counter): ########
     current_trajectories.append(trajectory_counter)
     angle = origin_angle([row[0],row[1]])
     subscene = row[5]
+    lane = start_lane([row[0],row[1]])
     trajectories[trajectory_counter] = {
         "coordinates":[[row[0],row[1]]],
         "frames":[row[4]],
         "type": row[2],
         "angles": [angle],
-        "subscene" : subscene                                                   #############                 
+        "subscene" : subscene ,
+        "lane" : lane                                                  #############                 
         }
     trajectory_counter += 1
     # return trajectories,current_trajectories,trajectory_counter
@@ -77,6 +79,60 @@ def linear_interpolation(coordinates,frames):
                 new_frames.append(new_frame)
     return new_coordinates,new_frames
 
+def start_lane(point,origin = [0.,-1.5],boundary = 5.):
+    x = point[0]
+    y = point[1]
+    if x < origin[0]-boundary:
+        return 4
+    elif x > origin[0] + boundary:
+        return 2
+    elif y < origin[1] -boundary:
+        return 1
+    elif y > origin[1] + boundary:
+        return 3
+    elif x > origin[0]:
+        if y < origin[1]:
+            return 10
+        else:
+            return 11
+    else:
+        if y < origin[1]:
+            return 9
+        else:
+            return 12
+def grid(value,test_values,return_values):
+    if value < test_values[0]:
+        return return_values[0]
+    elif value < test_values[1]:
+        return return_values[1]
+    elif value < test_values[2]:
+        return return_values[2]
+    else:
+        return return_values[3] 
+
+def current_lane(point,origin = [0.,-1.5],boundary = 5.):
+    x = point[0]
+    y = point[1]
+    ytest_values = [origin[1]-boundary,origin[1],origin[1] + boundary]
+    if x < origin[0]-boundary:
+        return_values = [16,4,8,15]
+        return grid(y,ytest_values,return_values)
+    elif x < origin[0]:
+        return_values = [5,9,12,3]
+        return grid(y,ytest_values,return_values)
+    elif x < origin[0] + boundary:
+
+        return_values = [1,10,11,7]
+        return grid(y,ytest_values,return_values)
+    else:
+        return_values = [13,6,2,14]
+        return grid(y,ytest_values,return_values)
+
+
+
+     
+
+
 def persist_trajectories(outdated_trajectories,trajectories,writer,interpolate = True):
     for c in outdated_trajectories:
         type_ = trajectories[c]["type"]
@@ -108,7 +164,7 @@ def persist_trajectories(outdated_trajectories,trajectories,writer,interpolate =
 
         del trajectories[c]
 def compute_map(prior,x, mean, cov ):
-    map_ = stats.multivariate_normal.pdf(x,mean=mean,cov=cov) * prior
+    map_ = stats.multivariate_normal.pdf(x,mean=mean,cov=cov,allow_singular=True) * prior
     
     return map_
 
@@ -117,6 +173,8 @@ def origin_angle(point):
     point /= np.linalg.norm(point)
     prod = np.dot(ux,point)
     angle = np.arccos(prod)
+    # if point[1] < 0:
+    #     angle *= -1.0
     return angle
 
 def get_nb_frames(filepath):
@@ -132,7 +190,7 @@ def get_nb_frames(filepath):
         nb = frame - start_frame + 1
     return nb
 import copy
-def add_frame(rows,trajectories,current_trajectories,cov,counter,distance_threshold):
+def add_frame(rows,trajectories,current_trajectories,cov,counter,distance_threshold,forbidden_states,forbidden_transitions,start_cst = False,trans_cst = False,sc = 10., tc = 10.):
     available_points = {}
     available_trajectories = {}
 
@@ -162,23 +220,55 @@ def add_frame(rows,trajectories,current_trajectories,cov,counter,distance_thresh
     probas = np.zeros((len(available_points.keys()),len(available_trajectories.keys())))
     prior = 1./ len(available_trajectories.keys())    #prior = 1./ len(available_points) #
     
-    
+    if rows[0][4] == 1045:
+        print(1045)
     for i,key in enumerate(available_points):
         row = available_points[key]
         x = [row[0],row[1]]
+        xlane = current_lane(x) ######### ########### ########
         ax = origin_angle(x)
         x.append(ax)
+        ###########################################################################################
+        if start_cst:
+            xpenalty1 = 0.
+            x.append(xpenalty1)
 
+        if trans_cst:
+            xpenalty2 = 0.
+            x.append(xpenalty2)
+        ###########################################################################################
         for j,key1 in enumerate(available_trajectories):
             trajectory = available_trajectories[key1]
             am = trajectory["angles"][-1]
             mean = copy.copy(trajectory["coordinates"][-1])
+            tlane = trajectory["lane"]
+            mlane = current_lane(mean)
+            # if tlane == 1:
+            #     print(2)
             mean.append(am)
-
-            proba = compute_map(prior,x, mean, cov )
+            ######################################################################################
+            if start_cst:
+                mean.append(0.)
+            if trans_cst:
+                mean.append(0.)
             
-            probas[i][j] = proba
+            if start_cst and trans_cst:
+                if xlane in forbidden_states[tlane]:
+                    x[-2] = sc
+                if xlane in forbidden_transitions[mlane]:
+                    x[-1] = tc
+            elif start_cst:
+                if xlane in forbidden_states[tlane]:
+                    x[-1] = sc
+            elif trans_cst:
+                if xlane in forbidden_transitions[mlane]:
+                    x[-1] = tc
+            #######################################################################################
+            proba = compute_map(prior,x, mean, cov )
+            if xlane not in forbidden_transitions[mlane]:
+                probas[i][j] = proba
     nb_points = len(available_points.keys())
+
     while nb_points > 0:
         idx = np.unravel_index(probas.argmax(), probas.shape)
         i = [key for key in available_points.keys()][idx[0]]
@@ -189,7 +279,8 @@ def add_frame(rows,trajectories,current_trajectories,cov,counter,distance_thresh
         ax = origin_angle(x)
 
         dist = np.linalg.norm(np.subtract(x,trajectories[j]["coordinates"][-1]))
-        if dist < distance_threshold:
+        # if dist < distance_threshold:
+        if probas.max() > 10e-100:
             trajectories[j]["coordinates"].append([row[0],row[1]])
             trajectories[j]["frames"].append(row[4])
             trajectories[j]["angles"].append(ax)
@@ -206,6 +297,7 @@ def main():
 
     s = time.time()
 
+    
     bad_csv = CSV_PATH + DATASET + ".csv"
     if os.path.exists(bad_csv):
         os.remove(bad_csv)
@@ -219,17 +311,62 @@ def main():
     # ids of the available trajectories
     current_trajectories = []
 
+    
    
     #####
     # covariance matrix for x,y,theta,deltat(s)
     # height,width = 720, 1280
     desired_width = 2.0 # meters
-    desired_angle =  0.17
+    desired_angle =  0.34
     var = (desired_width/2.0) ** 2
     var_angle = (desired_angle/2.0) ** 2
     distance_threshold = 15.0
     cov = [var,var]
-    cov = [var,var,var_angle]
+
+
+    forbidden_states = {
+        1:[3,2],
+        2:[1,3,4,6,7],
+        3:[1,2,7],
+        4:[1,2,3],
+        9:[1,2,3,4,8],
+        10:[1,2,3,4,5],
+        11:[1,2,3,4,6],
+        12:[1,2,3,4,7]
+        
+    }
+    forbidden_transitions = {
+        1:[2,3,4,5,6,8,9,12],
+        2:[1,3,4,5,6,7,8,9,10,12],
+        3:[1,2,4,5,6,7,8,9,10,11],
+        4:[1,2,3,5,6,7,8,10,11,12],
+        5:[1,2,3,4,6,7,8,9,10,11,12],
+        6:[1,2,3,4,5,7,8,9,10,11,12],
+        7:[1,2,3,4,5,6,8,9,10,11,12],
+        8:[1,2,3,5,6,7,9,10,11,12],
+        9:[4,8,1,2,3],
+        10:[1,2,3,4,5],
+        11:[1,2,3,4,6,10],
+        12:[1,2,3,4,7],
+        13: [],
+        14: [],
+        15: [],
+        16: [],
+        
+    }
+    start_cst = True
+    trans_cst = False
+    sc = 10. 
+    tc = 20.
+    if start_cst and trans_cst:
+        cov = [var,var,var_angle,1,1]
+    elif start_cst:
+        cov = [var,var,var_angle,1]
+    elif trans_cst:
+        cov = [var,var,var_angle,1]
+    else:
+        cov = [var,var,var_angle]
+
 
 
     # the consecutive number of not updated frame for a trajectory
@@ -255,6 +392,8 @@ def main():
             frame0 = row[4]
             frame = frame0
             while frame < nb_frames:
+                if frame == 1045:
+                    print(frame)
                 if frame % 50000 == 0:
                     print(frame)
                     print(time.time() - s)
@@ -284,8 +423,8 @@ def main():
                 car_current_trajectories = [id_ for id_ in current_trajectories if trajectories[id_]["type"] == "car"]
                 ped_current_trajectories = [id_ for id_ in current_trajectories if trajectories[id_]["type"] == "pedestrian"]
                 # add frames for pedestrians and cars respectively
-                trajectory_counter = add_frame(car_rows,trajectories,car_current_trajectories,cov,trajectory_counter,distance_threshold)
-                trajectory_counter = add_frame(ped_rows,trajectories,ped_current_trajectories,cov,trajectory_counter,distance_threshold)
+                trajectory_counter = add_frame(car_rows,trajectories,car_current_trajectories,cov,trajectory_counter,distance_threshold,forbidden_states,forbidden_transitions,start_cst,trans_cst,sc, tc )
+                # trajectory_counter = add_frame(ped_rows,trajectories,ped_current_trajectories,cov,trajectory_counter,distance_threshold)
 
                 # in case where new trajectories were added
                 current_trajectories = car_current_trajectories + ped_current_trajectories
