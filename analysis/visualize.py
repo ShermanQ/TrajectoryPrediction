@@ -79,7 +79,7 @@ def main():
 
     csv_file = "new_rates/bad_30.0to2.5.csv"
     csv_file = "bad.csv"
-    csv_file = "lankershim_inter1.csv"
+    csv_file = "peachtree_inter5.csv"
     file_path = CSV + csv_file
     user = "car"
     # user = "pedestrian\n"

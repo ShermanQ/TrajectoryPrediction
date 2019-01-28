@@ -21,12 +21,12 @@ def main():
 
     file_path = CSV + "new_rates/gates8_30.0to2.5.csv"
     file_path = CSV + "bad.csv"
-    file_path = CSV + "peachtree_inter4.csv"
-    file_path = CSV + "01_tracks.csv"
+    file_path = CSV + "lankershim_inter4.csv"
+    # file_path = CSV + "01_tracks.csv"
 
     
 
-    framerate = 25
+    framerate = 15
     # factor_div = 3/2
     plot_last_step = True
     nb_last_steps = 200
@@ -86,8 +86,8 @@ def main():
 
                 img1 = vis.plot_frame_number(w,h, img1,frame)
                 
-                if file_path == CSV + "bad.csv":
-                    img1 = vis.plot_scene_name(w,h, img1,frame)
+                # if file_path == CSV + "bad.csv":
+                img1 = vis.plot_scene_name(w,h, img1,frame)
 
 
 
