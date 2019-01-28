@@ -29,5 +29,11 @@
         "peachtree_inter4"
 
     ],
-    "bad":["bad"]
+    "bad":["bad"],
+    "highd":[
+        "01_tracks",
+        "24_tracks",
+        "32_tracks"
+
+    ]
 }
