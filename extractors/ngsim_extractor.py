@@ -58,6 +58,7 @@ def main():
     for scene_name in scene_names:
         print("processing scene: " + scene_name)
         with open(DATAFILE) as csv_reader:
+            csv_reader = csv.reader(csv_reader, delimiter=',')
             
 
             dataset_file = CSV + MAIN + DATASET + ".csv"

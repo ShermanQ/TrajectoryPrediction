@@ -279,13 +279,8 @@ def extract_trajectories(file_name,destination_path = "", save = False):
     trajectories = {}
 
     with open(file_name) as file_:
+        file_ = csv.reader(file_, delimiter=',')
         for line in file_:
-
-            line = line.split(",")
-            # print(line)
-
-            # for i,l in enumerate(line[:-1]):
-            #     print(i,l)
 
             id_ = int(line[3])
             # print(id_)

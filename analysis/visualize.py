@@ -79,6 +79,7 @@ def main():
 
     csv_file = "new_rates/bad_30.0to2.5.csv"
     csv_file = "bad.csv"
+    csv_file = "01_tracks.csv"
     file_path = CSV + csv_file
     user = "car\n"
     user = "pedestrian\n"
@@ -90,8 +91,8 @@ def main():
     selected_subscenes = [prefix + str(i) for i in ids]
     selected_subscenes = []
     #         +str(id_scene)
-    plot_trajectories(file_path, user_type = user,selected_subscenes= selected_subscenes)
-
+    plot_trajectories(file_path, user_type = user,selected_subscenes= selected_subscenes,plot_context= False)
+    
 
 if __name__ == "__main__":
     main()

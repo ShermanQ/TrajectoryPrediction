@@ -98,7 +98,12 @@
     "quad0":30,
     "quad1":30,
     "quad2":30,
-    "quad3":30
+    "quad3":30,
+    "01_tracks":25,
+    "24_tracks":25,
+    "32_tracks":25
+
+
 
 
 }

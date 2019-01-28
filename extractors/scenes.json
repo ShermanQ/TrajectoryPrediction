@@ -1,0 +1,33 @@
+{
+    "sdd" : [
+        "bookstore0", 
+        "bookstore1", 
+        "bookstore2", 
+        "bookstore3", 
+        "deathCircle0",
+        "deathCircle1",
+        "deathCircle2",
+        "deathCircle3",
+        "deathCircle4",
+        "gates1",
+        "gates3",
+        "gates4",
+        "gates5",
+        "little0",
+        "little3"
+
+    ],
+    "koper": ["koper"],
+    "ngsim": [
+        "lankershim_inter1",
+        "lankershim_inter2",
+        "lankershim_inter3",
+        "lankershim_inter4",
+        "peachtree_inter1",
+        "peachtree_inter2",
+        "peachtree_inter3",
+        "peachtree_inter4"
+
+    ],
+    "bad":["bad"]
+}
