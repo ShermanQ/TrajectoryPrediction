@@ -5,15 +5,14 @@ import numpy as np
 from scipy import stats
 
 
-ROOT = "./datasets/"
+ROOT = "./data/datasets/"
 DATASET = "bad"
 DATA = ROOT + DATASET + "/"
 BOXES_PATH = DATA + "boxes.csv"
 INIT_PATH = DATA + "init.csv"
 TRAJECTORIES_PATH = DATA + "trajectories.csv"
 dict_classes = {'7': 'car', '15':'pedestrian', '6': 'car', '14': 'pedestrian'}
-CSV_PATH = "./csv/"
-HOMOGRAPHY = "datasets/bad/homography/"
+CSV_PATH = "./data/csv/"
 
 
 def add_traj(trajectories,row,current_trajectories,trajectory_counter): ###########
@@ -431,8 +430,8 @@ def main():
     probability_threshold = 10e-30
     
 
-    bad_csv = "/home/laurent/Documents/master/extractors/csv/bad.csv"
-    TRAJECTORIES_PATH = "/home/laurent/Documents/master/extractors/datasets/bad/trajectories.csv"
+    bad_csv = "/home/laurent/Documents/master/data/csv/bad.csv"
+    TRAJECTORIES_PATH = "/home/laurent/Documents/master/data/datasets/bad/trajectories.csv"
 
     nb_frames = get_nb_frames(TRAJECTORIES_PATH)
     

@@ -2,19 +2,19 @@ import numpy as np
 
 import sys 
 import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 
 import extractors.helpers as helpers
-import helpers_c as cl
-import helpers_v as vis
+import analysis.helpers_c as cl
+import analysis.helpers_v as vis
 
-from Extractor import Extractor
-from Clusterer import Clusterer
+from analysis.Extractor import Extractor
+from analysis.Clusterer import Clusterer
 
 
 
-ROOT = "./../"
-CSV = ROOT + "extractors/csv/"
+ROOT = "./"
+CSV = ROOT + "data/csv/"
 
 
 
@@ -38,7 +38,7 @@ def main():
     # print(sorted(multistep_clusters[2][0]))
 
     ##############################
-    temp_path = "./temp.txt"
+    temp_path = "./data/temp/temp.txt"
     helpers.extract_frames(file_path,temp_path,save = True)
     min_,max_ = vis.find_bounding_coordinates(temp_path)
 

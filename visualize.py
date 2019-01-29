@@ -1,21 +1,20 @@
 import sys 
 import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from extractors.helpers import get_dir_names,extract_frames,bb_intersection_over_union,extract_trajectories
 
+import extractors.helpers as helpers
 import seaborn as sns
 
 import time
 
 
-import helpers_a
+import analysis.helpers_a as helpers_a
 import json
 import csv
 import matplotlib.pyplot as plt
 
 
-ROOT = "./../"
-CSV = ROOT + "extractors/csv/"
+ROOT = "./"
+CSV = ROOT + "data/csv/"
 
 import pandas as pd
 
@@ -48,8 +47,8 @@ def plot_coordinates(coordinates):
     y = [p[1] for p in coordinates]
     plt.plot(x,y)   
 
-def plot_trajectories(file_path, user_type = None,selected_subscenes = [],plot_context = True,temp_path = "./temp.txt"):
-    extract_trajectories(file_path,destination_path = temp_path, save = True)
+def plot_trajectories(file_path, user_type = None,selected_subscenes = [],plot_context = True,temp_path = "./data/temp/temp.txt"):
+    helpers.extract_trajectories(file_path,destination_path = temp_path, save = True)
 
     param = 5
     depth = 20

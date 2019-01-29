@@ -1,5 +1,5 @@
 import os
-import helpers
+import extractors.helpers as helpers
 import cPickle
 import csv
 import numpy as np
@@ -7,7 +7,7 @@ from skimage.transform import ProjectiveTransform
 
 
 DATASET = "bad"
-ROOT = "./datasets/"
+ROOT = "./data/datasets/"
 DATA = ROOT + DATASET + "/data/"
 BOXES_SUFFIX = "_bboxes.cpkl"
 TRAJECTORIES_SUFFIX = "_trajectories.cpkl"
@@ -109,7 +109,8 @@ def main():
     # ]
 
     # homography = np.loadtxt("/home/laurent/Documents/master/extractors/datasets/bad/homography/homography.txt")
-    homography = np.loadtxt("/home/laurent/Documents/master/extractors/datasets/bad/homography/homography.txt")
+    # homography = np.loadtxt("/home/laurent/Documents/master/extractors/datasets/bad/homography/homography.txt")
+    homography = np.loadtxt("./data/datasets/bad/homography/homography.txt")
 
     
 

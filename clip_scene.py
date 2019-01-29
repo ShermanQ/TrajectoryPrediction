@@ -1,8 +1,8 @@
 import csv
 import os 
 
-def clip_scene(x_low,x_up,y_low,y_up,scene_path):
-    new_path = "./csv/temp.csv"
+def clip_scene(x_low,x_up,y_low,y_up,scene_path,new_path = "./data/temp/temp.csv"):
+    
     with open(scene_path) as scene_csv:
         csv_reader = csv.reader(scene_csv)
 
@@ -26,7 +26,7 @@ def clip_scene(x_low,x_up,y_low,y_up,scene_path):
 
     
 def main():
-    scene_path = "./csv/bad.csv"
+    scene_path = "./data/csv/bad.csv"
     
     x_low = -15
     x_up = 20

@@ -1,11 +1,11 @@
-from helpers import extract_trajectories
+import extractors.helpers as helpers
 import json
 
 def main():
-    scenes_selected_path = "./scenes.json"
-    files_path = "./csv/"
-    save_path = "./datasets/inventory.json"
-    save_path1 = "./datasets/inventory1.json"
+    scenes_selected_path = "./parameters/scenes.json"
+    files_path = "./data/csv/"
+    save_path = "./data/datasets/inventory.json"
+    save_path1 = "./data/datasets/inventory1.json"
     with open(scenes_selected_path) as json_file:
         scenes = json.load(json_file)
         
@@ -17,7 +17,7 @@ def main():
             for scene in scenes[dataset]:
                 datas[scene] = {"total" : 0}
                 path = files_path + scene + ".csv"
-                trajectories = extract_trajectories(path)
+                trajectories = helpers.extract_trajectories(path)
                 for id_ in trajectories:
                     type_ = trajectories[id_]["user_type"]
                     datas[scene]["total"] += 1

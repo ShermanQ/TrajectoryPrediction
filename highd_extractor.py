@@ -1,14 +1,14 @@
 import csv
 import os
 import time
-import helpers
+import extractors.helpers as helpers
 import numpy as np
 
 
-DATASETS = "./datasets/"
+DATASETS = "./data/datasets/"
 DATASET = "highd"
 DATAFILE = DATASETS + DATASET + "/" + DATASET + ".csv"
-CSV = "./csv/"
+CSV = "./data/csv/"
 MAIN = "main/"
 TRACKS = "/tracks/"
 META = "/tracks_meta/"

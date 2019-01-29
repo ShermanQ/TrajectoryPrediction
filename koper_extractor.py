@@ -1,13 +1,13 @@
 import scipy.io as sio
 import numpy as np 
-import helpers
+import extractors.helpers as helpers
 import csv
 import os 
 
-DATA_PATH = "./datasets/koper/"
+DATA_PATH = "./data/datasets/koper/"
 DATA_FILES = "/annotations.txt"
 DATASET = "koper"
-CSV_PATH = "./csv/"
+CSV_PATH = "./data/csv/"
 
 
 

@@ -1,6 +1,5 @@
 # personnal
-extractors/csv/
-extractors/datasets/
+data/*
 preprocessing/temp.txt
 # Byte-compiled / optimized / DLL files
 __pycache__/

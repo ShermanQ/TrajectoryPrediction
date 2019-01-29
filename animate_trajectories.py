@@ -3,19 +3,18 @@ import numpy as np
 
 import sys 
 import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import extractors.helpers as helpers
-import helpers_v as vis
+import analysis.helpers_v as vis
 
 import csv
 import json
 import matplotlib.cm as cm
 from collections import deque
 
-ROOT = "./../"
-CSV = ROOT + "extractors/csv/"
 
 
+CSV = "./data/csv/"
 
 def main():
 
@@ -32,7 +31,7 @@ def main():
     nb_last_steps = 200
     new_color_index = 0
     color_dict = {}
-    temp_path = "./temp.txt"
+    temp_path = "./data/temp/temp.txt"
     target_size = 1000
     margin = 10
 

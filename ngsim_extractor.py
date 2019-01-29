@@ -1,14 +1,14 @@
 import csv
 import os
 import time
-import helpers
+import extractors.helpers as helpers
 import numpy as np
 from scipy.spatial.distance import euclidean
 
-DATASETS = "./datasets/"
+DATASETS = "./data/datasets/"
 DATASET = "ngsim"
 DATAFILE = DATASETS + DATASET + "/" + DATASET + ".csv"
-CSV = "./csv/"
+CSV = "./data/csv/"
 MAIN = "main/"
 
 def get_scene_names(filename):
@@ -71,8 +71,8 @@ def main():
                 for line in csv_reader:
 
                     if line_num != 0:
-                        line = line.split(",")
-                        scene_line = line[-1][:-1]
+                        # line = line.split(",")
+                        scene_line = line[-1]
                         
 
                         if scene_name == scene_line:

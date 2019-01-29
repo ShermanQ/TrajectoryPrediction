@@ -1,19 +1,18 @@
 import sys 
 import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from extractors.helpers import get_dir_names,extract_frames,bb_intersection_over_union,extract_trajectories
-
+# from extractors.helpers import get_dir_names,extract_frames
+import extractors.helpers as helpers
 import time
 
 
-import helpers_a
+import analysis.helpers_a
 import json
 import csv
 
-FPS_PATH = "./framerates.json"
+FPS_PATH = "./parameters/framerates.json"
 
-ROOT = "./../"
-CSV = ROOT + "extractors/csv/"
+ROOT = "./"
+CSV = ROOT + "data/csv/"
 
 
 
@@ -42,7 +41,7 @@ def write_frame(frame,file_name,new_frame_id):
 
 
                 file_writer.writerow(new_line)
-def framerate_manager(framerates_json,csv_file,file_path,destination_root,new_rate = 2.5,temp_path = "./temp.txt"):   
+def framerate_manager(framerates_json,csv_file,file_path,destination_root,new_rate = 2.5,temp_path = "./data/temp/temp.txt"):   
 
     
     json_file = open(framerates_json)
@@ -59,7 +58,7 @@ def framerate_manager(framerates_json,csv_file,file_path,destination_root,new_ra
 
     
 
-    extract_frames(file_path,temp_path,save=True)
+    helpers.extract_frames(file_path,temp_path,save=True)
     with open(temp_path) as frames:
         counter = 0
         for frame in frames:
@@ -74,7 +73,7 @@ def framerate_manager(framerates_json,csv_file,file_path,destination_root,new_ra
 def main():
     dir_list = ["main","new_rates"]
    
-    csvs = [ f for f in get_dir_names(CSV,lower = False) if f not in dir_list]
+    csvs = [ f for f in helpers.get_dir_names(CSV,lower = False) if f not in dir_list]
 
 
     # csv_file = csvs[1]
@@ -94,7 +93,7 @@ def main():
         print(csv_file)
         file_path = CSV + csv_file
 
-        framerate_manager(FPS_PATH,csv_file,file_path,destination_root,temp_path = "./temp.txt")  
+        framerate_manager(FPS_PATH,csv_file,file_path,destination_root,temp_path = "./data/temp/temp.txt")  
         print(time.time() - s)
     print(time.time() - s)
 

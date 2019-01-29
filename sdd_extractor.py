@@ -1,12 +1,12 @@
 import time
 import csv
-import helpers 
+import extractors.helpers as helpers
 import os
 
-DATA_PATH = "./datasets/sdd/trajectories/"
+DATA_PATH = "./data/datasets/sdd/trajectories/"
 DATA_FILES = "/annotations.txt"
 DATASET = "sdd"
-CSV_PATH = "./csv/"
+CSV_PATH = "./data/csv/"
 MAIN = "main/"
 
 """
