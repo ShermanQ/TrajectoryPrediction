@@ -222,38 +222,62 @@ def transpose(theta,points,x,y):
     new_points = []
 
     for point in points:
-        new_point = np.add(np.matmul(R,point), T)
+        new_point = np.add(np.matmul(R,point), T).tolist()
         new_points.append(new_point)
     return np.array(new_points)
 
 
-
-def get_bbox(theta,width,length,x,y):
+import math
+def get_bbox(theta,theta1,width,length,x,y):
     t,b = [],[]
 
+    # points = [
+    #     [-length,width/2.0],
+    #     [-length,-width/2.0],
+    #     [0,width/2.0],
+    #     [0,-width/2.0], 
+    #     [-length/2.0,0],         
+    # ]
+
     points = [
-        [-length,width/2.0],
-        [-length,-width/2.0],
-        [0,width/2.0],
-        [0,-width/2.0], 
-        [-length/2.0,0],         
+        [-length/2.0,0]        
     ]
-
     new_points = transpose(theta,points,x,y)
-    
-
-    
-
-    max_int = 10e30
-    t = [0,-max_int]
-    b = [0,max_int]
     pm = new_points[-1]
-    for p in new_points[:-1]:
-        if p[0] < pm[0] and p[1] > t[1]:
-            t = p
-        if p[0] > pm[0] and p[1] < b[1]:
-            b = p
+    add_l = [0.,0.]
+    add_r = [0.,0.]
+    if math.pi/4. < theta1 and theta1 < 3./4. * math.pi:
+        
+        # print("in")
+        add_l = [-width/2.,length/2.0]
+        add_r = [width/2.,-length/2.0]
     
+    else:
+        # print("else")
+        add_l = [-length/2.,width/2.0]
+        add_r = [length/2.,-width/2.0]
+    
+    t = np.add(pm,add_l).tolist()
+    b = np.add(pm,add_r).tolist()
+
+    # max_int = 10e30
+    # t = [0,-max_int]
+    # b = [0,max_int]
+    # pm = new_points[-1]
+    # for p in new_points[:-1]:
+    #     if p[0] < pm[0] and p[1] > t[1]:
+    #         t = p
+    #     if p[0] > pm[0] and p[1] < b[1]:
+    #         b = p
+    # t = [
+    #     np.min([p[0] for p in new_points[:-1]]),
+    #     np.max([p[1] for p in new_points[:-1]])
+    # ]
+
+    # b = [
+    #     np.max([p[0] for p in new_points[:-1]]),
+    #     np.min([p[1] for p in new_points[:-1]])
+    # ]
     
 
     # return new_points

@@ -20,12 +20,13 @@ def main():
 
     file_path = CSV + "new_rates/gates8_30.0to2.5.csv"
     file_path = CSV + "bad.csv"
-    file_path = CSV + "lankershim_inter4.csv"
+    file_path = CSV + "lankershim_inter1.csv"
+    # file_path = CSV + "deathCircle1.csv"
     # file_path = CSV + "01_tracks.csv"
 
     
 
-    framerate = 15
+    framerate = 8
     # factor_div = 3/2
     plot_last_step = True
     nb_last_steps = 200
@@ -77,7 +78,7 @@ def main():
                 img1 = img.copy()
 
 
-                img1,color_dict,new_color_index = vis.plot_current_frame(frame,img1,color_dict,new_color_index,factor_div,offset)
+                img1,color_dict,new_color_index = vis.plot_current_frame(frame,img1,color_dict,new_color_index,factor_div,offset, display_box= True)
 
                 if plot_last_step:
                     img1 = vis.plot_last_steps(img1,frame,last_frames,color_dict,factor_div=factor_div,offset = offset)

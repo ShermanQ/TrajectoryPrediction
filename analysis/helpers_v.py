@@ -54,7 +54,7 @@ def get_number_object(file_path):
     return len(dict_.keys())
 
 
-def plot_current_frame(frame,img1,color_dict,new_color_index,factor_div,offset):
+def plot_current_frame(frame,img1,color_dict,new_color_index,factor_div,offset,display_box = True):
 
    
     for id_ in frame:
@@ -68,6 +68,9 @@ def plot_current_frame(frame,img1,color_dict,new_color_index,factor_div,offset):
                 new_color_index += 1
 
             coordinates = frame[id_]["coordinates"]
+            bbox = frame[id_]["bbox"]
+            bbox = [[bbox[0],bbox[1]],[bbox[2],bbox[3]]]
+            # print(bbox)
             # print(type(color_dict[id_][0]))
             # print(coordinates)
             # print(tuple([int(p/factor_div) for p in coordinates]))
@@ -76,6 +79,14 @@ def plot_current_frame(frame,img1,color_dict,new_color_index,factor_div,offset):
             offset_coordinates = np.add(scaled_coordinates,offset).tolist()
             int_coordinates = [int(p) for p in offset_coordinates]
             cv2.circle(img1,tuple(int_coordinates), 5, tuple(color_dict[id_]), -1)
+            cv2.putText(img1, str(id_), tuple(np.add(int_coordinates,[10,10]).tolist()), cv2.FONT_HERSHEY_SIMPLEX, 0.6, tuple(color_dict[id_]), 2, cv2.LINE_AA)
+
+            if display_box and bbox[0] != -1:
+                scaled_bbox = [[c/factor_div for c in p]for p in bbox]
+                offset_bbox = [ np.add(p,offset).tolist() for p in scaled_bbox]
+                int_bbox = [[int(c) for c in p ]for p in offset_bbox]
+                
+                cv2.rectangle(img1,tuple(int_bbox[0]),tuple(int_bbox[1]),tuple(color_dict[id_]),3)
     return img1,color_dict,new_color_index
 
 def plot_frame_number(h,w, img1,frame, size = 0.8, offset = [100,25], color = (255, 255, 255),  font = cv2.FONT_HERSHEY_SIMPLEX):

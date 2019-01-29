@@ -4,6 +4,7 @@ import time
 import extractors.helpers as helpers
 import numpy as np
 from scipy.spatial.distance import euclidean
+import math
 
 DATASETS = "./data/datasets/"
 DATASET = "ngsim"
@@ -35,6 +36,9 @@ def main():
     print(time.time()-start)
 
     scene_names = ["lankershim" ,"peachtree"]
+    scene_names = ["lankershim" ]
+
+
 
     csv_files = helpers.get_dir_names(CSV)
     for csv_ in csv_files:
@@ -80,63 +84,85 @@ def main():
                             new_scene_name = scene_name
 
                             if line[16] != "0" and line[17] == "0":
-                                new_scene_name = scene_name +"_inter" +line[16]                            
-                            elif line[17] != "0" and line[16] == "0":
-                                new_scene_name = scene_name +"_section" +line[17]
-                        
-                            scene_file = CSV + new_scene_name + ".csv"
-
-                            if new_scene_name != scene_name:
-
-                                new_id = int(line[0])
-                                    
-                                new_pos = [
-                                    float(line[4]) * feet_meters,
-                                    float(line[5]) * feet_meters
-                                ]
-
-                                                              
-
-                                if  last_id == new_id:
-                                    t = [0.,0.]
-                                    b = [0.,0.]
-                                    disp = np.subtract(new_pos,last_pos)
-                                    norm = np.linalg.norm(disp)
-                                    if norm == 0.:
-                                        norm = 1
-                                    disp /= norm
-                                    axis = [1,0]
-
-                                    theta = np.arccos(np.dot(axis,disp))
-                                    length = float(line[8]) * feet_meters
-                                    width = float(line[9]) * feet_meters
+                                new_scene_name = scene_name +"_inter" +line[16]  ####################
                                 
-                                    t,b,new_pos = helpers.get_bbox(theta,width,length,new_pos[0],new_pos[1])
 
+
+                            # elif line[17] != "0" and line[16] == "0":
+                            #     new_scene_name = scene_name +"_section" +line[17]
+                        
+                                scene_file = CSV + new_scene_name + ".csv"
+
+                                if new_scene_name != scene_name:
+
+                                    new_id = int(line[0])
+                                        
+                                    new_pos = [
+                                        float(line[4]) * feet_meters,
+                                        float(line[5]) * feet_meters
+                                    ]
+
+                                                             
+
+                                    if  last_id == new_id:
+                                        t = [0.,0.]
+                                        b = [0.,0.]
+                                        disp = np.subtract(new_pos,last_pos)
+                                        norm = np.linalg.norm(disp)
+                                        if norm == 0.:
+                                            norm = 1
+                                        disp /= norm
+                                        axis = [1,0]
+
+                                        theta = np.arccos(np.dot(axis,disp))
+
+                                        disp1 = np.subtract(new_pos,first_pos)
+                                        norm1 = np.linalg.norm(disp1)
+                                        if norm1 == 0.:
+                                            norm1 = 1
+                                        disp1 /= norm1
+
+                                        theta1 = np.arccos(np.dot(axis,disp1))
+
+
+                                        # if new_pos[0] < 0:
+                                        #     print(theta)  
+                                        length = float(line[8]) * feet_meters
+                                        width = float(line[9]) * feet_meters
+                                        # if math.pi/4. < theta and theta < 3.*math.pi / 4.:
+
+                                        
                                     
-                                    with open(scene_file,"a") as scene_csv:
-                                        subscene_writer = csv.writer(scene_csv)
+                                        # t,b,new_pos = helpers.get_bbox(theta,theta1,width,length,new_pos[0],new_pos[1])
+                                        t =[-1,-1]
+                                        b =[-1,-1]
 
-                                        row = []
-                                        row.append(DATASET) #dataset
-                                        row.append(new_scene_name) #scene
-                                        row.append(int(line[1])) # frame
-                                        row.append(new_id) # id
-                                        row.append(new_pos[0]) #x
-                                        row.append(new_pos[1])  #y
+                                        
+                                        with open(scene_file,"a") as scene_csv:
+                                            subscene_writer = csv.writer(scene_csv)
 
-                                        row.append(t[0]) #xl
-                                        row.append(t[1]) #yl
-                                        row.append(b[0]) #xb
-                                        row.append(b[1]) #yb
+                                            row = []
+                                            row.append(DATASET) #dataset
+                                            row.append(new_scene_name) #scene
+                                            row.append(int(line[1])) # frame
+                                            row.append(new_id) # id
+                                            row.append(new_pos[0]) #x
+                                            row.append(new_pos[1])  #y
 
-                                        row.append(dict_type[int(line[10])]) # type
+                                            row.append(t[0]) #xl
+                                            row.append(t[1]) #yl
+                                            row.append(b[0]) #xb
+                                            row.append(b[1]) #yb
 
-                                        subscene_writer.writerow(row)
-                                        dataset_writer.writerow(row)
+                                            row.append(dict_type[int(line[10])]) # type
 
-                                last_pos = new_pos
-                                last_id = new_id
+                                            subscene_writer.writerow(row)
+                                            dataset_writer.writerow(row)
+                                    else:
+                                        first_pos = new_pos
+                                    
+                                    last_pos = new_pos                                    
+                                    last_id = new_id
 
                     line_num += 1
     print(time.time()-start)
