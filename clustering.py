@@ -30,6 +30,7 @@ def main():
     # file_path = CSV + "new_rates/fsc_4_20.0to2.5.csv"
     # file_path = CSV + "new_rates/koper_12.5to2.5.csv"
     # file_path = CSV + "new_rates/lankershim_inter3_10.0to2.5.csv"
+    file_path = CSV + "lankershim_inter1.csv"
 
     
 
@@ -61,8 +62,8 @@ def main():
     # clusterers = [Clusterer(selected_clusterer= 1),Clusterer(selected_clusterer= 1 )]
     # extractors = [Extractor(0),Extractor(1)]
 
-    clusterers = [Clusterer(selected_clusterer= 1)]
-    extractors = [Extractor(4)]
+    clusterers = [Clusterer(selected_clusterer= 1,eps = 0.2)]
+    extractors = [Extractor(0)]
 
     multistep_clusters,cluster_hierarchy = cl.multi_step_clustering(trajectories,extractors,clusterers)
 

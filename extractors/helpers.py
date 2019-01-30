@@ -242,7 +242,7 @@ def get_bbox(theta,theta1,width,length,x,y):
     points = [
         [-length/2.0,0]        
     ]
-    new_points = transpose(theta,points,x,y)
+    new_points = transpose(theta1,points,x,y)
     pm = new_points[-1]
     add_l = [0.,0.]
     add_r = [0.,0.]

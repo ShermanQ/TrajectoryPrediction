@@ -130,7 +130,7 @@ def collisions_in_scene(file_path,temp_path = "./temp.txt"):
         for frame in frames:
             frame = json.loads(frame)
             # print(frame["0"]["bbox"])
-            conflicts,nb_collisions,frame_id,nb_objects,ious,ious_conflict = collisions_in_frame(frame,threshold = 0.1)
+            conflicts,nb_collisions,frame_id,nb_objects,ious,ious_conflict = collisions_in_frame(frame,threshold = 0.5)
             nb_collisions_total.append(nb_collisions)
             nb_objects_total.append(nb_objects)
 

@@ -19,14 +19,44 @@ def del_files_containing_string(strings,dir_path):
 def feet_meters(value,conversion_rate = 0.3048 ):
     return conversion_rate * value
 
-def add_obs(trajectories,row,subscene,dataset,dict_type):
+def get_bbox(direction,new_pos,length,width):
+    if direction == 2:
+        top_left = np.subtract(new_pos, [width/2.,length]).tolist()
+        bottom_right = np.subtract(new_pos, [-width/2.,0]).tolist()
+    elif direction == 4:
+        top_left = np.subtract(new_pos, [width/2.,0]).tolist()
+        bottom_right = np.subtract(new_pos, [-width/2.,-length]).tolist()
+    elif direction == 3 :
+        top_left = np.subtract(new_pos, [0.,-width/2]).tolist()
+        bottom_right = np.subtract(new_pos, [-length,width/2]).tolist()
+    elif direction == 1 :
+        top_left = np.subtract(new_pos, [length,-width/2]).tolist()
+        bottom_right = np.subtract(new_pos, [0,width/2]).tolist()
+    else: 
+        top_left,bottom_right = [-1,-1],[-1,-1]
+    return [c for c in top_left+bottom_right]
+    
+def add_obs(trajectories,row,subscene,dataset,dict_type,trajectory_counter):
     id_,frame,type_ = int(row[0]),int(row[1]),dict_type[row[10]]
+    id_ = trajectory_counter
     new_pos = [
                 feet_meters(float(row[4])),
                 feet_meters(float(row[5]))
             ]
 
-    top_left,bottom_right = [-1,-1],[-1,-1]
+    # width and length of the observed vehicle
+    length = feet_meters(float(row[8]))
+    width = feet_meters(float(row[9]))
+    # new_pos = [
+    #             feet_meters(float(row[6])),
+    #             feet_meters(float(row[7]))
+    #         ]
+
+    direction = int(row[18])
+    bbox = get_bbox(direction,new_pos,length,width)
+
+    
+    
 
     if id_ not in trajectories:
 
@@ -35,13 +65,16 @@ def add_obs(trajectories,row,subscene,dataset,dict_type):
             "frames":[frame],
             "type": type_,
             "subscene" : subscene,
-            "bboxes" : [[c for c in top_left+bottom_right]],
+            "bboxes" : [bbox],
             "dataset": dataset                                                        
             }
     else:
+        
+
         trajectories[id_]["coordinates"].append(new_pos)
         trajectories[id_]["frames"].append(frame)
-        trajectories[id_]["bboxes"].append([c for c in top_left+bottom_right])
+        trajectories[id_]["bboxes"].append(bbox)
+    return trajectory_counter
 
 def persist_trajectories(trajectories,file_path):
     with open(file_path,"a") as csv_:
@@ -80,6 +113,28 @@ def split_ngsim(data_file):
                         csv_writer = csv.writer(csv_)
                         csv_writer.writerow(line)
 
+def angle_ux(last_pos,new_pos):
+
+    # angle between ux and last two points vector
+    disp = np.subtract(new_pos,last_pos)
+    norm = np.linalg.norm(disp)
+    if norm == 0.:
+        norm = 1
+    disp /= norm
+    axis = [1,0]
+
+    theta = np.arccos(np.dot(axis,disp))
+
+    return theta
+
+                                    # # angle between ux and first and last point of the current trajectory
+                                    # disp1 = np.subtract(new_pos,first_pos)
+                                    # norm1 = np.linalg.norm(disp1)
+                                    # if norm1 == 0.:
+                                    #     norm1 = 1
+                                    # disp1 /= norm1
+
+                                    # theta1 = np.arccos(np.dot(axis,disp1))
     
 def main():
     parameters = "parameters/ngsim_extractor.json"
@@ -95,20 +150,23 @@ def main():
 
 
     start = time.time()
-    trajectories = {}
+    
     
   
 
     del_files_containing_string(scene_names,csv_path) 
 
-    
+    trajectories = {}
+    trajectory_counter = 0
+
     for subscene in subscene_names:
+        
         data_path = "./data/datasets/ngsim/"+subscene+".csv"
         with open(data_path) as data_reader:
             data_reader = csv.reader(data_reader, delimiter=',')
 
             last_id = -1
-            for i, line in enumerate(data_reader):
+            for line in data_reader:
               
                 
                 new_id = int(line[0])
@@ -116,10 +174,14 @@ def main():
                     file_path = csv_path + subscene + ".csv"
                     
                     trajectories = persist_trajectories(trajectories,file_path)
+                    trajectory_counter += 1
                     
 
-                add_obs(trajectories,line,subscene,dataset,dict_type)
+                trajectory_counter = add_obs(trajectories,line,subscene,dataset,dict_type,trajectory_counter)
                 last_id = new_id
+
+        file_path = csv_path + subscene + ".csv"
+        trajectories = persist_trajectories(trajectories,file_path)
                             
                             
 
