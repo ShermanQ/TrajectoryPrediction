@@ -1,0 +1,19 @@
+{
+    "dataset" : "ngsim",
+    "data_file": "./data/datasets/ngsim/ngsim.csv",
+    "feet_meters": 0.3048,
+    "dict_type": {"1":"motorcycle", "2":"car", "3":"truck"},
+    "scene_names" : ["lankershim" ,"peachtree"],
+    "subscene_names" : ["lankershim_inter1",
+        "lankershim_inter2",
+        "lankershim_inter3",
+        "lankershim_inter4"],
+    "subscene_names_all": ["lankershim_inter1",
+        "lankershim_inter2",
+        "lankershim_inter3",
+        "lankershim_inter4",
+        "peachtree_inter1",
+        "peachtree_inter2",
+        "peachtree_inter3",
+        "peachtree_inter4"]
+}

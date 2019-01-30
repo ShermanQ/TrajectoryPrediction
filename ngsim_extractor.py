@@ -3,172 +3,129 @@ import os
 import time
 import extractors.helpers as helpers
 import numpy as np
-from scipy.spatial.distance import euclidean
-import math
+import json
 
-DATASETS = "./data/datasets/"
-DATASET = "ngsim"
-DATAFILE = DATASETS + DATASET + "/" + DATASET + ".csv"
-CSV = "./data/csv/"
-MAIN = "main/"
+def del_files_containing_string(strings,dir_path):
+    # in data/csv delete every csv file related to the selected scene
+    csv_files = helpers.get_dir_names(dir_path)
+    for csv_ in csv_files:
+        for string in strings:
+            if string in csv_:
+                file_ = dir_path + csv_
+                # print(scene_file)
+                if os.path.exists(file_):
+                    os.remove(file_)
 
-def get_scene_names(filename):
-    line_num = 0
-    scene_names = ["names: "]
-    with open(filename) as csv_reader:
-        for line in csv_reader:
-            if line_num != 0:
-                scene_name = line.split(",")[-1]
-                if scene_name not in scene_names:
-                    scene_names.append(scene_name)
+def feet_meters(value,conversion_rate = 0.3048 ):
+    return conversion_rate * value
+
+def add_obs(trajectories,row,subscene,dataset,dict_type):
+    id_,frame,type_ = int(row[0]),int(row[1]),dict_type[row[10]]
+    new_pos = [
+                feet_meters(float(row[4])),
+                feet_meters(float(row[5]))
+            ]
+
+    top_left,bottom_right = [-1,-1],[-1,-1]
+
+    if id_ not in trajectories:
+
+        trajectories[id_] = {
+            "coordinates":[new_pos],
+            "frames":[frame],
+            "type": type_,
+            "subscene" : subscene,
+            "bboxes" : [[c for c in top_left+bottom_right]],
+            "dataset": dataset                                                        
+            }
+    else:
+        trajectories[id_]["coordinates"].append(new_pos)
+        trajectories[id_]["frames"].append(frame)
+        trajectories[id_]["bboxes"].append([c for c in top_left+bottom_right])
+
+def persist_trajectories(trajectories,file_path):
+    with open(file_path,"a") as csv_:
+        csv_writer = csv.writer(csv_)
+
+        for id_ in trajectories:
+            trajectory = trajectories[id_]
+            dataset = trajectory["dataset"]
+            subscene = trajectory["subscene"]
+            type_ = trajectory["type"]
+
+            for frame,pos,bbox in zip(trajectory["frames"],trajectory["coordinates"],trajectory["bboxes"]):
                 
-            line_num += 1
-    return [s[:-1] for s in scene_names[1:]]
+                row = []
+                row.append(dataset) #dataset
+                row.append(subscene) #scene
+                row.append(frame) # frame
+                row.append(id_) # id
+                row.append(pos[0]) #x
+                row.append(pos[1])  #y
+                for b in bbox:
+                    row.append(b) 
+                row.append(type_)
+                csv_writer.writerow(row)
+    return {}
 
+def split_ngsim(data_file):
+    with open(data_file) as data_reader:
+        data_reader = csv.reader(data_reader, delimiter=',')
+        for i, line in enumerate(data_reader):               
+            if i != 0:
+                if line[16] != "0" and line[17] == "0":
+                    subscene = line[-1] +"_inter" +line[16]
+                    file_path = "./data/datasets/ngsim/" + subscene + ".csv"
+                    with open(file_path,"a") as csv_:
+                        csv_writer = csv.writer(csv_)
+                        csv_writer.writerow(line)
 
+    
 def main():
+    parameters = "parameters/ngsim_extractor.json"
+    with open(parameters) as parameters_file:
+        parameters = json.load(parameters_file)
+    csv_path = "./data/csv/"
+    dataset = parameters["dataset"]
+    # data_file = parameters["data_file"]
+    # feet_meters = parameters["feet_meters"]
+    dict_type = parameters["dict_type"]    
+    scene_names = parameters["scene_names"] # list of scenes I want  to keep    
+    subscene_names = parameters["subscene_names_all"] # list of subscenes I want  to keep
+
 
     start = time.time()
-    print("checking the existence of destination files...")
-    dict_type = {1:"motorcycle", 2:"car", 3:"truck"}
-    # scene_names = get_scene_names(DATAFILE)
+    trajectories = {}
     
-    print(time.time()-start)
+  
 
-    scene_names = ["lankershim" ,"peachtree"]
-    scene_names = ["lankershim" ]
+    del_files_containing_string(scene_names,csv_path) 
 
+    
+    for subscene in subscene_names:
+        data_path = "./data/datasets/ngsim/"+subscene+".csv"
+        with open(data_path) as data_reader:
+            data_reader = csv.reader(data_reader, delimiter=',')
 
+            last_id = -1
+            for i, line in enumerate(data_reader):
+              
+                
+                new_id = int(line[0])
+                if  last_id != new_id:
+                    file_path = csv_path + subscene + ".csv"
+                    
+                    trajectories = persist_trajectories(trajectories,file_path)
+                    
 
-    csv_files = helpers.get_dir_names(CSV)
-    for csv_ in csv_files:
-        for scene_name in scene_names:
-            if scene_name in csv_:
-                scene_file = CSV + csv_
-                # print(scene_file)
-                if os.path.exists(scene_file):
-                    os.remove(scene_file)
-    print("Done!")
-
-    # scene_names = ["lankershim"]
-    # print("extracting subscenes id")
-    # subscenes = get_subscenes(scene_names)
-    # print("Done!")
-    # print(time.time()-start)
-
-    print("processing extraction...")
-
-    feet_meters = 0.3048
-    for scene_name in scene_names:
-        print("processing scene: " + scene_name)
-        with open(DATAFILE) as csv_reader:
-            csv_reader = csv.reader(csv_reader, delimiter=',')
-            
-
-            dataset_file = CSV + MAIN + DATASET + ".csv"
-            with open(dataset_file,"a") as dataset_csv:
-                dataset_writer = csv.writer(dataset_csv)
-
-                line_num = 0
-                last_id = -1
-                last_pos = [-1,-1]
-                for line in csv_reader:
-
-                    if line_num != 0:
-                        # line = line.split(",")
-                        scene_line = line[-1]
-                        
-
-                        if scene_name == scene_line:
+                add_obs(trajectories,line,subscene,dataset,dict_type)
+                last_id = new_id
                             
-                            new_scene_name = scene_name
+                            
 
-                            if line[16] != "0" and line[17] == "0":
-                                new_scene_name = scene_name +"_inter" +line[16]  ####################
+                            
                                 
 
-
-                            # elif line[17] != "0" and line[16] == "0":
-                            #     new_scene_name = scene_name +"_section" +line[17]
-                        
-                                scene_file = CSV + new_scene_name + ".csv"
-
-                                if new_scene_name != scene_name:
-
-                                    new_id = int(line[0])
-                                        
-                                    new_pos = [
-                                        float(line[4]) * feet_meters,
-                                        float(line[5]) * feet_meters
-                                    ]
-
-                                                             
-
-                                    if  last_id == new_id:
-                                        t = [0.,0.]
-                                        b = [0.,0.]
-                                        disp = np.subtract(new_pos,last_pos)
-                                        norm = np.linalg.norm(disp)
-                                        if norm == 0.:
-                                            norm = 1
-                                        disp /= norm
-                                        axis = [1,0]
-
-                                        theta = np.arccos(np.dot(axis,disp))
-
-                                        disp1 = np.subtract(new_pos,first_pos)
-                                        norm1 = np.linalg.norm(disp1)
-                                        if norm1 == 0.:
-                                            norm1 = 1
-                                        disp1 /= norm1
-
-                                        theta1 = np.arccos(np.dot(axis,disp1))
-
-
-                                        # if new_pos[0] < 0:
-                                        #     print(theta)  
-                                        length = float(line[8]) * feet_meters
-                                        width = float(line[9]) * feet_meters
-                                        # if math.pi/4. < theta and theta < 3.*math.pi / 4.:
-
-                                        
-                                    
-                                        # t,b,new_pos = helpers.get_bbox(theta,theta1,width,length,new_pos[0],new_pos[1])
-                                        t =[-1,-1]
-                                        b =[-1,-1]
-
-                                        
-                                        with open(scene_file,"a") as scene_csv:
-                                            subscene_writer = csv.writer(scene_csv)
-
-                                            row = []
-                                            row.append(DATASET) #dataset
-                                            row.append(new_scene_name) #scene
-                                            row.append(int(line[1])) # frame
-                                            row.append(new_id) # id
-                                            row.append(new_pos[0]) #x
-                                            row.append(new_pos[1])  #y
-
-                                            row.append(t[0]) #xl
-                                            row.append(t[1]) #yl
-                                            row.append(b[0]) #xb
-                                            row.append(b[1]) #yb
-
-                                            row.append(dict_type[int(line[10])]) # type
-
-                                            subscene_writer.writerow(row)
-                                            dataset_writer.writerow(row)
-                                    else:
-                                        first_pos = new_pos
-                                    
-                                    last_pos = new_pos                                    
-                                    last_id = new_id
-
-                    line_num += 1
     print(time.time()-start)
-    
-
-
-
 if __name__ == "__main__":
     main()
