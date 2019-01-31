@@ -1,17 +1,27 @@
 {
-    "dataset" : "ngsim",
+    "dataset": "ngsim",
     "data_file": "./data/datasets/ngsim/ngsim.csv",
     "data_dir": "./data/datasets/ngsim/",
     "feet_meters": 0.3048,
-    "dict_type": {"1":"motorcycle", "2":"car", "3":"truck"},
-    "scene_names" : ["lankershim" ,"peachtree"],
-    "dir_model" : "./data/datasets/ngsim/models/",
-    "models" : "./data/datasets/ngsim/models/models.json",
-    "subscene_names" : ["lankershim_inter1",
+    "dict_type": {
+        "1": "motorcycle",
+        "2": "car",
+        "3": "truck"
+    },
+    "scene_names": [
+        "lankershim",
+        "peachtree"
+    ],
+    "dir_model": "./data/datasets/ngsim/models/",
+    "models": "./data/datasets/ngsim/models/models.json",
+    "subscene_names": [
+        "lankershim_inter1",
         "lankershim_inter2",
         "lankershim_inter3",
-        "lankershim_inter4"],
-    "subscene_names_all": ["lankershim_inter1",
+        "lankershim_inter4"
+    ],
+    "subscene_names_all": [
+        "lankershim_inter1",
         "lankershim_inter2",
         "lankershim_inter3",
         "lankershim_inter4",
@@ -19,8 +29,103 @@
         "peachtree_inter2",
         "peachtree_inter3",
         "peachtree_inter4",
-        "peachtree_inter5"],
-    "train_files":[
+        "peachtree_inter5"
+    ],
+    
+    "correspondences": {
+        "lankershim": {
+            "inters": {
+                "1": [
+                    "lankershim_inter1"
+                ],
+                "2": [
+                    "lankershim_inter2"
+                ],
+                "3": [
+                    "lankershim_inter3"
+                ],
+                "4": [
+                    "lankershim_inter4"
+                ]
+            },
+            "sections": {
+                "1": [
+                    "lankershim_inter1"
+                ],
+                "2": [
+                    "lankershim_inter1",
+                    "lankershim_inter2"
+                ],
+                "3": [
+                    "lankershim_inter2",
+                    "lankershim_inter3"
+                ],
+                "4": [
+                    "lankershim_inter3",
+                    "lankershim_inter4"
+                ],
+                "5": [
+                    "lankershim_inter4"
+                ]
+            }
+        },
+        "peachtree": {
+            "inters": {
+                "1": [
+                    "peachtree_inter1"
+                ],
+                "2": [
+                    "peachtree_inter2"
+                ],
+                "3": [
+                    "peachtree_inter3"
+                ],
+                "4": [
+                    "peachtree_inter4"
+                ],
+                "5": [
+                    "peachtree_inter5"
+                ]
+            },
+            "sections": {
+                "1": [
+                    "peachtree_inter1"
+                ],
+                "2": [
+                    "peachtree_inter1",
+                    "peachtree_inter2"
+                ],
+                "3": [
+                    "peachtree_inter2",
+                    "peachtree_inter3"
+                ],
+                "4": [
+                    "peachtree_inter3",
+                    "peachtree_inter4"
+                ],
+                "5": [
+                    "peachtree_inter4",
+                    "peachstreet_inter5"
+                ],
+                "6": [
+                    "lankershim_inter6"
+                ]
+            }
+        }
+    },
+    
+    "clip_scenes": {
+        "lankershim_inter1.csv":[-15,15,0,40],
+        "lankershim_inter2.csv":[-30,23,80,200],
+        "lankershim_inter3.csv":[-25,18,269,370],
+        "lankershim_inter4.csv":[-26,26,444,500],
+        "peachtree_inter1.csv":[-10,10,20,100],
+        "peachtree_inter2.csv":[-15,8,167,270],
+        "peachtree_inter3.csv":[-15,15,330,400],
+        "peachtree_inter4.csv":[-10,10,426,550],
+        "peachtree_inter5.csv":[-12,12,600,630]
+    },
+    "train_files": [
         "lankershim_inter1_train.csv",
         "lankershim_inter2_train.csv",
         "lankershim_inter3_train.csv",
@@ -31,43 +136,16 @@
         "peachtree_inter4_train.csv",
         "peachtree_inter5_train.csv"
     ],
-        
-   
-    "correspondences":{
-        "lankershim": {
-            "inters" :{
-                "1": ["lankershim_inter1"],
-                "2": ["lankershim_inter2"],
-                "3": ["lankershim_inter3"],
-                "4": ["lankershim_inter4"]
-            },
-            "sections":{
-                "1": ["lankershim_inter1"],
-                "2": ["lankershim_inter1","lankershim_inter2"],
-                "3": ["lankershim_inter2","lankershim_inter3"],
-                "4": ["lankershim_inter3","lankershim_inter4"],
-                "5": ["lankershim_inter4"]
-
-            }
-        },
-        "peachtree": {
-            "inters" :{
-                "1": ["peachtree_inter1"],
-                "2": ["peachtree_inter2"],
-                "3": ["peachtree_inter3"],
-                "4": ["peachtree_inter4"],
-                "5": ["peachtree_inter5"]
-
-            },
-            "sections":{
-                "1": ["peachtree_inter1"],
-                "2": ["peachtree_inter1","peachtree_inter2"],
-                "3": ["peachtree_inter2","peachtree_inter3"],
-                "4": ["peachtree_inter3","peachtree_inter4"],
-                "5": ["peachtree_inter4","peachstreet_inter5"],
-                "6": ["lankershim_inter6"]
-            }
-        }
-    }
+    "std_files": [
+        "lankershim_inter1_std.csv",
+        "lankershim_inter2_std.csv",
+        "lankershim_inter3_std.csv",
+        "lankershim_inter4_std.csv",
+        "peachtree_inter1_std.csv",
+        "peachtree_inter2_std.csv",
+        "peachtree_inter3_std.csv",
+        "peachtree_inter4_std.csv",
+        "peachtree_inter5_std.csv"
+    ]
 
 }

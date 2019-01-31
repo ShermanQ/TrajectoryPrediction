@@ -6,6 +6,7 @@ import numpy as np
 import json
 from sklearn import neural_network,preprocessing,metrics,model_selection
 import pandas as pd 
+import clip_scene
 
 
 def del_files_containing_string(strings,dir_path):
@@ -42,14 +43,14 @@ def get_bbox(direction,new_pos,length,width):
 def add_obs(trajectories,row,subscene,dataset,dict_type,trajectory_counter):
     id_,frame,type_ = int(row[0]),int(row[1]),dict_type[row[10]]
     id_ = trajectory_counter
-    # new_pos = [
-    #             feet_meters(float(row[4])),
-    #             feet_meters(float(row[5]))
-    #         ]
     new_pos = [
-                feet_meters(float(row[6])),
-                feet_meters(float(row[7]))
+                feet_meters(float(row[4])),
+                feet_meters(float(row[5]))
             ]
+    # new_pos = [
+    #             feet_meters(float(row[6])),
+    #             feet_meters(float(row[7]))
+    #         ]
 
     # width and length of the observed vehicle
     length = feet_meters(float(row[8]))
@@ -83,7 +84,7 @@ def add_obs(trajectories,row,subscene,dataset,dict_type,trajectory_counter):
         trajectories[id_]["bboxes"].append(bbox)
     return trajectory_counter
 
-def persist_trajectories(trajectories,file_path,models):
+def persist_trajectories(trajectories,file_path):
     with open(file_path,"a") as csv_:
         csv_writer = csv.writer(csv_)
 
@@ -93,8 +94,18 @@ def persist_trajectories(trajectories,file_path,models):
             subscene = trajectory["subscene"]
             type_ = trajectory["type"]
 
+            # model_path = models[subscene]["model_path"]
+            # std_path = models[subscene]["std_path"]
+
+            # model = load(model_path)
+            # std = load(std_path)
+            # coordinates = std.transform(trajectory["coordinates"])
+            # coordinates = model.predict(coordinates).tolist()
+            # trajectory["coordinates"] = coordinates
+
             for frame,pos,bbox in zip(trajectory["frames"],trajectory["coordinates"],trajectory["bboxes"]):
-                
+                # pos = std.transform([pos])
+                # pos = model.predict(pos)[0].tolist()
                 row = []
                 row.append(dataset) #dataset
                 row.append(subscene) #scene
@@ -120,23 +131,16 @@ def split_ngsim(data_file):
                         csv_writer = csv.writer(csv_)
                         csv_writer.writerow(line)
 
-def get_train_data(data_file):
-    with open(data_file) as data_reader:
-        data_reader = csv.reader(data_reader, delimiter=',')
-        for i, line in enumerate(data_reader):               
-            if i != 0:
-                if line[16] != "0" and line[17] == "0":
-                    subscene = line[-1] +"_inter" +line[16]
-                    file_path = "./data/datasets/ngsim/" + subscene + "_train.csv"
-                    new_line = [
-                        feet_meters(float(line[4])),
-                        feet_meters(float(line[5])),
-                        feet_meters(float(line[6])),
-                        feet_meters(float(line[7]))
-                    ]
-                    with open(file_path,"a") as csv_:
-                        csv_writer = csv.writer(csv_)
-                        csv_writer.writerow(new_line)
+
+                
+                
+
+
+
+                
+
+                
+
 
 def split_ngsim_correspondences(data_file,correspondences):
     with open(data_file) as data_reader:
@@ -167,63 +171,6 @@ def split_ngsim_correspondences(data_file,correspondences):
 
 
 
-def train_unit_converter(train_file,model = neural_network.MLPRegressor(hidden_layer_sizes = (10,10)),random_seed = 42):
-    with open(train_file) as data_reader:
-        data_reader = csv.reader(data_reader, delimiter=',')
-        X, Y = [],[]
-        for i, line in enumerate(data_reader):
-            y = [float(line[0]),float(line[1])]
-            x = [float(line[2]),float(line[3])]
-            X.append(x)
-            Y.append(y)
-        X = pd.DataFrame(X)
-        Y = pd.DataFrame(Y)
-
-        std = preprocessing.StandardScaler()
-
-        
-
-        X_train, X_test, y_train, y_test = model_selection.train_test_split(X, Y, test_size=0.2, random_state=random_seed)
-
-        X_train = std.fit_transform(X_train)
-        X_test = std.transform(X_test)
-        # model = MLPRegressor(hidden_layer_sizes = (10,10))
-
-        model = model.fit(X_train,y_train)
-        train_pred,test_pred = model.predict(X_train),model.predict(X_test)
-        train_err = metrics.mean_squared_error(y_train,train_pred)
-        test_err = metrics.mean_squared_error(y_test,test_pred)
-
-        return model,std,train_err,test_err
-
-from joblib import dump, load
-
-def train_converters(train_files,train_dir,dir_model,dict_path):
-    model_dict = {}
-    # dict_path = dir_model + "models.json"
-    for train_file in train_files:
-        model,std,train_err,test_err = train_unit_converter(train_dir+train_file)
-        model_path = train_file.split("_")
-        model_name = model_path[0]+"_"+model_path[1]
-        
-        model_path = dir_model + model_name + "_model.joblib"
-        std_path = dir_model + model_name + "_std.joblib"
-
-        
-        model_dict[model_name] = {
-            "model_path" : model_path,
-            "std_path" : std_path,
-            "train_error": train_err,
-            "test_error": test_err
-        }
-
-        dump(model, model_path) 
-        dump(std, std_path) 
-    with open(dict_path,"w") as dict_json:
-        json.dump(model_dict,dict_json,indent = 2)
-
-
-
 
 
         
@@ -247,36 +194,37 @@ def main():
     dataset = parameters["dataset"]
     data_file = parameters["data_file"]
     data_dir = parameters["data_dir"]
-    dir_model = parameters["dir_model"]
-    train_files = parameters["train_files"]
+    # dir_model = parameters["dir_model"]
+    # train_files = parameters["train_files"]
+    # std_files = parameters["std_files"]
     # feet_meters = parameters["feet_meters"]
     dict_type = parameters["dict_type"]    
     scene_names = parameters["scene_names"] # list of scenes I want  to keep    
     subscene_names = parameters["subscene_names_all"] # list of subscenes I want  to keep
     correspondences = parameters["correspondences"]
-    models_json = parameters["models"]
+    # models_json = parameters["models"]
+    clips = parameters["clip_scenes"]
 
 
-    models = json.load(open(models_json))
-    
 
     start = time.time()
 
     
-    # del_files_containing_string(scene_names,data_dir) 
-    # split_ngsim_correspondences(data_file,correspondences)
+    del_files_containing_string(scene_names,data_dir) 
+    split_ngsim_correspondences(data_file,correspondences)
   
-    # get_train_data(data_file)
-    # train_converters(train_files,data_dir,dir_model,models_json)
+ 
 
-
+    print(time.time() - start)
+    # split_ngsim(data_file)
     del_files_containing_string(scene_names,csv_path) 
 
     trajectories = {}
     trajectory_counter = 0
 
+    
+
     for subscene in subscene_names:
-        
         data_path = "./data/datasets/ngsim/"+subscene+".csv"
         with open(data_path) as data_reader:
             data_reader = csv.reader(data_reader, delimiter=',')
@@ -289,7 +237,7 @@ def main():
                 if  last_id != new_id:
                     file_path = csv_path + subscene + ".csv"
                     
-                    trajectories = persist_trajectories(trajectories,file_path,models)
+                    trajectories = persist_trajectories(trajectories,file_path)
                     trajectory_counter += 1
                     
 
@@ -298,6 +246,14 @@ def main():
 
         file_path = csv_path + subscene + ".csv"
         trajectories = persist_trajectories(trajectories,file_path)
+
+    for subscene in clips:
+        file_path = csv_path + subscene 
+        print(file_path)
+        clip = clips[subscene]
+        print(clip)
+        clip_scene.clip_scene(clip[0],clip[1],clip[2],clip[3],file_path)
+
                             
                             
 
@@ -307,3 +263,121 @@ def main():
     print(time.time()-start)
 if __name__ == "__main__":
     main()
+
+
+
+
+# def train_unit_converter(train_file,std,model = neural_network.MLPRegressor(hidden_layer_sizes = (10,10)),random_seed = 42):
+#     with open(train_file) as data_reader:
+#         data_reader = csv.reader(data_reader, delimiter=',')
+#         X, Y = [],[]
+#         for i, line in enumerate(data_reader):
+#             y = [float(line[0]),float(line[1])]
+#             x = [float(line[2]),float(line[3])]
+#             X.append(x)
+#             Y.append(y)
+#         X = pd.DataFrame(X)
+#         Y = pd.DataFrame(Y)
+
+#         # std = preprocessing.StandardScaler()
+
+        
+
+#         X_train, X_test, y_train, y_test = model_selection.train_test_split(X, Y, test_size=0.2, random_state=random_seed)
+
+#         X_train = std.transform(X_train)
+#         X_test = std.transform(X_test)
+#         # model = MLPRegressor(hidden_layer_sizes = (10,10))
+
+#         model = model.fit(X_train,y_train)
+#         train_pred,test_pred = model.predict(X_train),model.predict(X_test)
+#         train_err = metrics.mean_squared_error(y_train,train_pred)
+#         test_err = metrics.mean_squared_error(y_test,test_pred)
+
+#         return model,std,train_err,test_err
+
+# from joblib import dump, load
+
+# def get_std(train_file):
+#     points = []
+#     # for train_file in train_files:
+#     with open(train_file) as data_reader:
+#         data_reader = csv.reader(data_reader, delimiter=',')
+#         for line in data_reader:
+#             x = float(line[0])
+#             y = float(line[1])
+
+#             points.append([x,y])
+    
+#     mms = preprocessing.StandardScaler()
+#     mms = mms.fit(points)
+#     return mms
+
+
+
+
+# def train_converters(train_files,std_files,train_dir,dir_model,dict_path):
+#     model_dict = {}
+#     # dict_path = dir_model + "models.json"
+#     # std_l = get_std([train_dir+f for f in train_files if "lankershim" in f])
+#     # std_p = get_std([train_dir+f for f in train_files if "peachtree" in f])
+
+#     for train_file,std_file in zip(train_files,std_files):
+#         std = get_std(train_dir+std_file)
+        
+#         model,std,train_err,test_err = train_unit_converter(train_dir+train_file,std)
+#         model_path = train_file.split("_")
+#         model_name = model_path[0]+"_"+model_path[1]
+        
+#         model_path = dir_model + model_name + "_model.joblib"
+#         std_path = dir_model + model_name + "_std.joblib"
+
+        
+#         model_dict[model_name] = {
+#             "model_path" : model_path,
+#             "std_path" : std_path,
+#             "train_error": train_err,
+#             "test_error": test_err
+#         }
+
+#         dump(model, model_path) 
+#         dump(std, std_path) 
+#     with open(dict_path,"w") as dict_json:
+#         json.dump(model_dict,dict_json,indent = 2)
+
+# def get_train_data(data_file ):
+#     with open(data_file) as data_reader:
+#         data_reader = csv.reader(data_reader, delimiter=',')
+#         for i, line in enumerate(data_reader):               
+#             if i != 0:
+                
+#                 if line[16] != "0" and line[17] == "0":
+#                     subscene = line[-1] + "_inter" +line[16]
+#                     file_path = "./data/datasets/ngsim/" + subscene + "_train.csv"
+#                     new_line = [
+#                         feet_meters(float(line[4])),
+#                         feet_meters(float(line[5])),
+#                         feet_meters(float(line[6])),
+#                         feet_meters(float(line[7]))
+#                     ]
+#                     with open(file_path,"a") as csv_:
+#                         csv_writer = csv.writer(csv_)
+#                         csv_writer.writerow(new_line)
+
+# def get_std_train_data(files,data_dir):
+#     for file_ in files:
+#         data_file = data_dir + file_ + ".csv"
+#         with open(data_file) as data_reader:
+#             data_reader = csv.reader(data_reader, delimiter=',')
+#             file_path = data_dir + file_ + "_std.csv"
+#             with open(file_path,"a") as csv_:
+#                 csv_writer = csv.writer(csv_)
+                
+#                 for i, line in enumerate(data_reader): 
+#                     new_line = [
+#                             feet_meters(float(line[4])),
+#                             feet_meters(float(line[5])),
+#                             feet_meters(float(line[6])),
+#                             feet_meters(float(line[7]))
+#                         ]
+#                     csv_writer.writerow(new_line)
