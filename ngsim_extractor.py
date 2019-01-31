@@ -4,6 +4,9 @@ import time
 import extractors.helpers as helpers
 import numpy as np
 import json
+from sklearn import neural_network,preprocessing,metrics,model_selection
+import pandas as pd 
+
 
 def del_files_containing_string(strings,dir_path):
     # in data/csv delete every csv file related to the selected scene
@@ -162,12 +165,9 @@ def split_ngsim_correspondences(data_file,correspondences):
                             csv_writer.writerow(line)
             
 
-from sklearn.neural_network import MLPRegressor
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_squared_error
-import pandas as pd 
-from sklearn.preprocessing import StandardScaler
-def train_unit_converter(train_file,random_seed = 42):
+
+
+def train_unit_converter(train_file,model = neural_network.MLPRegressor(hidden_layer_sizes = (10,10)),random_seed = 42):
     with open(train_file) as data_reader:
         data_reader = csv.reader(data_reader, delimiter=',')
         X, Y = [],[]
@@ -179,20 +179,20 @@ def train_unit_converter(train_file,random_seed = 42):
         X = pd.DataFrame(X)
         Y = pd.DataFrame(Y)
 
-        std = StandardScaler()
+        std = preprocessing.StandardScaler()
 
         
 
-        X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.2, random_state=random_seed)
+        X_train, X_test, y_train, y_test = model_selection.train_test_split(X, Y, test_size=0.2, random_state=random_seed)
 
         X_train = std.fit_transform(X_train)
         X_test = std.transform(X_test)
-        model = MLPRegressor(hidden_layer_sizes = (10,10))
+        # model = MLPRegressor(hidden_layer_sizes = (10,10))
 
         model = model.fit(X_train,y_train)
         train_pred,test_pred = model.predict(X_train),model.predict(X_test)
-        train_err = mean_squared_error(y_train,train_pred)
-        test_err = mean_squared_error(y_test,test_pred)
+        train_err = metrics.mean_squared_error(y_train,train_pred)
+        test_err = metrics.mean_squared_error(y_test,test_pred)
 
         
 
