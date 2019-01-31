@@ -83,7 +83,7 @@ def add_obs(trajectories,row,subscene,dataset,dict_type,trajectory_counter):
         trajectories[id_]["bboxes"].append(bbox)
     return trajectory_counter
 
-def persist_trajectories(trajectories,file_path):
+def persist_trajectories(trajectories,file_path,models):
     with open(file_path,"a") as csv_:
         csv_writer = csv.writer(csv_)
 
@@ -198,9 +198,9 @@ def train_unit_converter(train_file,model = neural_network.MLPRegressor(hidden_l
 
 from joblib import dump, load
 
-def train_converters(train_files,train_dir,dir_model):
+def train_converters(train_files,train_dir,dir_model,dict_path):
     model_dict = {}
-    dict_path = dir_model + "models.json"
+    # dict_path = dir_model + "models.json"
     for train_file in train_files:
         model,std,train_err,test_err = train_unit_converter(train_dir+train_file)
         model_path = train_file.split("_")
@@ -254,44 +254,50 @@ def main():
     scene_names = parameters["scene_names"] # list of scenes I want  to keep    
     subscene_names = parameters["subscene_names_all"] # list of subscenes I want  to keep
     correspondences = parameters["correspondences"]
+    models_json = parameters["models"]
 
+
+    models = json.load(open(models_json))
+    
 
     start = time.time()
 
-    train_converters(train_files,data_dir,dir_model)
+    
     # del_files_containing_string(scene_names,data_dir) 
     # split_ngsim_correspondences(data_file,correspondences)
   
     # get_train_data(data_file)
-    # train_unit_converter(data_dir + "lankershim_inter1_train.csv")
-    # del_files_containing_string(scene_names,csv_path) 
+    # train_converters(train_files,data_dir,dir_model,models_json)
 
-    # trajectories = {}
-    # trajectory_counter = 0
 
-    # for subscene in subscene_names:
+    del_files_containing_string(scene_names,csv_path) 
+
+    trajectories = {}
+    trajectory_counter = 0
+
+    for subscene in subscene_names:
         
-    #     data_path = "./data/datasets/ngsim/"+subscene+".csv"
-    #     with open(data_path) as data_reader:
-    #         data_reader = csv.reader(data_reader, delimiter=',')
+        data_path = "./data/datasets/ngsim/"+subscene+".csv"
+        with open(data_path) as data_reader:
+            data_reader = csv.reader(data_reader, delimiter=',')
 
-    #         last_id = -1
-    #         for line in data_reader:
+            last_id = -1
+            for line in data_reader:
               
                 
-    #             new_id = int(line[0])
-    #             if  last_id != new_id:
-    #                 file_path = csv_path + subscene + ".csv"
+                new_id = int(line[0])
+                if  last_id != new_id:
+                    file_path = csv_path + subscene + ".csv"
                     
-    #                 trajectories = persist_trajectories(trajectories,file_path)
-    #                 trajectory_counter += 1
+                    trajectories = persist_trajectories(trajectories,file_path,models)
+                    trajectory_counter += 1
                     
 
-    #             trajectory_counter = add_obs(trajectories,line,subscene,dataset,dict_type,trajectory_counter)
-    #             last_id = new_id
+                trajectory_counter = add_obs(trajectories,line,subscene,dataset,dict_type,trajectory_counter)
+                last_id = new_id
 
-    #     file_path = csv_path + subscene + ".csv"
-    #     trajectories = persist_trajectories(trajectories,file_path)
+        file_path = csv_path + subscene + ".csv"
+        trajectories = persist_trajectories(trajectories,file_path)
                             
                             
 

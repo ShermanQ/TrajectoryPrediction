@@ -6,6 +6,7 @@
     "dict_type": {"1":"motorcycle", "2":"car", "3":"truck"},
     "scene_names" : ["lankershim" ,"peachtree"],
     "dir_model" : "./data/datasets/ngsim/models/",
+    "models" : "./data/datasets/ngsim/models/models.json",
     "subscene_names" : ["lankershim_inter1",
         "lankershim_inter2",
         "lankershim_inter3",
