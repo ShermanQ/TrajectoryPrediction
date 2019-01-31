@@ -1,6 +1,7 @@
 {
     "dataset" : "ngsim",
     "data_file": "./data/datasets/ngsim/ngsim.csv",
+    "data_dir": "./data/datasets/ngsim/",
     "feet_meters": 0.3048,
     "dict_type": {"1":"motorcycle", "2":"car", "3":"truck"},
     "scene_names" : ["lankershim" ,"peachtree"],
@@ -16,5 +17,42 @@
         "peachtree_inter2",
         "peachtree_inter3",
         "peachtree_inter4",
-        "peachtree_inter5"]
+        "peachtree_inter5"],
+    "correspondences":{
+        "lankershim": {
+            "inters" :{
+                "1": ["lankershim_inter1"],
+                "2": ["lankershim_inter2"],
+                "3": ["lankershim_inter3"],
+                "4": ["lankershim_inter4"]
+            },
+            "sections":{
+                "1": ["lankershim_inter1"],
+                "2": ["lankershim_inter1","lankershim_inter2"],
+                "3": ["lankershim_inter2","lankershim_inter3"],
+                "4": ["lankershim_inter3","lankershim_inter4"],
+                "5": ["lankershim_inter4"]
+
+            }
+        },
+        "peachtree": {
+            "inters" :{
+                "1": ["peachtree_inter1"],
+                "2": ["peachtree_inter2"],
+                "3": ["peachtree_inter3"],
+                "4": ["peachtree_inter4"],
+                "5": ["peachtree_inter5"]
+
+            },
+            "sections":{
+                "1": ["peachtree_inter1"],
+                "2": ["peachtree_inter1","peachtree_inter2"],
+                "3": ["peachtree_inter2","peachtree_inter3"],
+                "4": ["peachtree_inter3","peachtree_inter4"],
+                "5": ["peachtree_inter4","peachstreet_inter5"],
+                "6": ["lankershim_inter6"]
+            }
+        }
+    }
+
 }

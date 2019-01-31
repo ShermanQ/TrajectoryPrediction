@@ -113,28 +113,37 @@ def split_ngsim(data_file):
                         csv_writer = csv.writer(csv_)
                         csv_writer.writerow(line)
 
-def angle_ux(last_pos,new_pos):
 
-    # angle between ux and last two points vector
-    disp = np.subtract(new_pos,last_pos)
-    norm = np.linalg.norm(disp)
-    if norm == 0.:
-        norm = 1
-    disp /= norm
-    axis = [1,0]
+def split_ngsim_correspondences(data_file,correspondences):
+    with open(data_file) as data_reader:
+        data_reader = csv.reader(data_reader, delimiter=',')
+        for i, line in enumerate(data_reader):               
+            if i != 0:
+                scene = line[-1]
+                if scene in correspondences:
+                    corres_scene = correspondences[scene]
+                    inter = line[16]
+                    section = line[17]
 
-    theta = np.arccos(np.dot(axis,disp))
+                    if inter in corres_scene["inters"]:
+                        subscenes = corres_scene["inters"][inter]
+                    elif section in corres_scene["sections"]:
+                        subscenes = corres_scene["sections"][section]
+                    else:
+                        subscene = []
 
-    return theta
 
-                                    # # angle between ux and first and last point of the current trajectory
-                                    # disp1 = np.subtract(new_pos,first_pos)
-                                    # norm1 = np.linalg.norm(disp1)
-                                    # if norm1 == 0.:
-                                    #     norm1 = 1
-                                    # disp1 /= norm1
+                    
+                    for subscene in subscenes:
+                        file_path = "./data/datasets/ngsim/" + subscene + ".csv"
+                        with open(file_path,"a") as csv_:
+                            csv_writer = csv.writer(csv_)
+                            csv_writer.writerow(line)
+            
 
-                                    # theta1 = np.arccos(np.dot(axis,disp1))
+                 
+
+
     
 def main():
     parameters = "parameters/ngsim_extractor.json"
@@ -142,46 +151,49 @@ def main():
         parameters = json.load(parameters_file)
     csv_path = "./data/csv/"
     dataset = parameters["dataset"]
-    # data_file = parameters["data_file"]
+    data_file = parameters["data_file"]
+    data_dir = parameters["data_dir"]
     # feet_meters = parameters["feet_meters"]
     dict_type = parameters["dict_type"]    
     scene_names = parameters["scene_names"] # list of scenes I want  to keep    
     subscene_names = parameters["subscene_names_all"] # list of subscenes I want  to keep
+    correspondences = parameters["correspondences"]
 
 
     start = time.time()
-    
-    
+
+    del_files_containing_string(scene_names,data_dir) 
+    split_ngsim_correspondences(data_file,correspondences)
   
 
-    del_files_containing_string(scene_names,csv_path) 
+    # del_files_containing_string(scene_names,csv_path) 
 
-    trajectories = {}
-    trajectory_counter = 0
+    # trajectories = {}
+    # trajectory_counter = 0
 
-    for subscene in subscene_names:
+    # for subscene in subscene_names:
         
-        data_path = "./data/datasets/ngsim/"+subscene+".csv"
-        with open(data_path) as data_reader:
-            data_reader = csv.reader(data_reader, delimiter=',')
+    #     data_path = "./data/datasets/ngsim/"+subscene+".csv"
+    #     with open(data_path) as data_reader:
+    #         data_reader = csv.reader(data_reader, delimiter=',')
 
-            last_id = -1
-            for line in data_reader:
+    #         last_id = -1
+    #         for line in data_reader:
               
                 
-                new_id = int(line[0])
-                if  last_id != new_id:
-                    file_path = csv_path + subscene + ".csv"
+    #             new_id = int(line[0])
+    #             if  last_id != new_id:
+    #                 file_path = csv_path + subscene + ".csv"
                     
-                    trajectories = persist_trajectories(trajectories,file_path)
-                    trajectory_counter += 1
+    #                 trajectories = persist_trajectories(trajectories,file_path)
+    #                 trajectory_counter += 1
                     
 
-                trajectory_counter = add_obs(trajectories,line,subscene,dataset,dict_type,trajectory_counter)
-                last_id = new_id
+    #             trajectory_counter = add_obs(trajectories,line,subscene,dataset,dict_type,trajectory_counter)
+    #             last_id = new_id
 
-        file_path = csv_path + subscene + ".csv"
-        trajectories = persist_trajectories(trajectories,file_path)
+    #     file_path = csv_path + subscene + ".csv"
+    #     trajectories = persist_trajectories(trajectories,file_path)
                             
                             
 
