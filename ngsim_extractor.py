@@ -39,9 +39,13 @@ def get_bbox(direction,new_pos,length,width):
 def add_obs(trajectories,row,subscene,dataset,dict_type,trajectory_counter):
     id_,frame,type_ = int(row[0]),int(row[1]),dict_type[row[10]]
     id_ = trajectory_counter
+    # new_pos = [
+    #             feet_meters(float(row[4])),
+    #             feet_meters(float(row[5]))
+    #         ]
     new_pos = [
-                feet_meters(float(row[4])),
-                feet_meters(float(row[5]))
+                feet_meters(float(row[6])),
+                feet_meters(float(row[7]))
             ]
 
     # width and length of the observed vehicle
@@ -113,6 +117,23 @@ def split_ngsim(data_file):
                         csv_writer = csv.writer(csv_)
                         csv_writer.writerow(line)
 
+def get_train_data(data_file):
+    with open(data_file) as data_reader:
+        data_reader = csv.reader(data_reader, delimiter=',')
+        for i, line in enumerate(data_reader):               
+            if i != 0:
+                if line[16] != "0" and line[17] == "0":
+                    subscene = line[-1] +"_inter" +line[16]
+                    file_path = "./data/datasets/ngsim/" + subscene + "_train.csv"
+                    new_line = [
+                        feet_meters(float(line[4])),
+                        feet_meters(float(line[5])),
+                        feet_meters(float(line[6])),
+                        feet_meters(float(line[7]))
+                    ]
+                    with open(file_path,"a") as csv_:
+                        csv_writer = csv.writer(csv_)
+                        csv_writer.writerow(new_line)
 
 def split_ngsim_correspondences(data_file,correspondences):
     with open(data_file) as data_reader:
@@ -141,6 +162,47 @@ def split_ngsim_correspondences(data_file,correspondences):
                             csv_writer.writerow(line)
             
 
+from sklearn.neural_network import MLPRegressor
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_squared_error
+import pandas as pd 
+from sklearn.preprocessing import StandardScaler
+def train_unit_converter(train_file,random_seed = 42):
+    with open(train_file) as data_reader:
+        data_reader = csv.reader(data_reader, delimiter=',')
+        X, Y = [],[]
+        for i, line in enumerate(data_reader):
+            y = [float(line[0]),float(line[1])]
+            x = [float(line[2]),float(line[3])]
+            X.append(x)
+            Y.append(y)
+        X = pd.DataFrame(X)
+        Y = pd.DataFrame(Y)
+
+        std = StandardScaler()
+
+        
+
+        X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.2, random_state=random_seed)
+
+        X_train = std.fit_transform(X_train)
+        X_test = std.transform(X_test)
+        model = MLPRegressor(hidden_layer_sizes = (10,10))
+
+        model = model.fit(X_train,y_train)
+        train_pred,test_pred = model.predict(X_train),model.predict(X_test)
+        train_err = mean_squared_error(y_train,train_pred)
+        test_err = mean_squared_error(y_test,test_pred)
+
+        
+
+
+        
+        
+        
+
+
+
                  
 
 
@@ -162,10 +224,11 @@ def main():
 
     start = time.time()
 
-    del_files_containing_string(scene_names,data_dir) 
-    split_ngsim_correspondences(data_file,correspondences)
+    # del_files_containing_string(scene_names,data_dir) 
+    # split_ngsim_correspondences(data_file,correspondences)
   
-
+    # get_train_data(data_file)
+    train_unit_converter(data_dir + "lankershim_inter1_train.csv")
     # del_files_containing_string(scene_names,csv_path) 
 
     # trajectories = {}
