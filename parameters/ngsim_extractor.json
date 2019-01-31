@@ -5,6 +5,7 @@
     "feet_meters": 0.3048,
     "dict_type": {"1":"motorcycle", "2":"car", "3":"truck"},
     "scene_names" : ["lankershim" ,"peachtree"],
+    "dir_model" : "./data/datasets/ngsim/models/",
     "subscene_names" : ["lankershim_inter1",
         "lankershim_inter2",
         "lankershim_inter3",
@@ -18,6 +19,19 @@
         "peachtree_inter3",
         "peachtree_inter4",
         "peachtree_inter5"],
+    "train_files":[
+        "lankershim_inter1_train.csv",
+        "lankershim_inter2_train.csv",
+        "lankershim_inter3_train.csv",
+        "lankershim_inter4_train.csv",
+        "peachtree_inter1_train.csv",
+        "peachtree_inter2_train.csv",
+        "peachtree_inter3_train.csv",
+        "peachtree_inter4_train.csv",
+        "peachtree_inter5_train.csv"
+    ],
+        
+   
     "correspondences":{
         "lankershim": {
             "inters" :{

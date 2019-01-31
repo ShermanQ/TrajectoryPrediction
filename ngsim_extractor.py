@@ -194,6 +194,38 @@ def train_unit_converter(train_file,model = neural_network.MLPRegressor(hidden_l
         train_err = metrics.mean_squared_error(y_train,train_pred)
         test_err = metrics.mean_squared_error(y_test,test_pred)
 
+        return model,std,train_err,test_err
+
+from joblib import dump, load
+
+def train_converters(train_files,train_dir,dir_model):
+    model_dict = {}
+    dict_path = dir_model + "models.json"
+    for train_file in train_files:
+        model,std,train_err,test_err = train_unit_converter(train_dir+train_file)
+        model_path = train_file.split("_")
+        model_name = model_path[0]+"_"+model_path[1]
+        
+        model_path = dir_model + model_name + "_model.joblib"
+        std_path = dir_model + model_name + "_std.joblib"
+
+        
+        model_dict[model_name] = {
+            "model_path" : model_path,
+            "std_path" : std_path,
+            "train_error": train_err,
+            "test_error": test_err
+        }
+
+        dump(model, model_path) 
+        dump(std, std_path) 
+    with open(dict_path,"w") as dict_json:
+        json.dump(model_dict,dict_json,indent = 2)
+
+
+
+
+
         
 
 
@@ -215,6 +247,8 @@ def main():
     dataset = parameters["dataset"]
     data_file = parameters["data_file"]
     data_dir = parameters["data_dir"]
+    dir_model = parameters["dir_model"]
+    train_files = parameters["train_files"]
     # feet_meters = parameters["feet_meters"]
     dict_type = parameters["dict_type"]    
     scene_names = parameters["scene_names"] # list of scenes I want  to keep    
@@ -224,11 +258,12 @@ def main():
 
     start = time.time()
 
+    train_converters(train_files,data_dir,dir_model)
     # del_files_containing_string(scene_names,data_dir) 
     # split_ngsim_correspondences(data_file,correspondences)
   
     # get_train_data(data_file)
-    train_unit_converter(data_dir + "lankershim_inter1_train.csv")
+    # train_unit_converter(data_dir + "lankershim_inter1_train.csv")
     # del_files_containing_string(scene_names,csv_path) 
 
     # trajectories = {}
