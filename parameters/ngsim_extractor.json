@@ -31,6 +31,11 @@
         "peachtree_inter4",
         "peachtree_inter5"
     ],
+    "timezones":{
+        "lankershim" : 1118936700000,
+        "peachtree"  : 10e30
+
+    },
     
     "correspondences": {
         "lankershim": {
@@ -115,15 +120,24 @@
     },
     
     "clip_scenes": {
-        "lankershim_inter1.csv":[-15,15,0,40],
-        "lankershim_inter2.csv":[-30,23,80,200],
-        "lankershim_inter3.csv":[-25,18,269,370],
-        "lankershim_inter4.csv":[-26,26,444,500],
-        "peachtree_inter1.csv":[-10,10,20,100],
-        "peachtree_inter2.csv":[-15,8,167,270],
-        "peachtree_inter3.csv":[-15,15,330,400],
-        "peachtree_inter4.csv":[-10,10,426,550],
-        "peachtree_inter5.csv":[-12,12,600,630]
+        "lankershim_inter1_0.csv":[-15,15,0,40],
+        "lankershim_inter1_1.csv":[-15,15,0,40],
+        "lankershim_inter2_0.csv":[-30,23,80,200],
+        "lankershim_inter2_1.csv":[-30,23,80,200],
+        "lankershim_inter3_0.csv":[-25,18,269,370],
+        "lankershim_inter3_1.csv":[-25,18,269,370],
+        "lankershim_inter4_0.csv":[-26,26,444,500],
+        "lankershim_inter4_1.csv":[-26,26,444,500],
+        "peachtree_inter1_0.csv":[-10,10,20,100],
+        "peachtree_inter2_0.csv":[-15,8,167,270],
+        "peachtree_inter3_0.csv":[-15,15,330,400],
+        "peachtree_inter4_0.csv":[-10,10,426,550],
+        "peachtree_inter5_0.csv":[-12,12,600,630],
+        "peachtree_inter1_1.csv":[-10,10,20,100],
+        "peachtree_inter2_1.csv":[-15,8,167,270],
+        "peachtree_inter3_1.csv":[-15,15,330,400],
+        "peachtree_inter4_1.csv":[-10,10,426,550],
+        "peachtree_inter5_1.csv":[-12,12,600,630]
     },
     "train_files": [
         "lankershim_inter1_train.csv",

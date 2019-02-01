@@ -20,13 +20,13 @@ def main():
 
     file_path = CSV + "new_rates/gates8_30.0to2.5.csv"
     file_path = CSV + "bad.csv"
-    file_path = CSV + "lankershim_inter2.csv"
+    file_path = CSV + "peachtree_inter1_0.csv"
     # file_path = CSV + "deathCircle1.csv"
     # file_path = CSV + "01_tracks.csv"
 
     
 
-    framerate = 12
+    framerate = 10
     # factor_div = 3/2
     plot_last_step = True
     nb_last_steps = 200

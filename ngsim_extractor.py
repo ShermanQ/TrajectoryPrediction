@@ -40,7 +40,7 @@ def get_bbox(direction,new_pos,length,width):
         top_left,bottom_right = [-1,-1],[-1,-1]
     return [c for c in top_left+bottom_right]
     
-def add_obs(trajectories,row,subscene,dataset,dict_type,trajectory_counter):
+def add_obs(trajectories,row,subscene,dataset,dict_type,trajectory_counter,timezones):
     id_,frame,type_ = int(row[0]),int(row[1]),dict_type[row[10]]
     id_ = trajectory_counter
     new_pos = [
@@ -63,8 +63,11 @@ def add_obs(trajectories,row,subscene,dataset,dict_type,trajectory_counter):
     direction = int(row[18])
     bbox = get_bbox(direction,new_pos,length,width)
 
-    
-    
+    scene = subscene.split("_")[0]
+    timezone = int(timezones[scene])
+    time_ = 0
+    if int(row[3]) > timezone:
+        time_ = 1
 
     if id_ not in trajectories:
 
@@ -74,7 +77,8 @@ def add_obs(trajectories,row,subscene,dataset,dict_type,trajectory_counter):
             "type": type_,
             "subscene" : subscene,
             "bboxes" : [bbox],
-            "dataset": dataset                                                        
+            "dataset": dataset,
+            "times" : [time_]                                                        
             }
     else:
         
@@ -82,41 +86,44 @@ def add_obs(trajectories,row,subscene,dataset,dict_type,trajectory_counter):
         trajectories[id_]["coordinates"].append(new_pos)
         trajectories[id_]["frames"].append(frame)
         trajectories[id_]["bboxes"].append(bbox)
+        trajectories[id_]["times"].append(time_)
     return trajectory_counter
 
 def persist_trajectories(trajectories,file_path):
-    with open(file_path,"a") as csv_:
-        csv_writer = csv.writer(csv_)
+    for id_ in trajectories:
+        
+        trajectory = trajectories[id_]
+        dataset = trajectory["dataset"]
+        subscene = trajectory["subscene"]
+        type_ = trajectory["type"]
+        times = trajectory["times"]
 
-        for id_ in trajectories:
-            trajectory = trajectories[id_]
-            dataset = trajectory["dataset"]
-            subscene = trajectory["subscene"]
-            type_ = trajectory["type"]
+        unique_timecode = True
+        start_time = times[0]
+        for time_ in times:
+            if time_ != start_time:
+                unique_timecode = False
 
-            # model_path = models[subscene]["model_path"]
-            # std_path = models[subscene]["std_path"]
+        file_path += "_" + str(start_time) + ".csv"
+        with open(file_path,"a") as csv_:
+            csv_writer = csv.writer(csv_)
 
-            # model = load(model_path)
-            # std = load(std_path)
-            # coordinates = std.transform(trajectory["coordinates"])
-            # coordinates = model.predict(coordinates).tolist()
-            # trajectory["coordinates"] = coordinates
+            if unique_timecode:
+                for frame,pos,bbox in zip(trajectory["frames"],trajectory["coordinates"],trajectory["bboxes"]):
+                    # pos = std.transform([pos])
+                    # pos = model.predict(pos)[0].tolist()
+                    row = []
+                    row.append(dataset) #dataset
+                    row.append(subscene) #scene
+                    row.append(frame) # frame
+                    row.append(id_) # id
+                    row.append(pos[0]) #x
+                    row.append(pos[1])  #y
+                    for b in bbox:
+                        row.append(b) 
+                    row.append(type_)
+                    csv_writer.writerow(row)
 
-            for frame,pos,bbox in zip(trajectory["frames"],trajectory["coordinates"],trajectory["bboxes"]):
-                # pos = std.transform([pos])
-                # pos = model.predict(pos)[0].tolist()
-                row = []
-                row.append(dataset) #dataset
-                row.append(subscene) #scene
-                row.append(frame) # frame
-                row.append(id_) # id
-                row.append(pos[0]) #x
-                row.append(pos[1])  #y
-                for b in bbox:
-                    row.append(b) 
-                row.append(type_)
-                csv_writer.writerow(row)
     return {}
 
 def split_ngsim(data_file):
@@ -148,6 +155,7 @@ def split_ngsim_correspondences(data_file,correspondences):
         for i, line in enumerate(data_reader):               
             if i != 0:
                 scene = line[-1]
+                
                 if scene in correspondences:
                     corres_scene = correspondences[scene]
                     inter = line[16]
@@ -205,13 +213,13 @@ def main():
     # models_json = parameters["models"]
     clips = parameters["clip_scenes"]
 
-
+    timezones = parameters["timezones"]
 
     start = time.time()
 
     
-    del_files_containing_string(scene_names,data_dir) 
-    split_ngsim_correspondences(data_file,correspondences)
+    # del_files_containing_string(scene_names,data_dir) 
+    # split_ngsim_correspondences(data_file,correspondences)
   
  
 
@@ -223,25 +231,31 @@ def main():
     trajectory_counter = 0
 
     
-
+    # criteria = 1118936700000
     for subscene in subscene_names:
+        # if "lankershim" in subscene:
         data_path = "./data/datasets/ngsim/"+subscene+".csv"
         with open(data_path) as data_reader:
             data_reader = csv.reader(data_reader, delimiter=',')
 
             last_id = -1
             for line in data_reader:
-              
+            
                 
                 new_id = int(line[0])
                 if  last_id != new_id:
-                    file_path = csv_path + subscene + ".csv"
+
+                    
+                    # file_path = csv_path + subscene + ".csv"
+                    file_path = csv_path + subscene 
+                    
+
                     
                     trajectories = persist_trajectories(trajectories,file_path)
                     trajectory_counter += 1
                     
 
-                trajectory_counter = add_obs(trajectories,line,subscene,dataset,dict_type,trajectory_counter)
+                trajectory_counter = add_obs(trajectories,line,subscene,dataset,dict_type,trajectory_counter,timezones)
                 last_id = new_id
 
         file_path = csv_path + subscene + ".csv"
@@ -256,6 +270,28 @@ def main():
 
                             
                             
+# for subscene in subscene_names:
+#         data_path = "./data/datasets/ngsim/"+subscene+".csv"
+#         with open(data_path) as data_reader:
+#             data_reader = csv.reader(data_reader, delimiter=',')
+
+#             last_id = -1
+#             for line in data_reader:
+              
+                
+#                 new_id = int(line[0])
+#                 if  last_id != new_id:
+#                     file_path = csv_path + subscene + ".csv"
+                    
+#                     trajectories = persist_trajectories(trajectories,file_path)
+#                     trajectory_counter += 1
+                    
+
+#                 trajectory_counter = add_obs(trajectories,line,subscene,dataset,dict_type,trajectory_counter)
+#                 last_id = new_id
+
+#         file_path = csv_path + subscene + ".csv"
+#         trajectories = persist_trajectories(trajectories,file_path)
 
                             
                                 
