@@ -7,15 +7,24 @@ import numpy as np
 import json
 
 
-names = ["lankershim_inter1",
-        "lankershim_inter2",
-        "lankershim_inter3",
-        "lankershim_inter4",
-        "peachtree_inter1",
-        "peachtree_inter2",
-        "peachtree_inter3",
-        "peachtree_inter4",
-        "peachtree_inter5"]
+names = ["lankershim_inter1_0",        
+        "lankershim_inter1_1",        
+        "lankershim_inter2_0",
+        "lankershim_inter2_1",
+        "lankershim_inter3_0",
+        "lankershim_inter3_1",
+        "lankershim_inter4_0",
+        "lankershim_inter4_1",
+        "peachtree_inter1_0",
+        "peachtree_inter2_0",
+        "peachtree_inter3_0",
+        "peachtree_inter4_0",
+        "peachtree_inter5_0",
+        "peachtree_inter1_1",
+        "peachtree_inter2_1",
+        "peachtree_inter3_1",
+        "peachtree_inter4_1",
+        "peachtree_inter5_1"]
 
 stats = {}
 for name in names:
