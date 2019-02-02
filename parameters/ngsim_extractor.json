@@ -136,29 +136,5 @@
         "peachtree_inter3.csv":[-15,15,330,400],
         "peachtree_inter4.csv":[-10,10,426,550],
         "peachtree_inter5.csv":[-12,12,600,630]
-    },
-    
-    "train_files": [
-        "lankershim_inter1_train.csv",
-        "lankershim_inter2_train.csv",
-        "lankershim_inter3_train.csv",
-        "lankershim_inter4_train.csv",
-        "peachtree_inter1_train.csv",
-        "peachtree_inter2_train.csv",
-        "peachtree_inter3_train.csv",
-        "peachtree_inter4_train.csv",
-        "peachtree_inter5_train.csv"
-    ],
-    "std_files": [
-        "lankershim_inter1_std.csv",
-        "lankershim_inter2_std.csv",
-        "lankershim_inter3_std.csv",
-        "lankershim_inter4_std.csv",
-        "peachtree_inter1_std.csv",
-        "peachtree_inter2_std.csv",
-        "peachtree_inter3_std.csv",
-        "peachtree_inter4_std.csv",
-        "peachtree_inter5_std.csv"
-    ]
-
+    }
 }

@@ -364,8 +364,9 @@ def extract_frames(file_path,destination_path = "", save = False):
     
 
     with open(file_path) as file_:
-        for line in file_:
-            line = line.split(",")
+        csv_reader = csv.reader(file_)
+        for line in csv_reader:
+            # line = line.split(",")
             
             id_ = int(line[3])
             # print(id_)

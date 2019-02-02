@@ -3,6 +3,10 @@ import csv
 import time
 import numpy as np
 from scipy import stats
+import extractors.helpers as helpers
+import json
+
+import clip_scene
 
 
 ROOT = "./data/datasets/"
@@ -348,17 +352,9 @@ def add_frame_pedestrian(rows,trajectories,current_trajectories,cov,counter,prob
 
     return counter
 
-
-def main():
-
-
-    s = time.time()
-
-    
-    bad_csv = CSV_PATH + DATASET + ".csv"
-    if os.path.exists(bad_csv):
-        os.remove(bad_csv)
-
+def extract_bad(bad_csv,trajectories_path,nb_frames,cov_car,cov_ped,inactivity,
+                forbidden_states,available_transitions,probability_threshold,
+                start_cst,trans_cst,sc, tc):
     # dict containing the trajectories and their coordinates
     trajectories = {}
 
@@ -367,6 +363,63 @@ def main():
 
     # ids of the available trajectories
     current_trajectories = []
+
+    with open(bad_csv,"a+") as csv_file:
+            writer = csv.writer(csv_file)        
+            with open(trajectories_path) as csv_file:
+
+                traj_reader = csv.reader(csv_file, delimiter=',')
+
+                row = next(traj_reader)
+                row = [float(row[0]),float(row[1]),row[2],row[3],int(row[4]),row[5]]
+
+                frame0 = row[4]
+                frame = frame0
+                while frame < nb_frames:
+                    
+                        
+                    # update current_trajectories by removing the old trajectories
+                    outdated_trajectories,current_trajectories = old_trajectories(current_trajectories,trajectories,inactivity,frame)
+                    # when a trajectory is outdated, write its content in destination file and delete it from the memory
+                    persist_trajectories(outdated_trajectories,trajectories,writer)
+                    
+                    rows = [row]
+                    
+                    try:
+                        while frame == frame0:
+                            row = next(traj_reader)
+                            row = [float(row[0]),float(row[1]),row[2],row[3],int(row[4]),row[5]]
+                            frame = row[4]
+                            if frame == frame0:
+                                rows.append(row)
+                        frame0 = frame
+                        
+                    except:
+                        frame += 1
+                    # separate pedestrians and cars rows
+                    car_rows = [row for row in rows if row[2] == "car"]
+                    ped_rows = [row for row in rows if row[2] == "pedestrian"]
+                    # separate pedestrians and cars current_trajectories
+                    car_current_trajectories = [id_ for id_ in current_trajectories if trajectories[id_]["type"] == "car"]
+                    ped_current_trajectories = [id_ for id_ in current_trajectories if trajectories[id_]["type"] == "pedestrian"]
+                    # add frames for pedestrians and cars respectively
+                    trajectory_counter = add_frame_car(car_rows,trajectories,car_current_trajectories,cov_car,trajectory_counter,forbidden_states,available_transitions,probability_threshold,start_cst,trans_cst,sc, tc )
+                    # print(4544)
+                    trajectory_counter = add_frame_pedestrian(ped_rows,trajectories,ped_current_trajectories,cov_ped,trajectory_counter,probability_threshold)
+
+                    # in case where new trajectories were added
+                    current_trajectories = car_current_trajectories + ped_current_trajectories
+                    
+            persist_trajectories(current_trajectories,trajectories,writer)
+def main():
+
+
+    s = time.time()
+
+    
+    
+
+    
 
     
    
@@ -429,62 +482,78 @@ def main():
     inactivity = 100
     probability_threshold = 10e-30
     
-
+    # bad_csv = CSV_PATH + DATASET + ".csv"
+    
     bad_csv = "/home/laurent/Documents/master/data/csv/bad.csv"
     TRAJECTORIES_PATH = "/home/laurent/Documents/master/data/datasets/bad/trajectories.csv"
 
     nb_frames = get_nb_frames(TRAJECTORIES_PATH)
     
+
+    bad_temp = "./data/datasets/bad/bad_temp.csv"
+    if os.path.exists(bad_temp):
+        os.remove(bad_temp)
+    extract_bad(bad_temp,TRAJECTORIES_PATH,nb_frames,cov,cov_ped,inactivity, \
+                forbidden_states,available_transitions,probability_threshold, \
+                start_cst,trans_cst,sc, tc)
+    print(time.time() - s)
+    # scene_path = "./data/csv/bad.csv"
+
     
-    with open(bad_csv,"a+") as csv_file:
-        writer = csv.writer(csv_file)        
-        with open(TRAJECTORIES_PATH) as csv_file:
+    x_low = -15
+    x_up = 20
+    y_up = 10
+    y_low = -15
+    # clip scene
+    clip_scene.clip_scene(x_low,x_up,y_low,y_up,bad_temp)
+    print(time.time() - s)
 
-            traj_reader = csv.reader(csv_file, delimiter=',')
+    # # extract trajectories as frames in txt file
+    # bad_temp1 = "./data/datasets/bad/bad_temp1.txt"
+    # if os.path.exists(bad_temp1):
+    #     os.remove(bad_temp1)
+    # helpers.extract_frames(bad_temp,bad_temp1,save = True)
 
-            row = next(traj_reader)
-            row = [float(row[0]),float(row[1]),row[2],row[3],int(row[4]),row[5]]
+    # # change the txt format to trajectories.csv
+    # os.remove(bad_temp)
+    # passed_ids = []
+    # with open(bad_temp,"a+") as temp_csv:
+    #     csv_writer = csv.writer(temp_csv)
+    #     with open(bad_temp1) as frames:
+            
+    #         for frame in frames:
+    #             frame = json.loads(frame)
+    #             f = frame["frame"]
+    #             for new_id in frame:
+    #                 if new_id != "frame":
+    #                     coordinates = frame[new_id]["coordinates"]
 
-            frame0 = row[4]
-            frame = frame0
-            while frame < nb_frames:
-                if frame % 50000 == 0:
-                    print(frame)
-                    print(time.time() - s)
-                    
-                # update current_trajectories by removing the old trajectories
-                outdated_trajectories,current_trajectories = old_trajectories(current_trajectories,trajectories,inactivity,frame)
-                # when a trajectory is outdated, write its content in destination file and delete it from the memory
-                persist_trajectories(outdated_trajectories,trajectories,writer)
-                
-                rows = [row]
-                
-                try:
-                    while frame == frame0:
-                        row = next(traj_reader)
-                        row = [float(row[0]),float(row[1]),row[2],row[3],int(row[4]),row[5]]
-                        frame = row[4]
-                        if frame == frame0:
-                            rows.append(row)
-                    frame0 = frame
-                    
-                except:
-                    frame += 1
-                # separate pedestrians and cars rows
-                car_rows = [row for row in rows if row[2] == "car"]
-                ped_rows = [row for row in rows if row[2] == "pedestrian"]
-                # separate pedestrians and cars current_trajectories
-                car_current_trajectories = [id_ for id_ in current_trajectories if trajectories[id_]["type"] == "car"]
-                ped_current_trajectories = [id_ for id_ in current_trajectories if trajectories[id_]["type"] == "pedestrian"]
-                # add frames for pedestrians and cars respectively
-                trajectory_counter = add_frame_car(car_rows,trajectories,car_current_trajectories,cov,trajectory_counter,forbidden_states,available_transitions,probability_threshold,start_cst,trans_cst,sc, tc )
-                # print(4544)
-                trajectory_counter = add_frame_pedestrian(ped_rows,trajectories,ped_current_trajectories,cov_ped,trajectory_counter,probability_threshold)
+    #                     x = coordinates[0]
+    #                     y = coordinates[1]
+    #                     subscene = frame[new_id]["scene"]
+    #                     type_ = frame[new_id]["type"]
 
-                # in case where new trajectories were added
-                current_trajectories = car_current_trajectories + ped_current_trajectories
-                
-        persist_trajectories(current_trajectories,trajectories,writer)
- 
+    #                     start = False
+    #                     if new_id not in passed_ids:
+    #                         start = True
+    #                         passed_ids.append(new_id)
+    #                     new_line = [x,y,type_,start,f,subscene]
+    #                     csv_writer.writerow(new_line)
+    
+    # print(time.time() - s)
+    # if os.path.exists(bad_csv):
+    #     os.remove(bad_csv)
+    # # reextract from bad_temp and store in bad csv
+    # nb_frames = get_nb_frames(bad_temp)
+    # extract_bad(bad_csv,bad_temp,nb_frames,cov,cov_ped,inactivity, \
+    #             forbidden_states,available_transitions,probability_threshold, \
+    #             start_cst,trans_cst,sc, tc)
+    # print(time.time() - s)
+
+    # os.remove(bad_temp)
+    # os.remove(bad_temp1)
+
+
+
 if __name__ == "__main__":
     main()
