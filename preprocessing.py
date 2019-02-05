@@ -191,23 +191,29 @@ def apply_filter(speeds):
     filtered_speeds = filtfilt(b,a, speeds)
     return filtered_speeds
 
+import math
 def new_pos(new_speeds,coordinates,dt = 0.1):
     coords = [coordinates[0]]
     for i in range(1,len(coordinates)):
+        if i == 181:
+            print(i)
         new_speed = new_speeds[i-1]
         pos = coordinates[i]
         old_pos = coords[-1]
         dir_vec = np.subtract(pos,old_pos)
-        dir_vec /= np.linalg.norm(dir_vec)
-        theta = np.arccos(np.dot(dir_vec,[1,0]))
-        new_x = old_pos[0] + new_speed * np.cos(theta) * dt
-        new_y = old_pos[1] + new_speed * np.sin(theta) *dt
-        new_pos = [new_x, new_y]
+        new_pos = old_pos
+        if np.linalg.norm(dir_vec) > 0:
+            dir_vec /= np.linalg.norm(dir_vec)
+            theta = np.arccos(np.dot(dir_vec,[1,0]))
+            if dir_vec[1] < 0:
+                theta = 2.* math.pi - theta
+           
+            new_x = old_pos[0] + new_speed * np.cos(theta) * dt
+            new_y = old_pos[1] + new_speed * np.sin(theta) *dt
+            new_pos = [new_x, new_y]
 
         coords.append(new_pos)
     return {"coordinates": coords}
-
-
 
 
 def main():
