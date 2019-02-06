@@ -18,9 +18,13 @@ def main():
         for trajectory in trajectories:
             trajectory = json.loads(trajectory)
             frames = trajectory["frames"]
+            current_id = str(trajectory["id"])
             start,stop = frames[0],frames[-1] + 1
             with open(parameters["frames_temp"]) as frames:
+                main_traj = []
                 for frame in islice(frames,start,stop):
+                    frame = json.loads(frame)
+                    main_traj.append(frame[current_id]["coordinates"])
                     
 if __name__ == "__main__":
     main()

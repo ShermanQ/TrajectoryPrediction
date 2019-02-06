@@ -332,17 +332,14 @@ def extract_trajectories(file_name,destination_path = "", save = False):
         if os.path.exists(destination_path):
             os.remove(destination_path)
         
-        current_frame = 0
-        dict_frame = {}
+        
+        dict_frame = reindex_frames(file_name)
 
         with open(destination_path,"a") as scene_txt:
             for key in trajectories:
-
+                
                 new_frames = []
                 for frame in trajectories[key]["frames"]:
-                    if frame not in dict_frame:
-                        dict_frame[frame] = current_frame
-                        current_frame += 1
                     new_frames.append(dict_frame[frame])
                 trajectories[key]["frames"] = new_frames
                 line = trajectories[key]
@@ -408,17 +405,17 @@ def extract_frames(file_path,destination_path = "", save = False):
             if os.path.exists(destination_path):
                 os.remove(destination_path)
 
-            current_frame = 0
-            dict_frame = {}
+            # current_frame = 0
+            # dict_frame = {}
 
-            
+            dict_frame = reindex_frames(file_path)
 
             with open(destination_path,"a") as scene_txt:
                 for key in sorted(frames):
 
-                    if key not in dict_frame:
-                        dict_frame[key] = current_frame
-                        current_frame += 1
+                    # if key not in dict_frame:
+                    #     dict_frame[key] = current_frame
+                    #     current_frame += 1
 
                     line = frames[key]
                     line["frame"] = dict_frame[key]
@@ -430,3 +427,28 @@ def extract_frames(file_path,destination_path = "", save = False):
         else:
             return frames
     return
+
+
+
+
+
+def reindex_frames(file_path):
+    frames = {}
+    with open(file_path) as file_:
+        csv_reader = csv.reader(file_)
+        for line in csv_reader:
+           
+            frame = int(line[2])
+           
+
+            if frame not in frames:
+                frames[frame] = -1
+    
+        current_frame = 0
+        dict_frame = {}
+
+        for key in sorted(frames):
+            if key not in dict_frame:
+                dict_frame[key] = current_frame
+                current_frame += 1
+    return dict_frame
