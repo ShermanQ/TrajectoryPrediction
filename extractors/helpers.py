@@ -331,8 +331,20 @@ def extract_trajectories(file_name,destination_path = "", save = False):
 
         if os.path.exists(destination_path):
             os.remove(destination_path)
+        
+        current_frame = 0
+        dict_frame = {}
+
         with open(destination_path,"a") as scene_txt:
             for key in trajectories:
+
+                new_frames = []
+                for frame in trajectories[key]["frames"]:
+                    if frame not in dict_frame:
+                        dict_frame[frame] = current_frame
+                        current_frame += 1
+                    new_frames.append(dict_frame[frame])
+                trajectories[key]["frames"] = new_frames
                 line = trajectories[key]
                 # trajectories["id"] = key
                 line = json.dumps(line)
