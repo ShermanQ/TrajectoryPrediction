@@ -26,7 +26,7 @@ def main():
 
     
 
-    framerate = 10
+    framerate = 1
     # factor_div = 3/2
     plot_last_step = True
     nb_last_steps = 200

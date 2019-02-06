@@ -186,7 +186,7 @@ def apply_filter(speeds):
     # sampling frequency fs is 10 Hz or s-1,
     # niquist frequency is fn = f/2.0 = 5.0 Hz
     # Paper says cut-off frequency of 1 Hz which is 0.2 * fn
-    b,a = butter(1,0.5,fs = 10 ) 
+    b,a = butter(1,0.8,fs = 10 ) 
 
     filtered_speeds = filtfilt(b,a, speeds)
     return filtered_speeds

@@ -362,7 +362,6 @@ def extract_frames(file_path,destination_path = "", save = False):
     frames = {}
 
     
-
     with open(file_path) as file_:
         csv_reader = csv.reader(file_)
         for line in csv_reader:
@@ -373,6 +372,7 @@ def extract_frames(file_path,destination_path = "", save = False):
             coordinates = [float(line[4]),float(line[5])]
             bbox = [float(line[6]),float(line[7]),float(line[8]),float(line[9])]
             frame = int(line[2])
+            
             type_ = line[10]
             
 
@@ -395,9 +395,21 @@ def extract_frames(file_path,destination_path = "", save = False):
 
             if os.path.exists(destination_path):
                 os.remove(destination_path)
+
+            current_frame = 0
+            dict_frame = {}
+
+            
+
             with open(destination_path,"a") as scene_txt:
                 for key in sorted(frames):
+
+                    if key not in dict_frame:
+                        dict_frame[key] = current_frame
+                        current_frame += 1
+
                     line = frames[key]
+                    line["frame"] = dict_frame[key]
                     # line["frame"] = key
                     line = json.dumps(line)
                     # print(line)
