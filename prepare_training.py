@@ -20,11 +20,11 @@ import os
         of theirs objects for a given frame or [-1,-1] if its not in 
         the given frame
 """
-def get_neighbors(start,stop,frames):
+def get_neighbors(frames):
 # def get_neighbors_coordinates(start,stop,frames,ids):
     ids = {}
     # with open(frames_path) as frames:
-    for i,frame in enumerate(islice(frames,start,stop)):
+    for i,frame in enumerate(frames):
         frame = json.loads(frame)
 
         for id_ in frame:
@@ -204,7 +204,7 @@ def extract_data(parameters):
                         current_id = int(trajectory["id"])
                         start,stop = frames[0],frames[-1] + 1
 
-                        ids = get_neighbors(start,stop,a)
+                        ids = get_neighbors(islice(a,start,stop))
                         len_traj = len(ids[current_id])
 
                         for i in range(0,len_traj,parameters["shift"]):
