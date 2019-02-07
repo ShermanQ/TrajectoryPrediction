@@ -4,154 +4,225 @@ import extractors.helpers as helpers
 import json
 import numpy as np
 import time
+from itertools import tee
+import os
+
+  
+
 
 """
     in: 
         start:frame number where the trajectory begins
         stop: frame number where the trajectory stops
         frames_path: path to the file containing frames
-    out:
-        dict: {id0:[], ..., idn:[]} ids of vehicle in the sequence
-
-"""
-
-def get_neighbors_id(start,stop,frames_path):
-    ids = {}
-    with open(frames_path) as frames:
-        
-        for frame in islice(frames,start,stop):
-            frame = json.loads(frame)
-            for id_ in frame:
-                if id_ != "frame":
-                    if int(id_) not in ids:
-                        ids[int(id_)] = []
-    return ids
-
-"""
-    in: 
-        start:frame number where the trajectory begins
-        stop: frame number where the trajectory stops
-        frames_path: path to the file containing frames
-        ids: {id0:[], ..., idn:[]} ids of vehicle in the sequence
     out:
         returns ids but the lists are filled with the coordinates
         of theirs objects for a given frame or [-1,-1] if its not in 
         the given frame
 """
-def get_neighbors_coordinates(start,stop,frames_path,ids):
-    with open(frames_path) as frames:
-        for frame in islice(frames,start,stop):
-            frame = json.loads(frame)
+def get_neighbors(start,stop,frames):
+# def get_neighbors_coordinates(start,stop,frames,ids):
+    ids = {}
+    # with open(frames_path) as frames:
+    for i,frame in enumerate(islice(frames,start,stop)):
+        frame = json.loads(frame)
 
-            for id_ in ids:
-                if str(id_) in frame:
-                    ids[id_].append(frame[str(id_)]["coordinates"])
-                else:
-                    ids[id_].append([-1,-1])
+        for id_ in frame:
+            if id_ != "frame":
+                if int(id_) not in ids:
+                    ids[int(id_)] = [[-1,-1] for j in range(i)]
+        
+        for id_ in ids:
+            if str(id_) in frame:
+                ids[id_].append(frame[str(id_)]["coordinates"])
+            else:
+                ids[id_].append([-1,-1])
     return ids
+
 
 """
     in:
-        ids and corresponding coordinates of vehicle present
-        in a subsequence of the scene
-        current_id: id of the main object
-    out:
-        coordinates data, one column per object, the main object
-        is in first column
-        the others columns are sorted by ascending objects
+        t_obs: number of observed frames
+        ids: ids  filled with the coordinates
+        id_: id of the neighbor to test
+        of theirs objects for a given frame or [-1,-1] if its not in 
+        the given frame
+        current_frame: the frame of the trajectory to be considered
+    out: 
+        True if the neighboor appears during observation time
 """
-def neighbors_to_data(ids,current_id):
-    data = [ids[current_id]]
-    for id_ in sorted(ids):
-        if id_ != current_id:
-            data.append(ids[id_])
-    return data
-def main():
-    parameters = {
-        "original_file" : "./data/csv/new_rates/lankershim_section2_10.0to2.5.csv",
-        "frames_temp" : "./data/temp/frames.txt",
-        "trajectories_temp" : "./data/temp/trajectories.txt",
-        "shift": 4,
-        "t_obs": 8,
-        "t_pred": 12,
-        "scene": "lankershim_inter2",
-        "framerate" : "2.5",
-        "data_path": "./data/deep/data.csv",
-        "label_path": "./data/deep/labels.csv",
+def add_neighbor(t_obs,ids,id_,current_frame):
+    add = False
+    for p in ids[id_][current_frame:current_frame+t_obs]:
+        if p != [-1,-1]:
+            return True
+    return add
+
+"""
+    in:
+        ids: ids  filled with the coordinates of theirs objects for a given frame or [-1,-1] if its not in 
+        the given frame
+        id_: id of the neighbor to test
+        
+        t_obs: number of observed frames
+        t_pred: number of frames to predict
+        current_frame: the frame of the trajectory to be considered
+    out: 
+        feature: for the given id, steps between current_frame and current_frame + t_obs 2D COORDINATES ARE FLATTENED
+        label: for the given id, steps between current_frame+t_obs and current_frame+t_obs+t_pred
+
+"""
+def feature_label(ids,id_,t_obs,t_pred,current_frame):
+    feature = np.array(ids[id_][current_frame:current_frame+t_obs]).flatten().tolist()
+    label = np.array(ids[id_][current_frame+t_obs:current_frame+t_obs+t_pred]).flatten().tolist()
+    return feature,label
+
+"""
+    in:
+        len_traj: length of the main trajectory
+        shift: the size of the step between to feature extraction for the main trajectory
+        t_obs: number of observed frames
+        t_pred: number of frames to predict
+        current_id: id of the main trajectory
+        ids: ids  filled with the coordinates of theirs objects for a given frame or [-1,-1] if its not in 
+        the given frame
+        current_frame: the frame of the trajectory to be considered
+    out:
+        features: first to appear is the main trajectory, then the neighboors that appears during observation
+                  everything is flattened: let xij, i traj_id, j time_step [x00,y00,...x0n,y0n, ... , xn0,yn0,...xnn,ynn,]
+                  j < current_frame + t_obs
+        labels: same idea but for prediction time
 
 
-    }
+"""
+def features_labels(len_traj,shift,t_obs,t_pred,current_id,ids,current_frame):
     
-    s = time.time()
-    helpers.extract_frames(parameters["original_file"],parameters["frames_temp"],save = True)
+    features = []
+    labels = []
+    if current_frame + t_obs + t_pred -1 < len_traj:
+        
 
-    print(time.time()-s)
+        feature,label = feature_label(ids,current_id,t_obs,t_pred,current_frame)
+
+        features.append(feature)
+        labels.append(label)
+
+        for id_ in sorted(ids):
+            if id_ != current_id:
+                
+                if add_neighbor(t_obs,ids,id_,current_frame):
+
+
+                    feature,label = feature_label(ids,id_,t_obs,t_pred,current_frame)
+
+                    features.append(feature)
+                    labels.append(label)
+
+        features = np.array(features).flatten().tolist()
+        labels = np.array(labels).flatten().tolist()
+    return features,labels
+
+
+"""
+    in:
+        ids: ids  filled with the coordinates of theirs objects for a given frame or [-1,-1] if its not in 
+        the given frame
+        features: see features_labels
+        labels: see features_labels
+        data_writer: csv writer for file containing features
+        label_writer: csv writer for file containing labels
+        sample_id: running id of the number of training sample
+    out:
+"""
+def persist_data(ids,features,labels,data_writer,label_writer,sample_id):
+    ids_list = sorted([id_ for id_ in ids])
+    nb_objects = len(ids_list)
+    features_header = [
+        sample_id,
+        # nb_objects,
+        # ids_list,
+        # parameters["t_obs"],
+        # parameters["t_pred"],
+        # start,
+        # stop,
+        # parameters["scene"],
+        # parameters["framerate"]
+
+    ]
+
+    labels_header = [
+        sample_id
+    ]
+    features = features_header + features
+    labels = labels_header + labels
+
+    sample_id += 1
+
+    data_writer.writerow(features)
+    label_writer.writerow(labels)
+
+    return sample_id
+
+"""
+    parameters: dict containing reauired parameters[
+        "original_file" path for file containing the original data
+        "frames_temp"   path to store temporarily the frame-shaped data extracted from original_file
+        "trajectories_temp" path to store temporarily the trajectory-shaped data extracted from original_file
+        "shift" the size of the step between two feature extraction for the main trajectory
+        t_obs: number of observed frames
+        t_pred: number of frames to predict
+        "scene" scene name
+        "framerate" framerate of the original data
+        "data_path path for file where to write down features
+        "label_path" path for file where to write down labels
+    ]
+"""
+def extract_data(parameters):
+
+    helpers.extract_frames(parameters["original_file"],parameters["frames_temp"],save = True)
     helpers.extract_trajectories(parameters["original_file"],parameters["trajectories_temp"],save = True)
 
-    print(time.time()-s)
-
     sample_id = 0
+    if os.path.exists(parameters["data_path"]):
+        os.remove(parameters["data_path"])
+    if os.path.exists(parameters["label_path"]):
+        os.remove(parameters["label_path"])
+
     with open(parameters["data_path"],"a") as data_csv:
         data_writer = csv.writer(data_csv)
         with open(parameters["label_path"],"a") as label_csv:
             label_writer = csv.writer(label_csv)
 
             with open(parameters["trajectories_temp"]) as trajectories:
-                for k,trajectory in enumerate(trajectories):
-                    trajectory = json.loads(trajectory)
-                    frames = trajectory["frames"]
-                    current_id = int(trajectory["id"])
-                    start,stop = frames[0],frames[-1] + 1
+                with open(parameters["frames_temp"]) as file_frames:
+                    for k,trajectory in enumerate(trajectories):
+                        trajectory = json.loads(trajectory)
 
-                    
-                    ids = get_neighbors_id(start,stop,parameters["frames_temp"])
-                    ids = get_neighbors_coordinates(start,stop,parameters["frames_temp"],ids)
-                    data = neighbors_to_data(ids,current_id)
-                    data = np.array(data)
-                    
-                    
-                    for i in range(0,len(data[0]),int(parameters["shift"])):
-                        features = []
-                        labels = []
-                        if i + parameters["t_obs"] + parameters["t_pred"] -1 < len(data[0]):
-                            for j in range(len(data)):
-                                feature = data[j,i: i + parameters["t_obs"] ].flatten()
-                                label = data[j,i + parameters["t_obs"]: i + parameters["t_obs"] + parameters["t_pred"] ].flatten()
+                        file_frames,a = tee(file_frames)
+                        
+                        frames = trajectory["frames"]
+                        current_id = int(trajectory["id"])
+                        start,stop = frames[0],frames[-1] + 1
 
-                                features.append(feature.tolist())
-                                labels.append(label.tolist())
-                        features = np.array(features).flatten().tolist()
-                        labels = np.array(labels).flatten().tolist()
+                        ids = get_neighbors(start,stop,a)
+                        len_traj = len(ids[current_id])
 
-                        ids = sorted([id_ for id_ in ids])
-                        nb_objects = len(ids)
-                        # ids = sorted(ids.keys())
-                        features_header = [
-                            sample_id,
-                            nb_objects,
-                            ids,
-                            parameters["t_obs"],
-                            parameters["t_pred"],
-                            start,
-                            stop,
-                            parameters["scene"],
-                            parameters["framerate"]
+                        for i in range(0,len_traj,parameters["shift"]):
+                            features,labels = features_labels(len_traj,parameters["shift"],parameters["t_obs"],parameters["t_pred"],current_id,ids,i)
+                            sample_id = persist_data(ids,features,labels,data_writer,label_writer,sample_id)
+    
+    os.remove(parameters["frames_temp"])
+    os.remove(parameters["trajectories_temp"])
 
-                        ]
 
-                        labels_header = [
-                            sample_id
-                        ]
-                        features = features_header + features
-                        labels = labels_header + labels
 
-                        sample_id += 1
-
-                        data_writer.writerow(features)
-                        label_writer.writerow(labels)
-
-                    print(k,sample_id,time.time()-s)
-
+def main():
+    parameters = "parameters/prepare_training.json"
+    with open(parameters) as parameters_file:
+        parameters = json.load(parameters_file)
+    
+    s = time.time()
+    extract_data(parameters)        
     print(time.time()-s)
 
 

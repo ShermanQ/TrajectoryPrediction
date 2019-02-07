@@ -1,0 +1,14 @@
+{
+    "original_file" : "./data/csv/new_rates/lankershim_section2_10.0to2.5.csv",
+    "frames_temp" : "./data/temp/frames.txt",
+    "trajectories_temp" : "./data/temp/trajectories.txt",
+    "shift": 4,
+    "t_obs": 8,
+    "t_pred": 12,
+    "scene": "lankershim_inter2",
+    "framerate" : "2.5",
+    "data_path": "./data/deep/data.csv",
+    "label_path": "./data/deep/labels.csv"
+
+
+}
