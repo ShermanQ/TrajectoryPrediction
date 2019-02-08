@@ -1,5 +1,6 @@
 # personnal
 data/*
+/learning/data/*
 preprocessing/temp.txt
 # Byte-compiled / optimized / DLL files
 __pycache__/

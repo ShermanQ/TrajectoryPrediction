@@ -134,15 +134,18 @@ def features_labels(len_traj,shift,t_obs,t_pred,current_id,ids,current_frame):
         sample_id: running id of the number of training sample
     out:
 """
-def persist_data(ids,features,labels,data_writer,label_writer,sample_id):
-    ids_list = sorted([id_ for id_ in ids])
-    nb_objects = len(ids_list)
+def persist_data(ids,parameters,current_id,current_frame,features,labels,data_writer,label_writer,sample_id):
+    
+
+    # ids_list = sorted([id_ for id_ in ids if add_neighbor(parameters["t_obs"],ids,id_,current_frame)])
+    # nb_objects = len(ids_list)
+    nb_objects = int((len(features)/2)/parameters["t_obs"])
     features_header = [
         sample_id,
-        # nb_objects,
+        nb_objects,
         # ids_list,
-        # parameters["t_obs"],
-        # parameters["t_pred"],
+        parameters["t_obs"],
+        parameters["t_pred"]
         # start,
         # stop,
         # parameters["scene"],
@@ -196,6 +199,8 @@ def extract_data(parameters):
             with open(parameters["trajectories_temp"]) as trajectories:
                 with open(parameters["frames_temp"]) as file_frames:
                     for k,trajectory in enumerate(trajectories):
+
+                        
                         trajectory = json.loads(trajectory)
 
                         file_frames,a = tee(file_frames)
@@ -209,7 +214,10 @@ def extract_data(parameters):
 
                         for i in range(0,len_traj,parameters["shift"]):
                             features,labels = features_labels(len_traj,parameters["shift"],parameters["t_obs"],parameters["t_pred"],current_id,ids,i)
-                            sample_id = persist_data(ids,features,labels,data_writer,label_writer,sample_id)
+                            if features != []:
+                                sample_id = persist_data(ids,parameters,current_id,i,features,labels,data_writer,label_writer,sample_id)
+                            # if sample_id == 39:
+                            #     print("")
     
     os.remove(parameters["frames_temp"])
     os.remove(parameters["trajectories_temp"])
