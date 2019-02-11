@@ -16,6 +16,71 @@ import time
 from classes import CustomDataset
 
 
+class encoderLSTM(nn.Module):
+    # def __init__(self,input_size,hidden_size,num_layers,output_size,batch_size,seq_len):
+    
+    def __init__(self,input_size,hidden_size,num_layers,batch_size):
+        super(encoderLSTM,self).__init__()
+
+        self.input_size = input_size
+        self.hidden_size = hidden_size
+        self.num_layers = num_layers
+        # self.output_size = output_size
+        self.batch_size = batch_size
+        self.hidden = self.init_hidden_state()
+
+        self.lstm = nn.LSTM(input_size = self.input_size,hidden_size = self.hidden_size,num_layers = self.num_layers,batch_first = True)
+        self.last_output = nn.Linear(self.hidden_size,self.input_size)
+
+        
+
+    def forward(self,x):
+        self.hidden = self.init_hidden_state()
+        output,self.hidden = self.lstm(x,self.hidden)
+        decoder_start = self.last_output(output[0])
+        return decoder_start, self.hidden
+
+    def init_hidden_state(self):
+        h_0 = torch.zeros(self.num_layers,self.batch_size,self.hidden_size).cuda()
+        c_0 = torch.zeros(self.num_layers,self.batch_size,self.hidden_size).cuda()
+
+        return (h_0,c_0)
+
+class decoderLSTM(nn.Module):
+    # def __init__(self,input_size,hidden_size,num_layers,output_size,batch_size,seq_len):
+    
+    def __init__(self,output_size,hidden_size,num_layers,batch_size,seq_len,teacher_forcing = False):
+        super(decoderLSTM,self).__init__()
+
+        self.hidden_size = hidden_size
+        self.num_layers = num_layers
+        self.output_size = output_size
+        self.batch_size = batch_size
+        self.hidden = self.init_hidden_state()
+        self.seq_len = seq_len
+        self.teacher_forcing = teacher_forcing
+        # self.target = target
+
+        
+        self.lstm = nn.LSTM(input_size = self.hidden_size,hidden_size = self.hidden_size,num_layers = self.num_layers)
+        self.out = nn.Linear(self.hidden_size,self.output_size)
+
+        
+
+    def forward(self,x,hidden):
+        # self.hidden = self.init_hidden_state()
+        x = x.view(self.seq_len,self.batch_size,2)
+        output,self.hidden = self.lstm(x,hidden)
+        output = self.out(output)
+        return output, hidden
+
+    def init_hidden_state(self):
+        h_0 = torch.zeros(self.num_layers,self.batch_size,self.hidden_size).cuda()
+        c_0 = torch.zeros(self.num_layers,self.batch_size,self.hidden_size).cuda()
+
+        return (h_0,c_0)
+
+
 
 class MLP(nn.Module):
     def __init__(self,input_size,hidden_size,output_size):
@@ -23,9 +88,9 @@ class MLP(nn.Module):
 
         self.fc1 = nn.Linear(input_size,hidden_size)
         self.fc2 = nn.Linear(hidden_size,hidden_size)
-        # self.fc3 = nn.Linear(hidden_size,hidden_size)
-        # self.fc4 = nn.Linear(hidden_size,hidden_size)
-        # self.fc5 = nn.Linear(hidden_size,hidden_size)
+        self.fc3 = nn.Linear(hidden_size,hidden_size)
+        self.fc4 = nn.Linear(hidden_size,hidden_size)
+        self.fc5 = nn.Linear(hidden_size,hidden_size)
 
         self.output = nn.Linear(hidden_size,output_size)
 
@@ -36,10 +101,10 @@ class MLP(nn.Module):
         x = f.relu(x)
         x = self.fc3(x)
         x = f.relu(x)
-        # x = self.fc4(x)
-        # x = f.relu(x)
-        # x = self.fc5(x)
-        # x = f.relu(x)
+        x = self.fc4(x)
+        x = f.relu(x)
+        x = self.fc5(x)
+        x = f.relu(x)
         
         x = self.output(x)
         return x
@@ -103,7 +168,7 @@ def main():
     dataset = CustomDataset(partition,"./learning/data/")
     # loader = torch.utils.data.DataLoader( dataset, batch_size= 200,collate_fn=naive_collate_lstm, shuffle=True)
     
-    loader = torch.utils.data.DataLoader( dataset, batch_size= 200, shuffle=True,num_workers= 30)
+    
 
     # data_path = "./data/deep/data.csv"
     # label_path = "./data/deep/labels.csv"
@@ -115,7 +180,7 @@ def main():
     # extract_tensors(data_path,label_path,samples_path,labels_path)
     # print(time.time()-s)
        
-    # torch.manual_seed(args.seed)
+    torch.manual_seed(10)
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")    
 
@@ -124,13 +189,17 @@ def main():
 
 
     
-    s = time.time()
+    
 
     # Assuming that we are on a CUDA machine, this should print a CUDA device:
     print(device)
-    input_size,hidden_size,output_size = 16,100,24
-    net = MLP(input_size,hidden_size,output_size)
+    # input_size,hidden_size,output_size = 16,1000,24
+    # net = MLP(input_size,hidden_size,output_size)
+    input_size,hidden_size,num_layers,output_size,batch_size,seq_len  = 2,30,1,2,200,8
 
+    loader = torch.utils.data.DataLoader( dataset, batch_size= batch_size, shuffle=True,num_workers= 30,drop_last = True)
+
+    net = encoderLSTM(input_size,hidden_size,num_layers,batch_size,seq_len)
     net.to(device)
 
     learning_rate = 0.001
@@ -145,9 +214,8 @@ def main():
     print(torch.cuda.is_available())
     losses = []
 
-    # for epoch in range(1, n_epochs + 1):
-    #     loss = train(net, device, train_loader,criterion, optimizer, epoch)
-    #     losses.append(loss)
+
+    s = time.time()
     for epoch in range(n_epochs):
         epoch_loss = 0.
         print(epoch)
@@ -157,31 +225,34 @@ def main():
             
             
 
-            # inputs,targets = data
-            # inputs,targets = inputs.to(device), targets.to(device)
+            inputs,targets = data
 
-            # optimizer.zero_grad()
-            # inputs = inputs.to(device=torch.device("cpu"))
-            # targets = targets.to(device=torch.device("cpu"))
+            inputs,targets = inputs.to(device), targets.to(device)
+
+            optimizer.zero_grad()
 
             
     
 
-            # outputs = net(inputs)
+            a,b = net(inputs)
+            c,d = b
+            print(c.size())
             # loss = criterion(outputs,targets)
 
-            # # del inputs
-            # # del targets
+    #         # # del inputs
+    #         # # del targets
 
-            # loss.backward()
-            # optimizer.step()
+    #         loss.backward()
+    #         optimizer.step()
 
-            # epoch_loss += loss.item()/200
+    #         # epoch_loss += loss.item()/200
 
-            # if i % 10 == 0:
-            print(i)       
-            # print(loss.item()/200)
-            print(time.time()-s)
+            if i % 50 == 0:
+                print(i)       
+                # print(loss.item()/200)
+                print(time.time()-s)
+            break
+        break
 
         # print(epoch_loss/i)
         # losses.append(epoch_loss)

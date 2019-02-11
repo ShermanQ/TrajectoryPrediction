@@ -18,10 +18,10 @@ class CustomDataset(data.Dataset):
         ID = self.list_IDs[index]
 
         # Load data and get label
-        X = torch.load(self.data_path + "samples/sample" + str(ID) + '.pt')[0].view(-1)
-        y = torch.load(self.data_path + "labels/label" + str(ID) + '.pt')[0].view(-1)
+      #   X = torch.load(self.data_path + "samples/sample" + str(ID) + '.pt')[0].view(-1)
+      #   y = torch.load(self.data_path + "labels/label" + str(ID) + '.pt')[0].view(-1)
 
-      #   X = torch.load(self.data_path + "samples/sample" + str(ID) + '.pt')
-      #   y = torch.load(self.data_path + "labels/label" + str(ID) + '.pt')
+        X = torch.load(self.data_path + "samples/sample" + str(ID) + '.pt')[0]
+        y = torch.load(self.data_path + "labels/label" + str(ID) + '.pt')[0]
         
         return X, y
