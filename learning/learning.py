@@ -23,7 +23,10 @@ class MLP(nn.Module):
 
         self.fc1 = nn.Linear(input_size,hidden_size)
         self.fc2 = nn.Linear(hidden_size,hidden_size)
-        self.fc3 = nn.Linear(hidden_size,hidden_size)
+        # self.fc3 = nn.Linear(hidden_size,hidden_size)
+        # self.fc4 = nn.Linear(hidden_size,hidden_size)
+        # self.fc5 = nn.Linear(hidden_size,hidden_size)
+
         self.output = nn.Linear(hidden_size,output_size)
 
     def forward(self,x):
@@ -33,6 +36,11 @@ class MLP(nn.Module):
         x = f.relu(x)
         x = self.fc3(x)
         x = f.relu(x)
+        # x = self.fc4(x)
+        # x = f.relu(x)
+        # x = self.fc5(x)
+        # x = f.relu(x)
+        
         x = self.output(x)
         return x
 
@@ -95,7 +103,7 @@ def main():
     dataset = CustomDataset(partition,"./learning/data/")
     # loader = torch.utils.data.DataLoader( dataset, batch_size= 200,collate_fn=naive_collate_lstm, shuffle=True)
     
-    loader = torch.utils.data.DataLoader( dataset, batch_size= 200, shuffle=True)
+    loader = torch.utils.data.DataLoader( dataset, batch_size= 200, shuffle=True,num_workers= 30)
 
     # data_path = "./data/deep/data.csv"
     # label_path = "./data/deep/labels.csv"
@@ -103,7 +111,7 @@ def main():
     # samples_path = "./learning/data/samples/"
     # labels_path = "./learning/data/labels/"
 
-    s = time.time()
+    
     # extract_tensors(data_path,label_path,samples_path,labels_path)
     # print(time.time()-s)
        
@@ -116,7 +124,7 @@ def main():
 
 
     
-
+    s = time.time()
 
     # Assuming that we are on a CUDA machine, this should print a CUDA device:
     print(device)
@@ -149,8 +157,8 @@ def main():
             
             
 
-            inputs,targets = data
-            inputs,targets = inputs.to(device), targets.to(device)
+            # inputs,targets = data
+            # inputs,targets = inputs.to(device), targets.to(device)
 
             # optimizer.zero_grad()
             # inputs = inputs.to(device=torch.device("cpu"))
@@ -159,24 +167,24 @@ def main():
             
     
 
-            outputs = net(inputs)
-            loss = criterion(outputs,targets)
+            # outputs = net(inputs)
+            # loss = criterion(outputs,targets)
 
-            del inputs
-            del targets
+            # # del inputs
+            # # del targets
 
-            loss.backward()
-            optimizer.step()
+            # loss.backward()
+            # optimizer.step()
 
-            epoch_loss += loss.item()/200
+            # epoch_loss += loss.item()/200
 
-            if i % 10 == 0:
-                print(i)       
-                print(loss.item()/200)
-                print(time.time()-s)
+            # if i % 10 == 0:
+            print(i)       
+            # print(loss.item()/200)
+            print(time.time()-s)
 
-        print(epoch_loss/i)
-        losses.append(epoch_loss)
+        # print(epoch_loss/i)
+        # losses.append(epoch_loss)
 
     # plt.plot(losses)
 

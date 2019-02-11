@@ -20,4 +20,8 @@ class CustomDataset(data.Dataset):
         # Load data and get label
         X = torch.load(self.data_path + "samples/sample" + str(ID) + '.pt')[0].view(-1)
         y = torch.load(self.data_path + "labels/label" + str(ID) + '.pt')[0].view(-1)
+
+      #   X = torch.load(self.data_path + "samples/sample" + str(ID) + '.pt')
+      #   y = torch.load(self.data_path + "labels/label" + str(ID) + '.pt')
+        
         return X, y
