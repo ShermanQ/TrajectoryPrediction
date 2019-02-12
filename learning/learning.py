@@ -180,7 +180,7 @@ def evaluate(model, device, eval_loader,criterion, epoch, batch_size):
 
 def save_model(epoch,net,optimizer,train_losses,eval_losses,batch_losses,save_root = "./learning/data/models/" ):
 
-    save_path = save_root + "model_{}.pt".format(time.time())
+    save_path = save_root + "model_{}.tar".format(time.time())
 
 
     state = {
@@ -195,18 +195,29 @@ def save_model(epoch,net,optimizer,train_losses,eval_losses,batch_losses,save_ro
     torch.save(state, save_path)
     
     print("model saved in {}".format(save_path))
-def training_loop(n_epochs,batch_size,net,device,train_loader,eval_loader,criterion_train,criterion_eval,optimizer,plot = True,early_stopping = True):
+def training_loop(n_epochs,batch_size,net,device,train_loader,eval_loader,criterion_train,criterion_eval,optimizer,plot = True,early_stopping = True,load_path = None):
 
     train_losses = []
     eval_losses = []
-
     batch_losses = []
+    start_epoch = 0
+
+
+    if load_path is not None:
+        print("loading former model from {}".format(load_path))
+        checkpoint = torch.load(load_path)
+        net.load_state_dict(checkpoint['state_dict'])
+        optimizer.load_state_dict(checkpoint['optimizer'])
+        train_losses = checkpoint["train_losses"]
+        eval_losses = checkpoint["eval_losses"]
+        batch_losses = checkpoint["batch_losses"]
+        start_epoch = checkpoint["epoch"]
 
 
     s = time.time()
     
     try:
-        for epoch in range(n_epochs):
+        for epoch in range(start_epoch,n_epochs):
             train_loss,batches_loss = train(net, device, train_loader,criterion_train, optimizer, epoch,batch_size)
             batch_losses += batches_loss
             train_losses.append(train_loss)
@@ -269,7 +280,6 @@ def main():
 
     # samples_path = "./learning/data/samples/"
     # labels_path = "./learning/data/labels/"
-
     
     # extract_tensors(data_path,label_path,samples_path,labels_path)
     # print(time.time()-s)
@@ -286,6 +296,9 @@ def main():
     nb_samples = 42380
     learning_rate = 0.001
     n_epochs = 10
+
+    load_path = None
+    # load_path = "./learning/data/models/model_1550002069.1353667.tar"
 
     # split train eval indices
     train_indices,eval_indices = train_test_split([i for i in range(nb_samples)],test_size = 0.2,random_state = 42)
@@ -310,8 +323,12 @@ def main():
     #optimizer
     optimizer = optim.Adam(net.parameters(),lr = 0.001)
 
+
+    # # resume training ?
+    # if load_model:
+
     
-    train_losses,eval_losses,batch_losses = training_loop(n_epochs,batch_size,net,device,train_loader,eval_loader,criterion_train,criterion_eval,optimizer)
+    train_losses,eval_losses,batch_losses = training_loop(n_epochs,batch_size,net,device,train_loader,eval_loader,criterion_train,criterion_eval,optimizer,load_path = load_path)
     
 
 if __name__ == "__main__":
