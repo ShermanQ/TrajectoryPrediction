@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 
 from torch.utils.data.dataset import Dataset
 from torch.utils.data import DataLoader
-
+from sklearn.model_selection import train_test_split
 import csv
 import numpy as np
 import time
@@ -88,11 +88,13 @@ class seq2seq(nn.Module):
         self.batch_size = batch_size
         self.output_size = output_size
 
-    def forward(self,x,y):
+    def forward(self,x):
         encoder_output, encoder_state = self.encoder(x)
 
     
         output,state = encoder_output,encoder_state
+        # output = x[:,-1].view(200,1,2) # take last pos of input sequence as <sos>
+
         outputs = []
         for _ in range(self.seq_len_d):
             output,state = self.decoder(output,state)
@@ -130,21 +132,102 @@ class MLP(nn.Module):
         x = self.output(x)
         return x
 
-def train(model, device, train_loader,criterion, optimizer, epoch):
-        model.train()
-        epoch_loss = 0.
-        for batch_idx, data in enumerate(train_loader):
-            data, target = data
-            data, target = data.to(device), target.to(device)
-            optimizer.zero_grad()
-            output = model(data)
-            loss = criterion(output, target)
-            loss.backward()
-            optimizer.step()
+def train(model, device, train_loader,criterion, optimizer, epoch,batch_size,print_every = 100):
+    model.train()
+    epoch_loss = 0.
+    batches_loss = []
 
-            epoch_loss += loss
+    start_time = time.time()
+    for batch_idx, data in enumerate(train_loader):
+        inputs, labels = data
+        inputs, labels = inputs.to(device), labels.to(device)
+        optimizer.zero_grad()
+        output = model(inputs)
+        loss = criterion(output, labels)
+        loss.backward()
+        optimizer.step()
 
-        return epoch_loss
+        epoch_loss += loss.item()
+        batches_loss.append(loss.item())
+
+        if batch_idx % print_every == 0:
+            print(batch_idx,loss.item(),time.time()-start_time)       
+    epoch_loss /= float(len(train_loader))        
+    print('Epoch n {} Loss: {}'.format(epoch,epoch_loss))
+
+    return epoch_loss,batches_loss
+
+def evaluate(model, device, eval_loader,criterion, epoch, batch_size):
+    model.eval()
+    eval_loss = 0.
+    nb_sample = len(eval_loader)*batch_size
+    
+    start_time = time.time()
+    for data in eval_loader:
+        inputs, labels = data
+        inputs, labels = inputs.to(device), labels.to(device)
+        
+        output = model(inputs)
+        loss = criterion(output, labels)
+        
+        eval_loss += loss.item()
+
+             
+    eval_loss /= float(len(eval_loader))        
+    print('Epoch n {} Evaluation Loss: {}'.format(epoch,eval_loss))
+
+    return eval_loss
+
+def save_model(epoch,net,optimizer,train_losses,eval_losses,batch_losses,save_root = "./learning/data/models/" ):
+
+    save_path = save_root + "model_{}.pt".format(time.time())
+
+
+    state = {
+        'epoch': epoch,
+        'state_dict': net.state_dict(),
+        'optimizer': optimizer.state_dict(),             
+        'train_losses': train_losses, 
+        'train_losses': eval_losses, 
+        'eval_losses': train_losses,
+        'batch_losses': batch_losses 
+        }
+    torch.save(state, save_path)
+    
+    print("model saved in {}".format(save_path))
+def training_loop(n_epochs,batch_size,net,device,train_loader,eval_loader,criterion_train,criterion_eval,optimizer,plot = True,early_stopping = True):
+
+    train_losses = []
+    eval_losses = []
+
+    batch_losses = []
+
+
+    s = time.time()
+    
+    try:
+        for epoch in range(n_epochs):
+            train_loss,batches_loss = train(net, device, train_loader,criterion_train, optimizer, epoch,batch_size)
+            batch_losses += batches_loss
+            train_losses.append(train_loss)
+
+            eval_loss = evaluate(net, device, eval_loader,criterion_eval, epoch, batch_size)
+        
+            eval_losses.append(eval_loss)
+            print(time.time()-s)
+        
+    except :
+        # logging.error(traceback.format_exc())
+        # save_model(epoch,net,optimizer,train_losses,eval_losses,batch_losses,save_path)
+        pass
+
+    save_model(epoch,net,optimizer,train_losses,eval_losses,batch_losses)
+    if plot:
+        plt.plot(train_losses)
+        plt.plot(eval_losses)
+        plt.show()
+
+    return train_losses,eval_losses,batch_losses
 
 def extract_tensors(data_path,label_path,samples_path,labels_path):
     with open(data_path) as data_csv :
@@ -181,16 +264,6 @@ def naive_collate_lstm(batch):
     return data, target
 
 def main():
-    
-    nb_samples = 42380
-    # nb_samples = 10000
-
-    partition = [i for i in range(nb_samples)]
-    dataset = CustomDataset(partition,"./learning/data/")
-    # loader = torch.utils.data.DataLoader( dataset, batch_size= 200,collate_fn=naive_collate_lstm, shuffle=True)
-    
-    
-
     # data_path = "./data/deep/data.csv"
     # label_path = "./data/deep/labels.csv"
 
@@ -201,95 +274,49 @@ def main():
     # extract_tensors(data_path,label_path,samples_path,labels_path)
     # print(time.time()-s)
        
+    # set pytorch
     torch.manual_seed(10)
-
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")    
-
-        
-
-
-
-    
-    
-
-    # Assuming that we are on a CUDA machine, this should print a CUDA device:
     print(device)
-    # input_size,hidden_size,output_size = 16,1000,24
-    # net = MLP(input_size,hidden_size,output_size)
-    input_size,hidden_size,num_layers,output_size,batch_size,seq_len,seq_len_d  = 2,30,1,2,200,8,12
+    print(torch.cuda.is_available())
+        
+    # parameters
+    input_size,hidden_size,num_layers,output_size,batch_size,seq_len,seq_len_d  = 2,30,3,2,200,8,12
 
-    loader = torch.utils.data.DataLoader( dataset, batch_size= batch_size, shuffle=True,num_workers= 10,drop_last = True)
+    nb_samples = 42380
+    learning_rate = 0.001
+    n_epochs = 10
 
-    # net = encoderLSTM(input_size,hidden_size,num_layers,batch_size)
-    # net.to(device)
-    # decoder = decoderLSTM(output_size,hidden_size,num_layers,batch_size)
-    # decoder.to(device)
+    # split train eval indices
+    train_indices,eval_indices = train_test_split([i for i in range(nb_samples)],test_size = 0.2,random_state = 42)
 
+    # load datasets
+    train_dataset = CustomDataset(train_indices,"./learning/data/")
+    eval_dataset = CustomDataset(eval_indices,"./learning/data/")
+
+    # create dataloaders
+    train_loader = torch.utils.data.DataLoader( train_dataset, batch_size= batch_size, shuffle=True,num_workers= 10,drop_last = True)
+    eval_loader = torch.utils.data.DataLoader( eval_dataset, batch_size= batch_size, shuffle=False,num_workers= 10,drop_last = True)
+
+    # init model and send it to gpu
     net = seq2seq(input_size,output_size,hidden_size,hidden_size,num_layers,num_layers,batch_size,seq_len_d)
     net.to(device)
-    learning_rate = 0.001
-    n_epochs = 1
-    #loss
-    criterion = nn.MSELoss()
-    # criterion = nn.CrossEntropyLoss()
+    
+    #losses
+    criterion_train = nn.MSELoss()
+    criterion_eval = nn.MSELoss(reduction="sum")
+    criterion_eval = criterion_train
 
     #optimizer
     optimizer = optim.Adam(net.parameters(),lr = 0.001)
 
-    print(torch.cuda.is_available())
-    losses = []
-
-
-    s = time.time()
-    for epoch in range(n_epochs):
-        epoch_loss = 0.
-        print(epoch)
-        print(time.time()-s)
-
-        for i, data in enumerate(loader):
-            
-            
-
-            inputs,targets = data
-
-            inputs,targets = inputs.to(device), targets.to(device)
-
-            optimizer.zero_grad()
-
-            
-            outputs = net(inputs,targets)
-            print(outputs)
-            print(len(outputs))
-
-            print(outputs.size())
-
-            print(targets.size())
-            # start,hidden_state = net(inputs)
-            # print(start.size())
-            # output, hidden = decoder(start,hidden_state)
-            # print(output.size())
-            # loss = criterion(outputs,targets)
-
-    #         # # del inputs
-    #         # # del targets
-
-    #         loss.backward()
-    #         optimizer.step()
-
-    #         # epoch_loss += loss.item()/200
-
-            if i % 50 == 0:
-                print(i)       
-                # print(loss.item()/200)
-                print(time.time()-s)
-            break
-        break            
-
-        # print(epoch_loss/i)
-        # losses.append(epoch_loss)
-
-    # plt.plot(losses)
-
+    
+    train_losses,eval_losses,batch_losses = training_loop(n_epochs,batch_size,net,device,train_loader,eval_loader,criterion_train,criterion_eval,optimizer)
+    
 
 if __name__ == "__main__":
     main()
+
+
+
+
