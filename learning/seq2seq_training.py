@@ -17,16 +17,31 @@ from classes.datasets import CustomDataset
 from classes.seq2seq_model import seq2seq
 import helpers.helpers_training as training
 
-def main():
-    # data_path = "./data/deep/data.csv"
-    # label_path = "./data/deep/labels.csv"
+"""
+    This script trains a seq2seq model
+    The data is loaded using custom dataset
+    and pytorch dataloader
 
-    # samples_path = "./learning/data/samples/"
-    # labels_path = "./learning/data/labels/"
-    
-    # extract_tensors(data_path,label_path,samples_path,labels_path)
-    # print(time.time()-s)
-       
+    THe model is trained on 80% of the dataset and evaluated
+    on the rest.
+    The objective function is the mean squared error between
+    target sequence and predicted sequence.
+
+    The training evaluates as well the Final Displacement Error
+
+    At the end of the training, model is saved in master/learning/data/models.
+    If the training is interrupted, the model is saved.
+    The interrupted trianing can be resumed by assigning a file path to the 
+    load_path variable.
+
+    Three curves are plotted:
+        train ADE
+        eval ADE
+        eval FDE
+"""
+
+def main():
+          
     # set pytorch
     torch.manual_seed(10)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")    
@@ -34,8 +49,13 @@ def main():
     print(torch.cuda.is_available())
         
     # parameters
-    input_size,hidden_size,num_layers,output_size,batch_size,seq_len,seq_len_d  = 2,30,3,2,200,8,12
-
+    input_size= 2
+    hidden_size= 30
+    num_layers= 3
+    output_size= 2
+    batch_size= 200
+    seq_len= 8
+    seq_len_d  = 12
     nb_samples = 42380
     learning_rate = 0.001
     n_epochs = 10

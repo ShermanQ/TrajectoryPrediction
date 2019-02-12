@@ -1,6 +1,14 @@
 import time
 import helpers.helpers_data_torch as torch_data
 
+
+"""
+    the script master/prepare_training.py extracts data for training
+    and store them into a csv file.
+    This script creates for every sample two .pt files:
+    One for the features and one for the labels and store them
+    respectively in "./learning/data/samples/" and "./learning/data/labels/"
+"""
 def main():
 
     s = time.time()

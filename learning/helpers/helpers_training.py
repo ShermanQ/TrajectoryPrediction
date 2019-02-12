@@ -2,7 +2,13 @@ import torch
 import time
 import matplotlib.pyplot as plt
 
-
+"""
+    Train loop for an epoch
+    Uses cuda if available
+    LOss is averaged for a batch
+    THen averaged batch losses are averaged
+    over the number of batches
+"""
 def train(model, device, train_loader,criterion, optimizer, epoch,batch_size,print_every = 100):
     model.train()
     epoch_loss = 0.
@@ -28,6 +34,16 @@ def train(model, device, train_loader,criterion, optimizer, epoch,batch_size,pri
 
     return epoch_loss,batches_loss
 
+"""
+    Evaluation loop for an epoch
+    Uses cuda if available
+    LOss is averaged for a batch
+    THen averaged batch losses are averaged
+    over the number of batches
+
+    FDE loss is added using MSEerror on the last point of prediction and target
+    sequences
+"""
 def evaluate(model, device, eval_loader,criterion, epoch, batch_size):
     model.eval()
     eval_loss = 0.
@@ -55,6 +71,13 @@ def evaluate(model, device, eval_loader,criterion, epoch, batch_size):
 
     return eval_loss,fde_loss
 
+
+"""
+    Saves model and optimizer states as dict
+    THe current epoch is stored
+    THe different losses at previous time_steps are loaded
+
+"""
 def save_model(epoch,net,optimizer,train_losses,eval_losses,batch_losses,fde_losses,save_root = "./learning/data/models/" ):
 
     save_path = save_root + "model_{}.tar".format(time.time())
@@ -72,6 +95,15 @@ def save_model(epoch,net,optimizer,train_losses,eval_losses,batch_losses,fde_los
     torch.save(state, save_path)
     
     print("model saved in {}".format(save_path))
+
+"""
+    Training loop
+    For NUMBER OF EPOCHS calls train and evaluate
+    if a model path is given, loads model
+    and resume training
+    if plot, display the different losses
+    If exception during training, model is stored
+"""
 def training_loop(n_epochs,batch_size,net,device,train_loader,eval_loader,criterion_train,criterion_eval,optimizer,plot = True,early_stopping = True,load_path = None):
 
     train_losses = []

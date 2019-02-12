@@ -1,6 +1,17 @@
 import torch
 from torch.utils import data
 
+"""
+      Custom pytorch dataset
+      self.list_IDs: ids of sample considered in this dataset
+      self.data_path: path whereto read the data
+
+      __getitem__: given an index, selects the corresponding sample id
+      and load data and labels files 
+      for now return only the trajectory of the main agent, not its neighbors
+
+      It'S done this way so multiprocessing can be used when loading batch with pytorch dataloader
+"""
 class CustomDataset(data.Dataset):
   'Characterizes a dataset for PyTorch'
   def __init__(self, list_IDs,data_path):

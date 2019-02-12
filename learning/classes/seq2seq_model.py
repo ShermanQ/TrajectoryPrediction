@@ -1,6 +1,15 @@
 import torch
 import torch.nn as nn
 
+
+"""
+    Straightforward LSTM encoder
+
+    returns hidden state at last time step
+    and process last layer of hidden state through a linear layer
+    to get its size to input_size
+    this is a returned and will be used as starting point for decoding
+"""
 class encoderLSTM(nn.Module):
     # def __init__(self,input_size,hidden_size,num_layers,output_size,batch_size,seq_len):
     
@@ -31,6 +40,12 @@ class encoderLSTM(nn.Module):
 
         return (h_0,c_0)
 
+
+"""
+    Straightforward LSTM decoder
+    Uses prediction at timestep t-1 as input 
+    to predict timestep t
+"""
 class decoderLSTM(nn.Module):
     # def __init__(self,input_size,hidden_size,num_layers,output_size,batch_size,seq_len):
     
@@ -64,6 +79,15 @@ class decoderLSTM(nn.Module):
 
         return (h_0,c_0)
 
+
+"""
+    Uses encoderLSTM and decoderLSTM in order to achieve training
+    inputs goes through encoderLSTM which outputs hidden state at 
+    last time step and start input for decoder.
+    Then uses decodeLSTM, seq_len_d times to make the predictions
+    It uses predictions of previous timestep to predict for the current timestep
+    THe decoder outputs are stored and returned
+"""
 class seq2seq(nn.Module):
     def __init__(self,input_size,output_size,hidden_size,hidden_size_d,num_layers,num_layers_d,batch_size,seq_len_d,teacher_forcing = False):
         super(seq2seq,self).__init__()
