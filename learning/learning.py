@@ -160,6 +160,7 @@ def train(model, device, train_loader,criterion, optimizer, epoch,batch_size,pri
 def evaluate(model, device, eval_loader,criterion, epoch, batch_size):
     model.eval()
     eval_loss = 0.
+    fde_loss = 0.
     nb_sample = len(eval_loader)*batch_size
     
     start_time = time.time()
@@ -169,16 +170,21 @@ def evaluate(model, device, eval_loader,criterion, epoch, batch_size):
         
         output = model(inputs)
         loss = criterion(output, labels)
+
+        # print(output[:,-1].view(200,1,2))
+        # print(labels.size())
+        fde_loss += criterion(output[:,-1].view(batch_size,1,-1), labels[:,-1].view(batch_size,1,-1)).item()
         
         eval_loss += loss.item()
 
              
     eval_loss /= float(len(eval_loader))        
-    print('Epoch n {} Evaluation Loss: {}'.format(epoch,eval_loss))
+    fde_loss /= float(len(eval_loader))        
+    print('Epoch n {} Evaluation Loss: {}, FDE Loss {}'.format(epoch,eval_loss,fde_loss))
 
-    return eval_loss
+    return eval_loss,fde_loss
 
-def save_model(epoch,net,optimizer,train_losses,eval_losses,batch_losses,save_root = "./learning/data/models/" ):
+def save_model(epoch,net,optimizer,train_losses,eval_losses,batch_losses,fde_losses,save_root = "./learning/data/models/" ):
 
     save_path = save_root + "model_{}.tar".format(time.time())
 
@@ -187,10 +193,10 @@ def save_model(epoch,net,optimizer,train_losses,eval_losses,batch_losses,save_ro
         'epoch': epoch,
         'state_dict': net.state_dict(),
         'optimizer': optimizer.state_dict(),             
-        'train_losses': train_losses, 
-        'train_losses': eval_losses, 
-        'eval_losses': train_losses,
-        'batch_losses': batch_losses 
+        'train_losses': train_losses,  
+        'eval_losses': eval_losses,
+        'batch_losses': batch_losses,
+        'fde_losses': fde_losses
         }
     torch.save(state, save_path)
     
@@ -200,6 +206,7 @@ def training_loop(n_epochs,batch_size,net,device,train_loader,eval_loader,criter
     train_losses = []
     eval_losses = []
     batch_losses = []
+    fde_losses = []
     start_epoch = 0
 
 
@@ -211,6 +218,7 @@ def training_loop(n_epochs,batch_size,net,device,train_loader,eval_loader,criter
         train_losses = checkpoint["train_losses"]
         eval_losses = checkpoint["eval_losses"]
         batch_losses = checkpoint["batch_losses"]
+        fde_losses = checkpoint["fde_losses"]
         start_epoch = checkpoint["epoch"]
 
 
@@ -222,9 +230,10 @@ def training_loop(n_epochs,batch_size,net,device,train_loader,eval_loader,criter
             batch_losses += batches_loss
             train_losses.append(train_loss)
 
-            eval_loss = evaluate(net, device, eval_loader,criterion_eval, epoch, batch_size)
+            eval_loss,fde_loss = evaluate(net, device, eval_loader,criterion_eval, epoch, batch_size)
         
             eval_losses.append(eval_loss)
+            fde_losses.append(fde_loss)
             print(time.time()-s)
         
     except :
@@ -232,10 +241,11 @@ def training_loop(n_epochs,batch_size,net,device,train_loader,eval_loader,criter
         # save_model(epoch,net,optimizer,train_losses,eval_losses,batch_losses,save_path)
         pass
 
-    save_model(epoch,net,optimizer,train_losses,eval_losses,batch_losses)
+    save_model(epoch,net,optimizer,train_losses,eval_losses,batch_losses,fde_losses)
     if plot:
         plt.plot(train_losses)
         plt.plot(eval_losses)
+        plt.plot(fde_losses)
         plt.show()
 
     return train_losses,eval_losses,batch_losses
