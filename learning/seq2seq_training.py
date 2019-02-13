@@ -43,7 +43,7 @@ import helpers.helpers_training as training
 def main():
           
     # set pytorch
-    torch.manual_seed(10)
+    # torch.manual_seed(10)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")    
     print(device)
     print(torch.cuda.is_available())
@@ -57,6 +57,10 @@ def main():
     seq_len= 8
     seq_len_d  = 12
     nb_samples = 42380
+    # nb_samples = 2000
+
+    # nb_samples = 168183
+
     learning_rate = 0.001
     n_epochs = 10
 
@@ -64,8 +68,11 @@ def main():
     # load_path = "./learning/data/models/model_1550002069.1353667.tar"
 
     # split train eval indices
-    train_indices,eval_indices = train_test_split([i for i in range(nb_samples)],test_size = 0.2,random_state = 42)
+    train_indices,eval_indices = train_test_split(np.array([i for i in range(nb_samples)]),test_size = 0.2,random_state = 42)
 
+    print(type(train_indices))
+
+    
     # load datasets
     train_dataset = CustomDataset(train_indices,"./learning/data/")
     eval_dataset = CustomDataset(eval_indices,"./learning/data/")
@@ -75,7 +82,7 @@ def main():
     eval_loader = torch.utils.data.DataLoader( eval_dataset, batch_size= batch_size, shuffle=False,num_workers= 10,drop_last = True)
 
     # init model and send it to gpu
-    net = seq2seq(input_size,output_size,hidden_size,hidden_size,num_layers,num_layers,batch_size,seq_len_d)
+    net = seq2seq(input_size,output_size,hidden_size,hidden_size,num_layers,num_layers,batch_size,seq_len,seq_len_d)
     net.to(device)
     
     #losses

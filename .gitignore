@@ -1,6 +1,6 @@
 # personnal
 data/*
-/learning/data/*
+/learning/data*/*
 /learning/models/*
 preprocessing/temp.txt
 # Byte-compiled / optimized / DLL files
