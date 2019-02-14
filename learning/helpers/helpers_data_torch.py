@@ -2,6 +2,8 @@ import csv
 import torch
 
 def extract_tensors(data_path,label_path,samples_path,labels_path):
+    nb_max = max_object(data_path)
+    print(nb_max)
     with open(data_path) as data_csv :
         with open(label_path) as label_csv:
             data_reader = csv.reader(data_csv)
@@ -12,11 +14,15 @@ def extract_tensors(data_path,label_path,samples_path,labels_path):
                 features = data[4:]
                 labels = label[1:]
 
-                features = torch.FloatTensor([float(f) for f in features])
-                features = features.view(nb_objects,t_obs,2)
+                features = torch.FloatTensor([float(f) for f in features]+[float(-1) for _ in range( (nb_max-nb_objects) * t_obs * 2)])
+                # features = features.view(nb_objects,t_obs,2)
+                features = features.view(nb_max,t_obs,2)
 
-                labels = torch.FloatTensor([float(f) for f in labels])
-                labels = labels.view(nb_objects,t_pred,2)
+
+                labels = torch.FloatTensor([float(f) for f in labels] + [float(-1) for _ in range( (nb_max-nb_objects) * t_pred * 2)])
+                # labels = labels.view(nb_objects,t_pred,2)
+                labels = labels.view(nb_max,t_pred,2)
+
 
 
                 # features = np.array([float(f) for f in features])
@@ -24,6 +30,17 @@ def extract_tensors(data_path,label_path,samples_path,labels_path):
 
                 torch.save(features,samples_path+"sample"+sample_id+".pt")
                 torch.save(labels,labels_path+"label"+sample_id+".pt")
+
+def max_object(data_path):
+    nb_max = 0
+    with open(data_path) as data_csv :
+        data_reader = csv.reader(data_csv)
+        for data in data_reader:
+            nb_objects = int(data[1])
+            if nb_objects > nb_max:
+                nb_max = nb_objects
+    return nb_max
+
 
 # def my_collate(batch):
 #     data = [item[0] for item in batch]
