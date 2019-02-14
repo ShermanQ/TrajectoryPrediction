@@ -62,7 +62,7 @@ def main():
     # nb_samples = 168183
 
     learning_rate = 0.001
-    n_epochs = 10
+    n_epochs = 15
 
     load_path = None
     # load_path = "./learning/data/models/model_1550002069.1353667.tar"

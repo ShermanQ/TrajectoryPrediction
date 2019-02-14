@@ -96,7 +96,7 @@ class decoderLSTM(nn.Module):
     THe decoder outputs are stored and returned
 """
 class seq2seq(nn.Module):
-    def __init__(self,input_size,output_size,hidden_size,hidden_size_d,num_layers,num_layers_d,batch_size,seq_len,seq_len_d,attention = False):
+    def __init__(self,input_size,output_size,hidden_size,hidden_size_d,num_layers,num_layers_d,batch_size,seq_len,seq_len_d,attention = True):
         super(seq2seq,self).__init__()
         self.encoder = encoderLSTM(input_size,hidden_size,num_layers,batch_size)
         # 
@@ -146,12 +146,21 @@ class decoderAttentionLSTM(nn.Module):
         self.seq_len = seq_len
         # self.target = target
 
-        self.attn = nn.Linear(self.hidden_size*2  + self.output_size,self.seq_len)#8
+        # self.attn = nn.Linear(self.hidden_size*2  + self.output_size,self.seq_len)#8
+        self.attn = nn.Linear(self.hidden_size*3 ,self.seq_len)#8
+
         # self.attn_c = nn.Linear(self.hidden_size  + self.output_size,self.seq_len)#8
 
+        self.widden = nn.Linear(self.output_size,self.hidden_size)
 
-        self.attn_combine = nn.Linear(self.hidden_size + self.output_size,self.output_size)
-        self.lstm = nn.LSTM(input_size = self.output_size,hidden_size = self.hidden_size,num_layers = self.num_layers,batch_first = True)
+        # self.attn_combine = nn.Linear(self.hidden_size + self.output_size,self.output_size)
+        # self.attn_combine = nn.Linear(self.hidden_size + self.output_size,self.hidden_size)
+        self.attn_combine = nn.Linear(self.hidden_size*2,self.hidden_size)
+
+
+        # self.lstm = nn.LSTM(input_size = self.output_size,hidden_size = self.hidden_size,num_layers = self.num_layers,batch_first = True)
+        self.lstm = nn.LSTM(input_size = self.hidden_size,hidden_size = self.hidden_size,num_layers = self.num_layers,batch_first = True)
+
         self.out = nn.Linear(self.hidden_size,self.output_size)
 
         
@@ -160,11 +169,13 @@ class decoderAttentionLSTM(nn.Module):
         # self.hidden = self.init_hidden_state()
         # x = x.view(self.seq_len,self.batch_size,2)
         
-
+        x = self.widden(x)
         # attention weights
         last_state = hidden[0][-1].view(self.batch_size,1,self.hidden_size)
         last_cell = hidden[1][-1].view(self.batch_size,1,self.hidden_size)
-        input_last_state = torch.cat((x,last_state,last_cell),dim = 2).view(self.batch_size,1,self.hidden_size * 2 +self.output_size)
+        # input_last_state = torch.cat((x,last_state,last_cell),dim = 2).view(self.batch_size,1,self.hidden_size * 2 +self.output_size)
+        input_last_state = torch.cat((x,last_state,last_cell),dim = 2).view(self.batch_size,1,self.hidden_size * 3)
+
         # input_last_cell = torch.cat((x,last_cell),dim = 2).view(self.batch_size,1,self.hidden_size +self.output_size)
 
         attn_weights_state = f.softmax(self.attn(input_last_state),dim = 2)

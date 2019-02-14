@@ -86,15 +86,16 @@ def add_neighbor(t_obs,ids,id_,current_frame):
         sample_id: running id of the number of training sample
     out:
 """
-def persist_data(ids,features,labels,data_writer,label_writer,sample_id):
-    ids_list = sorted([id_ for id_ in ids])
-    nb_objects = len(ids_list)
+def persist_data(ids,features,labels,data_writer,label_writer,sample_id,parameters):
+    nb_objects = int((len(features)/2)/parameters["t_obs"])
+    # ids_list = sorted([id_ for id_ in ids])
+    # nb_objects = len(ids_list)
     features_header = [
         sample_id,
-        # nb_objects,
+        nb_objects,
         # ids_list,
-        # parameters["t_obs"],
-        # parameters["t_pred"],
+        parameters["t_obs"],
+        parameters["t_pred"],
         # start,
         # stop,
         # parameters["scene"],
@@ -183,8 +184,8 @@ def extract_data1(parameters):
                         if len(observations[id_]) < parameters["t_obs"] + parameters["t_pred"]:
                             observations[id_].append(frame)
                         else:
-                            features,labels,ids = features_labels1(observations[id_],data_writer,label_writer,parameters["t_obs"],parameters["t_pred"])
-                            persist_data(ids,features,labels,data_writer,label_writer,id_)
+                            features,labels,ids = features_labels1(observations[id_],parameters["t_obs"],parameters["t_pred"])
+                            persist_data(ids,features,labels,data_writer,label_writer,id_,parameters)
                             
                             delete_ids.append(id_)
                     for id_ in delete_ids:
