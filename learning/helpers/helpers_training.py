@@ -1,7 +1,18 @@
 import torch
 import time
 import matplotlib.pyplot as plt
+import torch
+import torch.nn as nn
 
+def custom_loss(outputs,labels):
+    mse = nn.MSELoss(reduction = "none")
+    loss = mse(outputs, labels)
+    loss = torch.sum(loss,dim = 2 , keepdim = False)
+    loss = torch.mean(loss, dim = 1)
+    # loss = torch.sum(loss, dim = 1)
+
+    loss = torch.mean(loss,dim = 0)
+    return loss
 """
     Train loop for an epoch
     Uses cuda if available
@@ -19,8 +30,24 @@ def train(model, device, train_loader,criterion, optimizer, epoch,batch_size,pri
         inputs, labels = data
         inputs, labels = inputs.to(device), labels.to(device)
         optimizer.zero_grad()
-        output = model(inputs)
+        output = model(inputs,labels)
+
+        # print("---------")
+        # print(output.size())
+        # print(labels.size())
         loss = criterion(output, labels)
+        # loss = custom_loss(output, labels)
+
+
+
+        # output = model(inputs)
+        
+
+        # print(loss.size())
+        # print(output[0])
+        # print(labels[0])
+        # print(loss)
+
         loss.backward()
         optimizer.step()
 
@@ -55,8 +82,21 @@ def evaluate(model, device, eval_loader,criterion, epoch, batch_size):
         inputs, labels = data
         inputs, labels = inputs.to(device), labels.to(device)
         
-        output = model(inputs)
+        output = model(inputs,labels)
+        # print("---------")
+        # print(output.size())
+        # print(labels.size())
+
         loss = criterion(output, labels)
+        # print(loss.size())
+
+        
+        # print(inputs[-10:])
+        # print(labels[-10:])
+        # print(output[-10:])
+        # print(output[:10])
+        # print(loss.item())
+        # print("---------")
 
         # print(output[:,-1].view(200,1,2))
         # print(labels.size())
@@ -133,8 +173,11 @@ def training_loop(n_epochs,batch_size,net,device,train_loader,eval_loader,criter
             batch_losses += batches_loss
             train_losses.append(train_loss)
 
+            temp = net.teacher_forcing
+            net.teacher_forcing = False
             eval_loss,fde_loss = evaluate(net, device, eval_loader,criterion_eval, epoch, batch_size)
-        
+            net.teacher_forcing = temp
+
             eval_losses.append(eval_loss)
             fde_losses.append(fde_loss)
             print(time.time()-s)

@@ -53,16 +53,16 @@ def main():
     hidden_size= 30
     num_layers= 3
     output_size= 2
-    batch_size= 200
+    batch_size= 1
     seq_len= 8
     seq_len_d  = 12
-    nb_samples = 42380
+    nb_samples = 31596
     # nb_samples = 2000
-
+    num_workers = 0
     # nb_samples = 168183
 
     learning_rate = 0.001
-    n_epochs = 15
+    n_epochs = 50
 
     load_path = None
     # load_path = "./learning/data/models/model_1550002069.1353667.tar"
@@ -78,16 +78,20 @@ def main():
     eval_dataset = CustomDataset(eval_indices,"./learning/data/")
 
     # create dataloaders
-    train_loader = torch.utils.data.DataLoader( train_dataset, batch_size= batch_size, shuffle=True,num_workers= 10,drop_last = True)
-    eval_loader = torch.utils.data.DataLoader( eval_dataset, batch_size= batch_size, shuffle=False,num_workers= 10,drop_last = True)
+    train_loader = torch.utils.data.DataLoader( train_dataset, batch_size= batch_size, shuffle=True,num_workers= num_workers,drop_last = True)
+    eval_loader = torch.utils.data.DataLoader( eval_dataset, batch_size= batch_size, shuffle=False,num_workers= num_workers,drop_last = True)
 
     # init model and send it to gpu
     net = seq2seq(input_size,output_size,hidden_size,hidden_size,num_layers,num_layers,batch_size,seq_len,seq_len_d)
     net.to(device)
     
     #losses
-    criterion_train = nn.MSELoss()
-    criterion_eval = nn.MSELoss(reduction="sum")
+    # criterion_train = nn.MSELoss(reduction = "mean")
+    # # criterion_eval = nn.MSELoss(reduction="sum")
+    # criterion_eval = criterion_train
+
+    criterion_train = training.custom_loss
+    # criterion_eval = nn.MSELoss(reduction="sum")
     criterion_eval = criterion_train
 
     #optimizer

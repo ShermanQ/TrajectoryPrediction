@@ -2,7 +2,6 @@ import sys
 import os
 
 import extractors.helpers as helpers
-import seaborn as sns
 
 import time
 
@@ -16,7 +15,6 @@ import matplotlib.pyplot as plt
 ROOT = "./"
 CSV = ROOT + "data/csv/"
 
-import pandas as pd
 
 
 

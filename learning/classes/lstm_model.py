@@ -11,20 +11,21 @@ import torch.nn.functional as f
     to get its size to input_size
     this is a returned and will be used as starting point for decoding
 """
-class encoderLSTM(nn.Module):
+class LSTM(nn.Module):
     # def __init__(self,input_size,hidden_size,num_layers,output_size,batch_size,seq_len):
     
-    def __init__(self,input_size,hidden_size,num_layers,batch_size):
-        super(encoderLSTM,self).__init__()
+    def __init__(self,input_size,output_size,hidden_size,num_layers,batch_size):
+        super(LSTM,self).__init__()
 
         self.input_size = input_size
         self.hidden_size = hidden_size
         self.num_layers = num_layers
-        # self.output_size = output_size
+        self.output_size = output_size
         self.batch_size = batch_size
         self.hidden = self.init_hidden_state()
 
         self.lstm = nn.LSTM(input_size = self.input_size,hidden_size = self.hidden_size,num_layers = self.num_layers,batch_first = True)
+        self.out = nn.Linear(self.hidden_size,self.output_size)
         # self.last_output = nn.Linear(self.hidden_size,self.input_size)
 
         
@@ -32,6 +33,7 @@ class encoderLSTM(nn.Module):
     def forward(self,x):
         self.hidden = self.init_hidden_state()
         output,self.hidden = self.lstm(x,self.hidden)
+
         # decoder_start = self.last_output(output[:,-1])
         # return decoder_start.view(self.batch_size,1,self.input_size), self.hidden
         # print(type(self.hidden),len(self.hidden))

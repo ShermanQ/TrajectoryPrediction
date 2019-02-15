@@ -48,6 +48,7 @@ def framerate_manager(framerates_json,csv_file,file_path,destination_root,new_ra
     framerates = json.load(json_file)
     
     name = csv_file.split(".")[0]
+    print(csv_file)
     former_rate = float(framerates[name])
     
     rate_ratio = int(former_rate/new_rate)
@@ -72,8 +73,11 @@ def framerate_manager(framerates_json,csv_file,file_path,destination_root,new_ra
 
 def main():
     dir_list = ["main","new_rates"]
+    dir_list = ["lankershim_inter2.csv"]
    
-    csvs = [ f for f in helpers.get_dir_names(CSV,lower = False) if f not in dir_list]
+    # csvs = [ f for f in helpers.get_dir_names(CSV,lower = False) if f not in dir_list]
+    csvs = [ f for f in helpers.get_dir_names(CSV,lower = False) if f in dir_list]
+
 
 
     # csv_file = csvs[1]
@@ -93,7 +97,7 @@ def main():
         print(csv_file)
         file_path = CSV + csv_file
 
-        framerate_manager(FPS_PATH,csv_file,file_path,destination_root,temp_path = "./data/temp/temp.txt")  
+        framerate_manager(FPS_PATH,csv_file,file_path,destination_root,new_rate = 1.0,temp_path = "./data/temp/temp.txt")  
         print(time.time() - s)
     print(time.time() - s)
 

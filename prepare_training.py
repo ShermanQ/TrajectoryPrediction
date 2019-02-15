@@ -8,7 +8,12 @@ from itertools import tee
 import os
 
   
-
+def round_coordinates(coordinates,decimal_nb = 2):
+    x = coordinates[0]
+    y = coordinates[1]
+    x = int( x * 10**decimal_nb)/float(10**decimal_nb)
+    y = int( y * 10**decimal_nb)/float(10**decimal_nb)
+    return [x,y]
 
 """
     in: 
@@ -34,7 +39,7 @@ def get_neighbors(frames):
         
         for id_ in ids:
             if str(id_) in frame:
-                ids[id_].append(frame[str(id_)]["coordinates"])
+                ids[id_].append(round_coordinates(frame[str(id_)]["coordinates"]))
             else:
                 ids[id_].append([-1,-1])
     return ids
@@ -104,6 +109,9 @@ def features_labels(len_traj,shift,t_obs,t_pred,current_id,ids,current_frame):
 
         feature,label = feature_label(ids,current_id,t_obs,t_pred,current_frame)
 
+        # if feature[0] == -1:
+        #     print("fdggsdg")
+
         features.append(feature)
         labels.append(label)
 
@@ -165,6 +173,12 @@ def persist_data(ids,parameters,current_id,current_frame,features,labels,data_wr
     label_writer.writerow(labels)
 
     return sample_id
+def are_frames_continuous(frames):
+    continuous = True
+    nb_frames = (float(frames[-1]-frames[0]))/1.0 + 1.0
+    if nb_frames > len(frames):
+        continuous = False
+    return continuous
 
 """
     parameters: dict containing reauired parameters[
@@ -207,17 +221,25 @@ def extract_data(parameters):
                         
                         frames = trajectory["frames"]
                         current_id = int(trajectory["id"])
-                        start,stop = frames[0],frames[-1] + 1
+                        # if current_id == 63:
+                        #     print("63")
+                        continuous = are_frames_continuous(frames)
 
-                        ids = get_neighbors(islice(a,start,stop))
-                        len_traj = len(ids[current_id])
+                        if continuous:
+                            start,stop = frames[0],frames[-1] + 1
 
-                        for i in range(0,len_traj,parameters["shift"]):
-                            features,labels = features_labels(len_traj,parameters["shift"],parameters["t_obs"],parameters["t_pred"],current_id,ids,i)
-                            if features != []:
-                                sample_id = persist_data(ids,parameters,current_id,i,features,labels,data_writer,label_writer,sample_id)
+                            ids = get_neighbors(islice(a,start,stop))
+                            len_traj = len(ids[current_id])
+
+                            for i in range(0,len_traj,parameters["shift"]):
+                                
+                                features,labels = features_labels(len_traj,parameters["shift"],parameters["t_obs"],parameters["t_pred"],current_id,ids,i)
+                                if features != []:
+                                    sample_id = persist_data(ids,parameters,current_id,i,features,labels,data_writer,label_writer,sample_id)
                             # if sample_id == 39:
                             #     print("")
+                        else:
+                            print("trajectory {} discarded".format(current_id))
     
     os.remove(parameters["frames_temp"])
     os.remove(parameters["trajectories_temp"])
@@ -228,6 +250,7 @@ def main():
     parameters = "parameters/prepare_training.json"
     with open(parameters) as parameters_file:
         parameters = json.load(parameters_file)
+    print(parameters["shift"])
     
     s = time.time()
     extract_data(parameters)        

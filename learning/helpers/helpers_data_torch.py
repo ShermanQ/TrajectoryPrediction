@@ -14,14 +14,19 @@ def extract_tensors(data_path,label_path,samples_path,labels_path):
                 features = data[4:]
                 labels = label[1:]
 
-                features = torch.FloatTensor([float(f) for f in features]+[float(-1) for _ in range( (nb_max-nb_objects) * t_obs * 2)])
-                # features = features.view(nb_objects,t_obs,2)
-                features = features.view(nb_max,t_obs,2)
+                features = torch.FloatTensor([float(f) for f in features])
+                features = features.view(nb_objects,t_obs,2)
+                # features = torch.FloatTensor([float(f) for f in features]+[float(-1) for _ in range( (nb_max-nb_objects) * t_obs * 2)])
+
+                # features = features.view(nb_max,t_obs,2)
 
 
-                labels = torch.FloatTensor([float(f) for f in labels] + [float(-1) for _ in range( (nb_max-nb_objects) * t_pred * 2)])
-                # labels = labels.view(nb_objects,t_pred,2)
-                labels = labels.view(nb_max,t_pred,2)
+                labels = torch.FloatTensor([float(f) for f in labels])
+                labels = labels.view(nb_objects,t_pred,2)
+                # labels = torch.FloatTensor([float(f) for f in labels] + [float(-1) for _ in range( (nb_max-nb_objects) * t_pred * 2)])
+
+                # labels = labels.view(nb_max,t_pred,2)
+                
 
 
 
