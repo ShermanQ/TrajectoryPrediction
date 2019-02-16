@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as f 
- 
+import random
 
 """
     Straightforward LSTM encoder
@@ -96,7 +96,7 @@ class decoderLSTM(nn.Module):
     THe decoder outputs are stored and returned
 """
 class seq2seq(nn.Module):
-    def __init__(self,input_size,output_size,hidden_size,hidden_size_d,num_layers,num_layers_d,batch_size,seq_len,seq_len_d,attention = False,teacher_forcing = True):
+    def __init__(self,input_size,output_size,hidden_size,hidden_size_d,num_layers,num_layers_d,batch_size,seq_len,seq_len_d,attention = True,teacher_forcing = 0.5):
         super(seq2seq,self).__init__()
         self.encoder = encoderLSTM(input_size,hidden_size,num_layers,batch_size)
         # 
@@ -126,8 +126,10 @@ class seq2seq(nn.Module):
         
 
         outputs = []
+        use_teacher_forcing = True if random.random() < self.teacher_forcing else False
+
         for i in range(self.seq_len_d):
-            if self.teacher_forcing and i > 0:
+            if use_teacher_forcing and i > 0:
                 output = labels[:,i-1].view(self.batch_size,1,self.output_size)
             output,state = self.decoder(output,state,encoder_output)
             outputs.append(output)

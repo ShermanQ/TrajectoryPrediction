@@ -83,7 +83,7 @@ def evaluate(model, device, eval_loader,criterion, epoch, batch_size):
         inputs, labels = inputs.to(device), labels.to(device)
         
         output = model(inputs,labels)
-        # print("---------")
+        print("---------")
         # print(output.size())
         # print(labels.size())
 
@@ -92,9 +92,10 @@ def evaluate(model, device, eval_loader,criterion, epoch, batch_size):
 
         
         # print(inputs[-10:])
-        # print(labels[-10:])
-        # print(output[-10:])
-        # print(output[:10])
+        print(labels[-10:])
+        print(output[-10:])
+        print(labels[:10])
+        print(output[:10])
         # print(loss.item())
         # print("---------")
 
