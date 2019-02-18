@@ -16,11 +16,12 @@ from collections import deque
 
 CSV = "./data/csv/"
 
+CSV = "./data/csv/new_rates/"
 def main():
 
     file_path = CSV + "new_rates/gates8_30.0to2.5.csv"
     file_path = CSV + "bad.csv"
-    file_path = CSV + "lankershim_inter2.csv"
+    file_path = CSV + "lankershim_inter2_10.0to1.0.csv"
     # file_path = CSV + "deathCircle1.csv"
     # file_path = CSV + "01_tracks.csv"
 

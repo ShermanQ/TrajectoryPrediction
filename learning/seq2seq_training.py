@@ -50,22 +50,22 @@ def main():
         
     # parameters
     input_size= 2
-    hidden_size= 30
+    hidden_size= 10
     num_layers= 3
     output_size= 2
     batch_size= 32 #32
     seq_len= 8
     seq_len_d  = 12
-    nb_samples = 31596
-    # nb_samples = 2000
+    # nb_samples = 31596
+    nb_samples = 9083
     num_workers = 0
     # nb_samples = 168183
 
     learning_rate = 0.001
-    n_epochs = 3
+    n_epochs = 10
 
-    # load_path = None
-    load_path = "./learning/data/models/best.tar"
+    load_path = None
+    # load_path = "./learning/data/models/best.tar"
 
     # split train eval indices
     train_indices,eval_indices = train_test_split(np.array([i for i in range(nb_samples)]),test_size = 0.2,random_state = 42)

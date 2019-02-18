@@ -14,7 +14,7 @@ import random
 class encoderLSTM(nn.Module):
     # def __init__(self,input_size,hidden_size,num_layers,output_size,batch_size,seq_len):
     
-    def __init__(self,input_size,hidden_size,num_layers,batch_size):
+    def __init__(self,input_size,hidden_size,num_layers,batch_size, n = 3):
         super(encoderLSTM,self).__init__()
 
         self.input_size = input_size
@@ -23,14 +23,15 @@ class encoderLSTM(nn.Module):
         # self.output_size = output_size
         self.batch_size = batch_size
         self.hidden = self.init_hidden_state()
-
-        self.lstm = nn.LSTM(input_size = self.input_size,hidden_size = self.hidden_size,num_layers = self.num_layers,batch_first = True)
+        self.in_ = nn.Linear(self.input_size,n * self.input_size)
+        self.lstm = nn.LSTM(input_size = n * self.input_size,hidden_size = self.hidden_size,num_layers = self.num_layers,batch_first = True)
         # self.last_output = nn.Linear(self.hidden_size,self.input_size)
 
         
 
     def forward(self,x):
         self.hidden = self.init_hidden_state()
+        x = self.in_(x)
         output,self.hidden = self.lstm(x,self.hidden)
         # decoder_start = self.last_output(output[:,-1])
         # return decoder_start.view(self.batch_size,1,self.input_size), self.hidden
@@ -42,8 +43,8 @@ class encoderLSTM(nn.Module):
 
 
     def init_hidden_state(self):
-        h_0 = torch.zeros(self.num_layers,self.batch_size,self.hidden_size).cuda()
-        c_0 = torch.zeros(self.num_layers,self.batch_size,self.hidden_size).cuda()
+        h_0 = torch.rand(self.num_layers,self.batch_size,self.hidden_size).cuda()
+        c_0 = torch.rand(self.num_layers,self.batch_size,self.hidden_size).cuda()
 
         return (h_0,c_0)
 
@@ -81,8 +82,8 @@ class decoderLSTM(nn.Module):
         return output, hidden
 
     def init_hidden_state(self):
-        h_0 = torch.zeros(self.num_layers,self.batch_size,self.hidden_size).cuda()
-        c_0 = torch.zeros(self.num_layers,self.batch_size,self.hidden_size).cuda()
+        h_0 = torch.rand(self.num_layers,self.batch_size,self.hidden_size).cuda()
+        c_0 = torch.rand(self.num_layers,self.batch_size,self.hidden_size).cuda()
 
         return (h_0,c_0)
 

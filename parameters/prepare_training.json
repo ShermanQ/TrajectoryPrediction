@@ -1,5 +1,5 @@
 {
-    "original_file" : "./data/csv/new_rates/lankershim_inter2_10.0to1.0.csv",
+    "original_file" : "./data/csv/normalized/lankershim_inter2_10.0to1.0.csv",
     "frames_temp" : "./data/temp/frames.txt",
     "trajectories_temp" : "./data/temp/trajectories.txt",
     "shift": 1,
