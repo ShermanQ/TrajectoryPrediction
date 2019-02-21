@@ -91,7 +91,8 @@ class sophie(nn.Module):
 
         rev_arg_ids = list(reversed(np.argsort(arg_ids)))
         x = x[rev_arg_ids]
-        x = x.view(B,N,S,I)
+        x = x.view(B,N,self.enc_hidden_size)
+        print(x.size())
 
         
         return
