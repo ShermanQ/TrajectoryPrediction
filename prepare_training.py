@@ -56,12 +56,28 @@ def get_neighbors(frames):
     out: 
         True if the neighboor appears during observation time
 """
+# def add_neighbor(t_obs,ids,id_,current_frame):
+#     add = False
+#     for p in ids[id_][current_frame:current_frame+t_obs]:
+#         if p != [-1,-1]:
+#             return True
+#     return add
+
+"""
+    in:
+        t_obs: number of observed frames
+        ids: ids  filled with the coordinates
+        id_: id of the neighbor to test
+        of theirs objects for a given frame or [-1,-1] if its not in 
+        the given frame
+        current_frame: the frame of the trajectory to be considered
+    out: 
+        True if the neighboor appears during the last time step of the observation time
+"""
 def add_neighbor(t_obs,ids,id_,current_frame):
-    add = False
-    for p in ids[id_][current_frame:current_frame+t_obs]:
-        if p != [-1,-1]:
-            return True
-    return add
+    if ids[id_][current_frame:current_frame+t_obs][-1] != [-1,-1]:
+        return True
+    return False
 
 """
     in:

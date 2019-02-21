@@ -18,7 +18,9 @@ def main():
     samples_path = "./learning/data/samples/"
     labels_path = "./learning/data/labels/"
     
-    torch_data.extract_tensors(data_path,label_path,samples_path,labels_path)
+    # torch_data.extract_tensors(data_path,label_path,samples_path,labels_path)
+    torch_data.extract_tensors_sophie(data_path,label_path,samples_path,labels_path)
+
     print(time.time()-s)
        
    

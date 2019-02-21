@@ -4,15 +4,31 @@ import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
 
-def custom_loss(outputs,labels):
-    mse = nn.MSELoss(reduction = "none")
-    loss = mse(outputs, labels)
-    loss = torch.sum(loss,dim = 2 , keepdim = False)
-    loss = torch.mean(loss, dim = 1)
-    # loss = torch.sum(loss, dim = 1)
 
-    loss = torch.mean(loss,dim = 0)
-    return loss
+class Regress_Loss(torch.nn.Module):
+    
+    def __init__(self):
+        super(Regress_Loss,self).__init__()
+        
+    def forward(self,outputs,labels):
+        mse = nn.MSELoss()
+        loss = mse(outputs, labels)
+        # loss = torch.sum(loss,dim = 2 , keepdim = False)
+        # loss = torch.mean(loss, dim = 1)
+        # # loss = torch.sum(loss, dim = 1)
+
+        # loss = torch.mean(loss,dim = 0)
+        return loss
+
+# def custom_loss(outputs,labels):
+#     mse = nn.MSELoss(reduction = "none")
+#     loss = mse(outputs, labels)
+#     loss = torch.sum(loss,dim = 2 , keepdim = False)
+#     loss = torch.mean(loss, dim = 1)
+#     # loss = torch.sum(loss, dim = 1)
+
+#     loss = torch.mean(loss,dim = 0)
+#     return loss
 """
     Train loop for an epoch
     Uses cuda if available
@@ -168,25 +184,25 @@ def training_loop(n_epochs,batch_size,net,device,train_loader,eval_loader,criter
 
     s = time.time()
     
-    try:
-        for epoch in range(start_epoch,n_epochs):
-            train_loss,batches_loss = train(net, device, train_loader,criterion_train, optimizer, epoch,batch_size)
-            batch_losses += batches_loss
-            train_losses.append(train_loss)
+    # try:
+    for epoch in range(start_epoch,n_epochs):
+        train_loss,batches_loss = train(net, device, train_loader,criterion_train, optimizer, epoch,batch_size)
+        batch_losses += batches_loss
+        train_losses.append(train_loss)
 
-            temp = net.teacher_forcing
-            net.teacher_forcing = False
-            eval_loss,fde_loss = evaluate(net, device, eval_loader,criterion_eval, epoch, batch_size)
-            net.teacher_forcing = temp
+        temp = net.teacher_forcing
+        net.teacher_forcing = False
+        eval_loss,fde_loss = evaluate(net, device, eval_loader,criterion_eval, epoch, batch_size)
+        net.teacher_forcing = temp
 
-            eval_losses.append(eval_loss)
-            fde_losses.append(fde_loss)
-            print(time.time()-s)
+        eval_losses.append(eval_loss)
+        fde_losses.append(fde_loss)
+        print(time.time()-s)
         
-    except :
-        # logging.error(traceback.format_exc())
-        # save_model(epoch,net,optimizer,train_losses,eval_losses,batch_losses,save_path)
-        pass
+    # except :
+    #     # logging.error(traceback.format_exc())
+    #     # save_model(epoch,net,optimizer,train_losses,eval_losses,batch_losses,save_path)
+    #     pass
 
     save_model(epoch,net,optimizer,train_losses,eval_losses,batch_losses,fde_losses)
     if plot:

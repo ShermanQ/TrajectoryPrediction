@@ -13,12 +13,12 @@ from sklearn.model_selection import train_test_split
 import numpy as np
 import time
 
-from classes.datasets import CustomDataset
-from classes.seq2seq_model import seq2seq
+from classes.datasets import CustomDataset,CustomDatasetIATCNN
+from classes.sophie_gan import sophie
 import helpers.helpers_training as training
 
 """
-    This script trains a seq2seq model
+    This script trains a iatcnn model
     The data is loaded using custom dataset
     and pytorch dataloader
 
@@ -49,23 +49,24 @@ def main():
     print(torch.cuda.is_available())
         
     # parameters
-    input_size= 2
-    hidden_size= 10
-    num_layers= 3
-    output_size= 2
-    batch_size= 2 #32
+    
+    batch_size= 32 #20
     seq_len= 8
     seq_len_d  = 12
-    # nb_samples = 31596
-    nb_samples = 9083
+
+    enc_input_size = 2
+    enc_hidden_size = 32
+    enc_num_layers = 1
+    embedding_size = 16
+
+    nb_samples = 31596
     num_workers = 0
-    # nb_samples = 168183
 
     learning_rate = 0.001
-    n_epochs = 10
+    n_epochs = 1
 
     load_path = None
-    # load_path = "./learning/data/models/best.tar"
+    # load_path = "./learning/data/models/model_1550002069.1353667.tar"
 
     # split train eval indices
     train_indices,eval_indices = train_test_split(np.array([i for i in range(nb_samples)]),test_size = 0.2,random_state = 42)
@@ -74,31 +75,38 @@ def main():
 
     
     # load datasets
-    train_dataset = CustomDataset(train_indices,"./learning/data/")
-    eval_dataset = CustomDataset(eval_indices,"./learning/data/")
+    train_dataset = CustomDatasetIATCNN(train_indices,"./learning/data/")
+    eval_dataset = CustomDatasetIATCNN(eval_indices,"./learning/data/")
 
     # create dataloaders
     train_loader = torch.utils.data.DataLoader( train_dataset, batch_size= batch_size, shuffle=True,num_workers= num_workers,drop_last = True)
     eval_loader = torch.utils.data.DataLoader( eval_dataset, batch_size= batch_size, shuffle=False,num_workers= num_workers,drop_last = True)
 
+   
+
     # init model and send it to gpu
-    net = seq2seq(input_size,output_size,hidden_size,hidden_size,num_layers,num_layers,batch_size,seq_len,seq_len_d)
+    net = sophie(batch_size,
+                enc_input_size,
+                enc_hidden_size,
+                enc_num_layers, 
+                embedding_size)
     net.to(device)
     
     #losses
-    # criterion_train = nn.MSELoss(reduction = "mean")
-    # # criterion_eval = nn.MSELoss(reduction="sum")
-    # criterion_eval = criterion_train
-
-    criterion_train = training.Regress_Loss()
-    # criterion_eval = nn.MSELoss(reduction="sum")
-    criterion_eval = criterion_train
+    # criterion_train = 
+    # criterion_eval = 
 
     #optimizer
-    optimizer = optim.Adam(net.parameters(),lr = 0.001)
+    # optimizer = optim.Adam(net.parameters(),lr = 0.001)
     
-    train_losses,eval_losses,batch_losses = training.training_loop(n_epochs,batch_size,net,device,train_loader,eval_loader,criterion_train,criterion_eval,optimizer,load_path = load_path)
+    # train_losses,eval_losses,batch_losses = training.training_loop(n_epochs,batch_size,net,device,train_loader,eval_loader,criterion_train,criterion_eval,optimizer,load_path = load_path)
     
+    for batch_idx, data in enumerate(train_loader):
+        inputs, labels = data
+        inputs, labels = inputs.to(device), labels.to(device)
+        net(inputs)
+        if batch_idx % 100 == 0:
+            print(batch_idx)
 
 if __name__ == "__main__":
     main()
