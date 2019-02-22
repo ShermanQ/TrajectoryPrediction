@@ -93,8 +93,15 @@ def add_neighbor(t_obs,ids,id_,current_frame):
         label: for the given id, steps between current_frame+t_obs and current_frame+t_obs+t_pred
 
 """
-def feature_label(ids,id_,t_obs,t_pred,current_frame):
-    feature = np.array(ids[id_][current_frame:current_frame+t_obs]).flatten().tolist()
+def feature_label(ids,id_,t_obs,t_pred,current_frame,padding = -1):
+
+    feature = ids[id_][current_frame:current_frame+t_obs]
+    ctr = 0
+    for p in feature:
+        if p[0] == padding:
+            ctr += 1
+    feature = np.array(feature[ctr:] + feature[:ctr])
+    feature = feature.flatten().tolist()
     label = np.array(ids[id_][current_frame+t_obs:current_frame+t_obs+t_pred]).flatten().tolist()
     return feature,label
 

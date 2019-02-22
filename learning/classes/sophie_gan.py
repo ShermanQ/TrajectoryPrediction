@@ -35,8 +35,6 @@ class encoderLSTM(nn.Module):
         self.hidden = self.init_hidden_state(self.batch_size*nb_max)
 
         seq_len = x.size()[1]
-        print(seq_len)
-        print(x.size())
         # print((self.batch_size*seq_len*nb_max,self.input_size))
 
         
@@ -77,40 +75,87 @@ class sophie(nn.Module):
 
     def forward(self,x):
         B,N,S,I = x.size()
-        x = x.view(B*N,S,I)
 
-        x_lengths,empty_trajectories_ids = self.__get_lengths_x(x.cpu().detach().numpy(),S)
+        # number of active agent per batch
+        agent_numbers = self.__get_number_agents(x)
+        
+        # reshape so that new batch size is former batch_size * nb_max agents
+        output = x.view(B*N,S,I)
+
+        # get lengths of sequences(without padding) in ascending order
+        x_lengths = self.__get_lengths_x(output.cpu().detach().numpy(),S)
         x_lengths = np.array(x_lengths)
 
-        arg_ids = list(reversed(np.argsort(x_lengths)))
         
-        x = x[arg_ids]
+        
+        
 
+        # get the indices of the descending sorted lengths
+        arg_ids = list(reversed(np.argsort(x_lengths)))
+
+        # order input vector based on descending sequence lengths
+        output = output[arg_ids]
+
+        # get ordered/unpadded sequences lengths for pack_padded object
         sorted_x_lengths = x_lengths[arg_ids]
-        x = self.encoder(x,sorted_x_lengths,N)
 
-        rev_arg_ids = list(reversed(np.argsort(arg_ids)))
-        x = x[rev_arg_ids]
-        x = x.view(B,N,self.enc_hidden_size)
-        print(x.size())
+        # encode
+        output = self.encoder(output,sorted_x_lengths,N)
+
+        # reverse ordering of indices
+        rev_arg_ids = np.argsort(arg_ids)
+        # reverse ordering of encoded sequence
+        output = output[rev_arg_ids]
+        # reshape to original batch_size
+        output = output.view(B,N,self.enc_hidden_size)
+
+        
+      
+        # get sequences last points
+        last_points = torch.stack([s[i-1,:] for i,s in zip(x_lengths,x.view(B*N,S,I))])
+        last_points = last_points.view(B,N,I)
+
+        # get main agent last point
+        reference_points = last_points[:,0].view(B,1,self.enc_input_size).repeat(1,N,1)
+       
+        # compute euclidean distance
+        dist = torch.sqrt(torch.sum(torch.pow(last_points-reference_points,2),dim = 2))
+
+        print(dist)
+
+        print(dist.size())
+    
 
         
         return
 
     def __get_lengths_x(self,x,seq_len,padding = -1):
         x_lengths = []
-        empty_trajectories_ids = []
         for i,sequence in enumerate(x):
             unpadded_length = 0
             for point in sequence:
                 if point[0] != padding:
                     unpadded_length += 1
             if unpadded_length == 0:
-                empty_trajectories_ids.append(i)
+            #     empty_trajectories_ids.append(i)
                 unpadded_length += 1
 
             x_lengths.append(unpadded_length)
-        return x_lengths,empty_trajectories_ids
+        return x_lengths
+
+    def __get_number_agents(self,x,padding = -1):
+        agent_numbers = []
+        for sample in x:
+            nb_agent = 0
+            for sequence in sample:
+                # if sequence[-1][0] != padding:
+                if sequence[0][0] != padding:                
+                    nb_agent += 1
+            agent_numbers.append(nb_agent)
+        return agent_numbers
+
+
+
 
 
 
