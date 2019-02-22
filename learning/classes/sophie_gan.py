@@ -110,7 +110,17 @@ class sophie(nn.Module):
         output = output.view(B,N,self.enc_hidden_size)
 
         
-      
+        # social features, sort hidden states by euclidean distance
+        # remove main agent hidden state
+        Vsos = self.__get_social_features(x_lengths,x,output)
+    
+
+        
+        return
+
+
+    def __get_social_features(self,x_lengths,x,output):
+        B,N,S,I = x.size()
         # get sequences last points
         last_points = torch.stack([s[i-1,:] for i,s in zip(x_lengths,x.view(B*N,S,I))])
         last_points = last_points.view(B,N,I)
@@ -119,15 +129,19 @@ class sophie(nn.Module):
         reference_points = last_points[:,0].view(B,1,self.enc_input_size).repeat(1,N,1)
        
         # compute euclidean distance
-        dist = torch.sqrt(torch.sum(torch.pow(last_points-reference_points,2),dim = 2))
+        dist = torch.sqrt(torch.sum(torch.pow(last_points-reference_points,2),dim = 2)) # B*Nmax
 
-        print(dist)
+        Vsos = []
+        for hiddens,d in zip(output,dist):
+            ids = np.argsort(d)
+            hiddens = hiddens[ids]
+            Vso = hiddens-hiddens[0].repeat(N,1)
+            Vso = Vso[1:]
+            Vsos.append(Vso)
+        Vsos = torch.stack(Vsos).view(B,N-1,self.enc_hidden_size)
 
-        print(dist.size())
-    
+        return  Vsos
 
-        
-        return
 
     def __get_lengths_x(self,x,seq_len,padding = -1):
         x_lengths = []
