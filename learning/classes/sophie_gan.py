@@ -131,11 +131,17 @@ class SoftAttention(nn.Module):
 
         
 
-    def forward(self,hdec,features):
+    def forward(self,hdec,features,zero_weigths = None,apply_weigths_filter = True):
         features = self.features_embedding(features)
         features = f.relu(features)
         # attn_weigths = f.softmax(self.core(hdec),dim = 1)
         attn_weigths = self.core(hdec)
+
+        # set to zero the weight of padding(no vehicule present)
+        if apply_weigths_filter :
+            attn_weigths *= zero_weigths
+        
+
 
         
 
@@ -266,16 +272,25 @@ class sophie(nn.Module):
         # social features, sort hidden states by euclidean distance
         # remove main agent hidden state
         Vsos = self.__get_social_features(x_lengths,x,output)
+
+       
+        
+        # nb of attention weigths to set to zero
+        nb_padded_agents = -1*( np.array(agent_numbers) -(N+1))
+        zero_weigths = np.ones((B,self.nb_neighbors_max))
+        for i,n in enumerate(nb_padded_agents):
+            zero_weigths[i][n:] = 0
+        zero_weights = torch.FloatTensor(zero_weigths).view(B,1,self.nb_neighbors_max).cuda()
         
         # apply social attention to get a unique feature vector per sample
-        Co = self.social_attention(torch.rand(B,1,self.dec_hidden_size).cuda(),Vsos)
+        Co = self.social_attention(torch.rand(B,1,self.dec_hidden_size).cuda(),Vsos,zero_weights)
         
-        # geerate one random tensor per batch
-        z = self.gaussian.sample((self.batch_size,1,)).cuda()
+        # # geerate one random tensor per batch
+        # z = self.gaussian.sample((self.batch_size,1,)).cuda()
 
-        C = torch.cat([Co,z], dim = 2)
-        generator_outputs = self.__generate(C)
-        print(generator_outputs.size())
+        # C = torch.cat([Co,z], dim = 2)
+        # generator_outputs = self.__generate(C)
+        # print(generator_outputs.size())
 
         return
 
