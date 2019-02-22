@@ -221,6 +221,8 @@ class sophie(nn.Module):
         self.dec_hidden_size = dec_hidden_size
         self.nb_neighbors_max = nb_neighbors_max
         self.pred_length = pred_length
+        self.output_size = output_size
+
 
 
         self.gaussian = torch.distributions.MultivariateNormal(torch.zeros(gaussian_dim),torch.eye(gaussian_dim))
@@ -280,28 +282,38 @@ class sophie(nn.Module):
         zero_weigths = np.ones((B,self.nb_neighbors_max))
         for i,n in enumerate(nb_padded_agents):
             zero_weigths[i][n:] = 0
-        zero_weights = torch.FloatTensor(zero_weigths).view(B,1,self.nb_neighbors_max).cuda()
+        zero_weigths = torch.FloatTensor(zero_weigths).view(B,1,self.nb_neighbors_max).cuda()
         
-        # apply social attention to get a unique feature vector per sample
-        Co = self.social_attention(torch.rand(B,1,self.dec_hidden_size).cuda(),Vsos,zero_weights)
         
-        # # geerate one random tensor per batch
-        # z = self.gaussian.sample((self.batch_size,1,)).cuda()
+        
+        
 
         # C = torch.cat([Co,z], dim = 2)
-        # generator_outputs = self.__generate(C)
-        # print(generator_outputs.size())
+        generator_outputs = self.__generate(Vsos,zero_weigths)
+        
 
         return
 
-    def __generate(self,features):
+    def __generate(self,Vsos,zero_weigths):
         state = self.generator.init_hidden_state()
+        # geerate one random tensor per batch
+        z = self.gaussian.sample((self.batch_size,1,)).cuda()
+
+        print(state[0].size())
+        # apply social attention to get a unique feature vector per sample
+        Co = self.social_attention(state[0][0].view(self.batch_size,1,self.dec_hidden_size),Vsos,zero_weigths)
+        C = torch.cat([Co,z], dim = 2)
+
         outputs = []
 
         for _ in range(self.pred_length):
             
-            output,state = self.generator(features,state)
+            output,state = self.generator(C,state)
             outputs.append(output)
+
+            Co = self.social_attention(state[0][0].view(self.batch_size,1,self.dec_hidden_size),Vsos,zero_weigths)
+            C = torch.cat([Co,z], dim = 2)
+
         outputs = torch.stack(outputs).view(self.batch_size,self.pred_length,self.output_size)
         return outputs
 
