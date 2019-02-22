@@ -165,6 +165,7 @@ class decoderLSTM(nn.Module):
 
         self.batch_size = batch_size
         self.input_size = input_size
+
         self.output_size = output_size
         self.hidden_size = hidden_size
         self.num_layers = num_layers
@@ -175,7 +176,7 @@ class decoderLSTM(nn.Module):
 
         
 
-    def forward(self,x,hidden,encoder_outputs):
+    def forward(self,x,hidden):
         # self.hidden = self.init_hidden_state()
         # x = x.view(self.seq_len,self.batch_size,2)
         output,self.hidden = self.lstm(x,hidden)
@@ -221,6 +222,7 @@ class sophie(nn.Module):
         self.social_attention = SoftAttention(batch_size,enc_hidden_size,social_features_embedding_size,dec_hidden_size ,nb_neighbors_max)
         
         dec_input_size = gaussian_dim + 1*embedding_size + 0*embedding_size
+        
         self.generator = decoderLSTM(batch_size,dec_input_size,output_size,dec_hidden_size,dec_num_layer)
         
 
@@ -271,18 +273,22 @@ class sophie(nn.Module):
         # geerate one random tensor per batch
         z = self.gaussian.sample((self.batch_size,1,)).cuda()
 
-        print(Co.size())
-        print(torch.cat([Co,z], dim = 2).size())
-        
-        # outputs = []
+        C = torch.cat([Co,z], dim = 2)
+        generator_outputs = self.__generate(C)
+        print(generator_outputs.size())
 
-        # for i in range(self.pred_length):
-            
-        #     output,state = self.decoder(output,state,encoder_output)
-        #     outputs.append(output)
-        # outputs = torch.stack(outputs)
         return
 
+    def __generate(self,features):
+        state = self.generator.init_hidden_state()
+        outputs = []
+
+        for _ in range(self.pred_length):
+            
+            output,state = self.generator(features,state)
+            outputs.append(output)
+        outputs = torch.stack(outputs).view(self.batch_size,self.pred_length,self.output_size)
+        return outputs
 
     def __get_social_features(self,x_lengths,x,output):
         B,N,S,I = x.size()
