@@ -59,11 +59,151 @@ class encoderLSTM(nn.Module):
         return (h_0,c_0)
 
 
+class generatorLSTM(nn.Module):
+    # def __init__(self,input_size,hidden_size,num_layers,output_size,batch_size,seq_len):
+    
+    def __init__(self,batch_size,input_size = 2,hidden_size = 32,num_layers = 1, embedding_size = 16):
+        super(encoderLSTM,self).__init__()
+
+        self.input_size = input_size
+        self.hidden_size = hidden_size
+        self.num_layers = num_layers
+        self.embedding_size = embedding_size
+        self.batch_size = batch_size
+
+        self.embedding = nn.Linear(self.input_size,self.embedding_size)
+
+        self.lstm = nn.LSTM(input_size = self.embedding_size,hidden_size = self.hidden_size,num_layers = self.num_layers,batch_first = True)
+        
+
+        
+
+    def forward(self,x,x_lengths,nb_max):
+        self.hidden = self.init_hidden_state(self.batch_size*nb_max)
+
+        seq_len = x.size()[1]
+        # print((self.batch_size*seq_len*nb_max,self.input_size))
+
+        
+        x = x.view(self.batch_size*seq_len*nb_max,self.input_size)
+        x = self.embedding(x)
+        x = x.view(self.batch_size * nb_max,seq_len,self.embedding_size)
+
+        x = f.relu(x)
+
+        x = torch.nn.utils.rnn.pack_padded_sequence(x, x_lengths, batch_first=True)
+        x,self.hidden = self.lstm(x,self.hidden)
+        x, _ = torch.nn.utils.rnn.pad_packed_sequence(x, batch_first=True)
+        
+        return x[:,-1,:]
+
+
+
+    def init_hidden_state(self,batch_size):
+        h_0 = torch.rand(self.num_layers,batch_size,self.hidden_size).cuda()
+        c_0 = torch.rand(self.num_layers,batch_size,self.hidden_size).cuda()
+
+        return (h_0,c_0)
+
+
+class SoftAttention(nn.Module):
+    # def __init__(self,input_size,hidden_size,num_layers,output_size,batch_size,seq_len):
+    
+    def __init__(self,batch_size,input_size,output_size,hdec_size ,nb_weights,layers = [64,128,64]):
+        super(SoftAttention,self).__init__()
+
+        self.hdec_size = hdec_size
+        self.output_size = output_size
+        self.input_size = input_size
+
+        self.nb_weights = nb_weights
+        self.batch_size = batch_size
+        self.layers = [hdec_size] + layers + [nb_weights]
+        self.features_embedding = nn.Linear(input_size,output_size)
+        modules = []
+        for i in range(1,len(self.layers)):
+            modules.append(nn.Linear(self.layers[i-1],self.layers[i]))
+            if i < len(self.layers) -1 :
+                modules.append(nn.ReLU())
+        self.core = nn.Sequential(*modules)
+        
+
+
+        
+
+    def forward(self,hdec,features):
+        features = self.features_embedding(features)
+        features = f.relu(features)
+        # attn_weigths = f.softmax(self.core(hdec),dim = 1)
+        attn_weigths = self.core(hdec)
+
+        
+
+        attn_applied = torch.bmm(attn_weigths, features)
+        
+        return attn_applied
+
+
+
+    def init_hidden_state(self,batch_size):
+        h_0 = torch.rand(self.num_layers,batch_size,self.hidden_size).cuda()
+        c_0 = torch.rand(self.num_layers,batch_size,self.hidden_size).cuda()
+
+        return (h_0,c_0)
+
+    
+"""
+    Straightforward LSTM decoder
+    Uses prediction at timestep t-1 as input 
+    to predict timestep t
+"""
+class decoderLSTM(nn.Module):
+    # def __init__(self,input_size,hidden_size,num_layers,output_size,batch_size,seq_len):
+    
+    def __init__(self,batch_size,input_size,output_size,hidden_size,num_layers):
+        super(decoderLSTM,self).__init__()
+
+        self.batch_size = batch_size
+        self.input_size = input_size
+        self.output_size = output_size
+        self.hidden_size = hidden_size
+        self.num_layers = num_layers
+
+        
+        self.lstm = nn.LSTM(input_size = input_size,hidden_size = hidden_size,num_layers = num_layers,batch_first = True)
+        self.out = nn.Linear(self.hidden_size,self.output_size)
+
+        
+
+    def forward(self,x,hidden,encoder_outputs):
+        # self.hidden = self.init_hidden_state()
+        # x = x.view(self.seq_len,self.batch_size,2)
+        output,self.hidden = self.lstm(x,hidden)
+        output = self.out(output)#activation?
+        return output, hidden
+
+    def init_hidden_state(self):
+        h_0 = torch.rand(self.num_layers,self.batch_size,self.hidden_size).cuda()
+        c_0 = torch.rand(self.num_layers,self.batch_size,self.hidden_size).cuda()
+
+        return (h_0,c_0)
 """
     
 """
 class sophie(nn.Module):
-    def __init__(self,batch_size,enc_input_size = 2,enc_hidden_size = 32,enc_num_layers = 1, embedding_size = 16):
+    def __init__(self,
+            batch_size,enc_input_size = 2,
+            enc_hidden_size = 32,
+            enc_num_layers = 1, 
+            embedding_size = 16,
+            dec_hidden_size = 32,
+            nb_neighbors_max = 51,
+            social_features_embedding_size = 16,
+            gaussian_dim = 8,
+            dec_num_layer = 1,
+            output_size = 2,
+            pred_length = 12
+            ):
         super(sophie,self).__init__()
         self.encoder = encoderLSTM(batch_size,enc_input_size,enc_hidden_size,enc_num_layers,embedding_size)
         self.batch_size = batch_size
@@ -71,6 +211,17 @@ class sophie(nn.Module):
         self.enc_hidden_size = enc_hidden_size
         self.enc_num_layers = enc_num_layers
         self.embedding_size = embedding_size
+        self.dec_hidden_size = dec_hidden_size
+        self.nb_neighbors_max = nb_neighbors_max
+        self.pred_length = pred_length
+
+
+        self.gaussian = torch.distributions.MultivariateNormal(torch.zeros(gaussian_dim),torch.eye(gaussian_dim))
+        self.social_features_embedding_size = social_features_embedding_size
+        self.social_attention = SoftAttention(batch_size,enc_hidden_size,social_features_embedding_size,dec_hidden_size ,nb_neighbors_max)
+        
+        dec_input_size = gaussian_dim + 1*embedding_size + 0*embedding_size
+        self.generator = decoderLSTM(batch_size,dec_input_size,output_size,dec_hidden_size,dec_num_layer)
         
 
     def forward(self,x):
@@ -113,9 +264,23 @@ class sophie(nn.Module):
         # social features, sort hidden states by euclidean distance
         # remove main agent hidden state
         Vsos = self.__get_social_features(x_lengths,x,output)
-    
-
         
+        # apply social attention to get a unique feature vector per sample
+        Co = self.social_attention(torch.rand(B,1,self.dec_hidden_size).cuda(),Vsos)
+        
+        # geerate one random tensor per batch
+        z = self.gaussian.sample((self.batch_size,1,)).cuda()
+
+        print(Co.size())
+        print(torch.cat([Co,z], dim = 2).size())
+        
+        # outputs = []
+
+        # for i in range(self.pred_length):
+            
+        #     output,state = self.decoder(output,state,encoder_output)
+        #     outputs.append(output)
+        # outputs = torch.stack(outputs)
         return
 
 
