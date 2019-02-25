@@ -228,8 +228,8 @@ class discriminatorLSTM(nn.Module):
         x = x.view(self.batch_size,self.seq_len,self.embedding_size)
 
         _,self.hidden = self.lstm(x,self.hidden)
-        x = self.out(self.hidden)
-        x = f.sigmoid(x)
+        x = self.out(self.hidden[0])
+        x = torch.sigmoid(x)
         return x
 
     def init_hidden_state(self):
@@ -285,7 +285,7 @@ class sophie(nn.Module):
         dec_input_size = gaussian_dim + 1*embedding_size + 0*embedding_size
         
         self.generator = decoderLSTM(batch_size,dec_input_size,output_size,dec_hidden_size,dec_num_layer)
-        self.discriminator = discriminatorLSTM(batch_size,enc_input_size,embedding_size,disc_hidden_size,disc_nb_layer,pred_length + obs_length)
+        self.discriminator = discriminatorLSTM(2*batch_size,enc_input_size,embedding_size,disc_hidden_size,disc_nb_layer,pred_length + obs_length)
         
 
     def forward(self,x,y):
@@ -356,7 +356,7 @@ class sophie(nn.Module):
         gt_labels = torch.ones(self.batch_size)
 
 
-        labels = torch.cat([pred_labels,gt_labels],dim = 0)
+        labels = torch.cat([pred_labels,gt_labels],dim = 0).cuda()
         traj = torch.cat([pred_traj,real_traj],dim = 0)
         
         sort = np.arange(self.batch_size * 2)
@@ -365,7 +365,21 @@ class sophie(nn.Module):
         labels = labels[sort]
         traj = traj[sort]
 
+        disc_class = self.discriminator(traj).view(2*self.batch_size)
         
+        gan_loss = nn.BCELoss()
+        g_loss = gan_loss(disc_class,labels)
+
+        mse = nn.MSELoss(reduction= "none")
+
+        # sum over a trajectory, average over batch size
+        mse_loss = torch.mean(torch.sum(torch.sum(mse(generator_outputs,ground_truth),dim = 2),dim = 1))
+
+
+
+        print(mse_loss.item())
+
+
 
         
 
