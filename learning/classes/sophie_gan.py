@@ -194,12 +194,56 @@ class decoderLSTM(nn.Module):
         c_0 = torch.rand(self.num_layers,self.batch_size,self.hidden_size).cuda()
 
         return (h_0,c_0)
+
+
+class discriminatorLSTM(nn.Module):
+    # def __init__(self,input_size,hidden_size,num_layers,output_size,batch_size,seq_len):
+    
+    def __init__(self,batch_size,input_size = 2,embedding_size = 16,hidden_size = 64,num_layers = 1,seq_len = 20):
+        super(discriminatorLSTM,self).__init__()
+
+        self.batch_size = batch_size
+        self.input_size = input_size
+        self.embedding_size = embedding_size
+
+
+        self.hidden_size = hidden_size
+        self.num_layers = num_layers
+        self.seq_len = seq_len
+        self.output_size = 1
+        
+
+        self.embedding = nn.Linear(input_size,embedding_size)
+        self.lstm = nn.LSTM(input_size = embedding_size,hidden_size = hidden_size,num_layers = num_layers,batch_first = True)
+        
+        self.out = nn.Linear(self.hidden_size,self.output_size)
+
+        
+
+    def forward(self,x):
+        self.hidden = self.init_hidden_state()
+
+        x = x.view(-1,self.input_size)
+        x = self.embedding(x)
+        x = x.view(self.batch_size,self.seq_len,self.embedding_size)
+
+        _,self.hidden = self.lstm(x,self.hidden)
+        x = self.out(self.hidden)
+        x = f.sigmoid(x)
+        return x
+
+    def init_hidden_state(self):
+        h_0 = torch.rand(self.num_layers,self.batch_size,self.hidden_size).cuda()
+        c_0 = torch.rand(self.num_layers,self.batch_size,self.hidden_size).cuda()
+
+        return (h_0,c_0)
 """
     
 """
 class sophie(nn.Module):
     def __init__(self,
-            batch_size,enc_input_size = 2,
+            batch_size,
+            enc_input_size = 2,
             enc_hidden_size = 32,
             enc_num_layers = 1, 
             embedding_size = 16,
@@ -209,7 +253,12 @@ class sophie(nn.Module):
             gaussian_dim = 8,
             dec_num_layer = 1,
             output_size = 2,
-            pred_length = 12
+            pred_length = 12,
+            obs_length = 8,
+
+            disc_hidden_size = 64,
+            disc_nb_layer = 1
+
             ):
         super(sophie,self).__init__()
         self.encoder = encoderLSTM(batch_size,enc_input_size,enc_hidden_size,enc_num_layers,embedding_size)
@@ -221,7 +270,11 @@ class sophie(nn.Module):
         self.dec_hidden_size = dec_hidden_size
         self.nb_neighbors_max = nb_neighbors_max
         self.pred_length = pred_length
+        self.obs_length = obs_length
+
         self.output_size = output_size
+        self.disc_hidden_size = disc_hidden_size
+        self.disc_nb_layer = disc_nb_layer
 
 
 
@@ -232,9 +285,10 @@ class sophie(nn.Module):
         dec_input_size = gaussian_dim + 1*embedding_size + 0*embedding_size
         
         self.generator = decoderLSTM(batch_size,dec_input_size,output_size,dec_hidden_size,dec_num_layer)
+        self.discriminator = discriminatorLSTM(batch_size,enc_input_size,embedding_size,disc_hidden_size,disc_nb_layer,pred_length + obs_length)
         
 
-    def forward(self,x):
+    def forward(self,x,y):
         B,N,S,I = x.size()
 
         # number of active agent per batch
@@ -290,6 +344,17 @@ class sophie(nn.Module):
 
         # C = torch.cat([Co,z], dim = 2)
         generator_outputs = self.__generate(Vsos,zero_weigths)
+
+        observations = x[:,0].view(self.batch_size,self.obs_length,self.output_size)
+
+        ground_truth = y[:,0].view(self.batch_size,self.pred_length,self.output_size)
+
+        pred_traj = torch.cat([observations,generator_outputs], dim = 1)
+        real_traj = torch.cat([observations,ground_truth], dim = 1)
+
+        print(pred_traj[0])
+        print(real_traj[0])
+
         
 
         return

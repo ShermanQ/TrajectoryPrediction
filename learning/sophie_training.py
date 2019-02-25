@@ -104,7 +104,7 @@ def main():
     for batch_idx, data in enumerate(train_loader):
         inputs, labels = data
         inputs, labels = inputs.to(device), labels.to(device)
-        net(inputs)
+        net(inputs,labels)
         if batch_idx % 100 == 0:
             print(batch_idx)
 
