@@ -352,8 +352,20 @@ class sophie(nn.Module):
         pred_traj = torch.cat([observations,generator_outputs], dim = 1)
         real_traj = torch.cat([observations,ground_truth], dim = 1)
 
-        print(pred_traj[0])
-        print(real_traj[0])
+        pred_labels = torch.zeros(self.batch_size)
+        gt_labels = torch.ones(self.batch_size)
+
+
+        labels = torch.cat([pred_labels,gt_labels],dim = 0)
+        traj = torch.cat([pred_traj,real_traj],dim = 0)
+        
+        sort = np.arange(self.batch_size * 2)
+        np.random.shuffle(sort) 
+
+        labels = labels[sort]
+        traj = traj[sort]
+
+        
 
         
 
