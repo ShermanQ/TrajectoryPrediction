@@ -63,17 +63,16 @@ def main():
     disc_nb_layer = 1
     output_size = 2
 
-    nb_samples = 31596
+    nb_samples = 1000
     num_workers = 0
 
     lr_gen = 0.001
     lr_disc = 0.001
 
-    n_epochs = 1
+    n_epochs = 2
 
     load_path = None
-    # load_path = "./learning/data/models/model_1550002069.1353667.tar"
-
+    load_path = "./learning/data/models/sophie_1551128311.430322.tar"
     # split train eval indices
     train_indices,eval_indices = train_test_split(np.array([i for i in range(nb_samples)]),test_size = 0.2,random_state = 42)
 
@@ -123,12 +122,12 @@ def main():
     # train_losses,eval_losses,batch_losses = training.training_loop(n_epochs,batch_size,net,device,train_loader,eval_loader,criterion_train,criterion_eval,optimizer,load_path = load_path)
     
     # for batch_idx, data in enumerate(train_loader):
-    for epoch in range(0,n_epochs):
-        training.train_sophie(generator,discriminator,device,train_loader,criterion_gan,criterion_gen, 
-        optimizer_gen, optimizer_disc,epoch,batch_size,obs_length,pred_length,output_size)
-        training.eval_sophie(generator,discriminator,device,eval_loader,criterion_gan,criterion_gen,epoch,batch_size,obs_length,pred_length,output_size)
+    training.sophie_training_loop(n_epochs,batch_size,generator,discriminator,optimizer_gen,optimizer_disc,device,
+        train_loader,eval_loader,obs_length, criterion_gan,criterion_gen, 
+        pred_length, output_size,True, load_path)
 
 
+    
 
 
 if __name__ == "__main__":

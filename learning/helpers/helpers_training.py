@@ -184,25 +184,25 @@ def training_loop(n_epochs,batch_size,net,device,train_loader,eval_loader,criter
 
     s = time.time()
     
-    # try:
-    for epoch in range(start_epoch,n_epochs):
-        train_loss,batches_loss = train(net, device, train_loader,criterion_train, optimizer, epoch,batch_size)
-        batch_losses += batches_loss
-        train_losses.append(train_loss)
+    try:
+        for epoch in range(start_epoch,n_epochs):
+            train_loss,batches_loss = train(net, device, train_loader,criterion_train, optimizer, epoch,batch_size)
+            batch_losses += batches_loss
+            train_losses.append(train_loss)
 
-        temp = net.teacher_forcing
-        net.teacher_forcing = False
-        eval_loss,fde_loss = evaluate(net, device, eval_loader,criterion_eval, epoch, batch_size)
-        net.teacher_forcing = temp
+            temp = net.teacher_forcing
+            net.teacher_forcing = False
+            eval_loss,fde_loss = evaluate(net, device, eval_loader,criterion_eval, epoch, batch_size)
+            net.teacher_forcing = temp
 
-        eval_losses.append(eval_loss)
-        fde_losses.append(fde_loss)
-        print(time.time()-s)
+            eval_losses.append(eval_loss)
+            fde_losses.append(fde_loss)
+            print(time.time()-s)
         
-    # except :
-    #     # logging.error(traceback.format_exc())
-    #     # save_model(epoch,net,optimizer,train_losses,eval_losses,batch_losses,save_path)
-    #     pass
+    except :
+        # logging.error(traceback.format_exc())
+        # save_model(epoch,net,optimizer,train_losses,eval_losses,batch_losses,save_path)
+        pass
 
     save_model(epoch,net,optimizer,train_losses,eval_losses,batch_losses,fde_losses)
     if plot:
@@ -376,5 +376,87 @@ def eval_sophie(
         losses[key] /= batch_idx    
     print('Eval Epoch n {} Loss: {}, gan loss real: {},gan loss fake: {}'.format(epoch,losses["mse"],losses["real"],losses["fake"]))
 
+    generator.train()
+    discriminator.train()
+    return losses
+
+
+def save_sophie(epoch,generator,discriminator,optimizer_gen,optimizer_disc,losses,save_root = "./learning/data/models/" ):
+
+    save_path = save_root + "sophie_{}.tar".format(time.time())
+
+
+    state = {
+        'epoch': epoch,
+        'state_dict_d': discriminator.state_dict(),
+        'state_dict_g': generator.state_dict(),
+        'optimizer_g': optimizer_gen.state_dict(), 
+        'optimizer_d': optimizer_disc.state_dict(),  
+        'losses': losses
+        }
+    torch.save(state, save_path)
+    
+    print("model saved in {}".format(save_path))
+
+def sophie_training_loop(n_epochs,batch_size,generator,discriminator,optimizer_gen,optimizer_disc,device,
+        train_loader,eval_loader,obs_length, criterion_gan,criterion_gen, 
+        pred_length, output_size,plot = True,load_path = None):
+
+    
+    losses = {
+        "train": {
+            "mse": [],
+            "real": [],
+            "fake": [],
+            "gen": []
+        },
+        "eval": {
+            "mse": [],
+            "real": [],
+            "fake": [],
+            "gen": []
+        }        
+    }
+    
+    start_epoch = 0
+
+
+    if load_path is not None:
+        print("loading former model from {}".format(load_path))
+        checkpoint = torch.load(load_path)
+        generator.load_state_dict(checkpoint['state_dict_g'])
+        discriminator.load_state_dict(checkpoint['state_dict_d'])
+        optimizer_gen.load_state_dict(checkpoint['optimizer_g'])
+        optimizer_disc.load_state_dict(checkpoint['optimizer_d'])
+
+        losses = checkpoint["losses"]
+        start_epoch = checkpoint["epoch"]
+
+
+    s = time.time()
+    
+    try:
+        for epoch in range(start_epoch,n_epochs):
+            train_losses,_ = train_sophie(generator,discriminator,device,train_loader,criterion_gan,criterion_gen, 
+            optimizer_gen, optimizer_disc,epoch,batch_size,obs_length,pred_length,output_size)
+
+            for key in train_losses:
+                losses["train"][key].append(train_losses[key])
+
+            test_losses = eval_sophie(generator,discriminator,device,eval_loader,criterion_gan,criterion_gen,epoch,batch_size,obs_length,pred_length,output_size)
+            for key in test_losses:
+                losses["eval"][key].append(test_losses[key])
+
+            
+            print(time.time()-s)
+        
+    except :
+        pass
+
+    save_sophie(epoch,generator,discriminator,optimizer_gen,optimizer_disc,losses)
+    if plot:
+        plt.plot(losses["train"]["mse"])
+        plt.plot(losses["eval"]["mse"])
+        plt.show()
 
     return losses
