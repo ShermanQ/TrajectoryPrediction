@@ -4,6 +4,14 @@ import torch.nn.functional as f
 import random
 import numpy as np 
 
+
+def custom_mse(pred_seq,gt_seq):
+    mse = nn.MSELoss(reduction= "none")
+
+    # sum over a trajectory, average over batch size
+    mse_loss = torch.mean(torch.sum(torch.sum(mse(pred_seq,gt_seq),dim = 2),dim = 1))
+
+    return mse_loss
 """
     Straightforward LSTM encoder
 
@@ -15,9 +23,10 @@ import numpy as np
 class encoderLSTM(nn.Module):
     # def __init__(self,input_size,hidden_size,num_layers,output_size,batch_size,seq_len):
     
-    def __init__(self,batch_size,input_size = 2,hidden_size = 32,num_layers = 1, embedding_size = 16):
+    def __init__(self,device,batch_size,input_size = 2,hidden_size = 32,num_layers = 1, embedding_size = 16):
         super(encoderLSTM,self).__init__()
 
+        self.device = device
         self.input_size = input_size
         self.hidden_size = hidden_size
         self.num_layers = num_layers
@@ -53,8 +62,8 @@ class encoderLSTM(nn.Module):
 
 
     def init_hidden_state(self,batch_size):
-        h_0 = torch.rand(self.num_layers,batch_size,self.hidden_size).cuda()
-        c_0 = torch.rand(self.num_layers,batch_size,self.hidden_size).cuda()
+        h_0 = torch.rand(self.num_layers,batch_size,self.hidden_size).to(self.device)
+        c_0 = torch.rand(self.num_layers,batch_size,self.hidden_size).to(self.device)
 
         return (h_0,c_0)
 
@@ -62,8 +71,10 @@ class encoderLSTM(nn.Module):
 class generatorLSTM(nn.Module):
     # def __init__(self,input_size,hidden_size,num_layers,output_size,batch_size,seq_len):
     
-    def __init__(self,batch_size,input_size = 2,hidden_size = 32,num_layers = 1, embedding_size = 16):
-        super(encoderLSTM,self).__init__()
+    def __init__(self,device,batch_size,input_size = 2,hidden_size = 32,num_layers = 1, embedding_size = 16):
+        super(generatorLSTM,self).__init__()
+
+        self.device = device
 
         self.input_size = input_size
         self.hidden_size = hidden_size
@@ -100,8 +111,8 @@ class generatorLSTM(nn.Module):
 
 
     def init_hidden_state(self,batch_size):
-        h_0 = torch.rand(self.num_layers,batch_size,self.hidden_size).cuda()
-        c_0 = torch.rand(self.num_layers,batch_size,self.hidden_size).cuda()
+        h_0 = torch.rand(self.num_layers,batch_size,self.hidden_size).to(self.device)
+        c_0 = torch.rand(self.num_layers,batch_size,self.hidden_size).to(self.device)
 
         return (h_0,c_0)
 
@@ -109,9 +120,10 @@ class generatorLSTM(nn.Module):
 class SoftAttention(nn.Module):
     # def __init__(self,input_size,hidden_size,num_layers,output_size,batch_size,seq_len):
     
-    def __init__(self,batch_size,input_size,output_size,hdec_size ,nb_weights,layers = [64,128,64]):
+    def __init__(self,device,batch_size,input_size,output_size,hdec_size ,nb_weights,layers = [64,128,64]):
         super(SoftAttention,self).__init__()
 
+        self.device = device
         self.hdec_size = hdec_size
         self.output_size = output_size
         self.input_size = input_size
@@ -152,8 +164,8 @@ class SoftAttention(nn.Module):
 
 
     def init_hidden_state(self,batch_size):
-        h_0 = torch.rand(self.num_layers,batch_size,self.hidden_size).cuda()
-        c_0 = torch.rand(self.num_layers,batch_size,self.hidden_size).cuda()
+        h_0 = torch.rand(self.num_layers,batch_size,self.hidden_size).to(self.device)
+        c_0 = torch.rand(self.num_layers,batch_size,self.hidden_size).to(self.device)
 
         return (h_0,c_0)
 
@@ -166,8 +178,10 @@ class SoftAttention(nn.Module):
 class decoderLSTM(nn.Module):
     # def __init__(self,input_size,hidden_size,num_layers,output_size,batch_size,seq_len):
     
-    def __init__(self,batch_size,input_size,output_size,hidden_size,num_layers):
+    def __init__(self,device,batch_size,input_size,output_size,hidden_size,num_layers):
         super(decoderLSTM,self).__init__()
+
+        self.device = device
 
         self.batch_size = batch_size
         self.input_size = input_size
@@ -190,8 +204,8 @@ class decoderLSTM(nn.Module):
         return output, hidden
 
     def init_hidden_state(self):
-        h_0 = torch.rand(self.num_layers,self.batch_size,self.hidden_size).cuda()
-        c_0 = torch.rand(self.num_layers,self.batch_size,self.hidden_size).cuda()
+        h_0 = torch.rand(self.num_layers,self.batch_size,self.hidden_size).to(self.device)
+        c_0 = torch.rand(self.num_layers,self.batch_size,self.hidden_size).to(self.device)
 
         return (h_0,c_0)
 
@@ -199,8 +213,10 @@ class decoderLSTM(nn.Module):
 class discriminatorLSTM(nn.Module):
     # def __init__(self,input_size,hidden_size,num_layers,output_size,batch_size,seq_len):
     
-    def __init__(self,batch_size,input_size = 2,embedding_size = 16,hidden_size = 64,num_layers = 1,seq_len = 20):
+    def __init__(self,device,batch_size,input_size = 2,embedding_size = 16,hidden_size = 64,num_layers = 1,seq_len = 20):
         super(discriminatorLSTM,self).__init__()
+
+        self.device = device
 
         self.batch_size = batch_size
         self.input_size = input_size
@@ -233,8 +249,8 @@ class discriminatorLSTM(nn.Module):
         return x
 
     def init_hidden_state(self):
-        h_0 = torch.rand(self.num_layers,self.batch_size,self.hidden_size).cuda()
-        c_0 = torch.rand(self.num_layers,self.batch_size,self.hidden_size).cuda()
+        h_0 = torch.rand(self.num_layers,self.batch_size,self.hidden_size).to(self.device)
+        c_0 = torch.rand(self.num_layers,self.batch_size,self.hidden_size).to(self.device)
 
         return (h_0,c_0)
 """
@@ -242,6 +258,7 @@ class discriminatorLSTM(nn.Module):
 """
 class sophie(nn.Module):
     def __init__(self,
+            device,
             batch_size,
             enc_input_size = 2,
             enc_hidden_size = 32,
@@ -256,12 +273,14 @@ class sophie(nn.Module):
             pred_length = 12,
             obs_length = 8,
 
-            disc_hidden_size = 64,
-            disc_nb_layer = 1
+            # disc_hidden_size = 64,
+            # disc_nb_layer = 1
 
             ):
         super(sophie,self).__init__()
-        self.encoder = encoderLSTM(batch_size,enc_input_size,enc_hidden_size,enc_num_layers,embedding_size)
+        self.device = device
+
+        self.encoder = encoderLSTM(device,batch_size,enc_input_size,enc_hidden_size,enc_num_layers,embedding_size)
         self.batch_size = batch_size
         self.enc_input_size = enc_input_size
         self.enc_hidden_size = enc_hidden_size
@@ -273,22 +292,22 @@ class sophie(nn.Module):
         self.obs_length = obs_length
 
         self.output_size = output_size
-        self.disc_hidden_size = disc_hidden_size
-        self.disc_nb_layer = disc_nb_layer
+        # self.disc_hidden_size = disc_hidden_size
+        # self.disc_nb_layer = disc_nb_layer
 
 
 
         self.gaussian = torch.distributions.MultivariateNormal(torch.zeros(gaussian_dim),torch.eye(gaussian_dim))
         self.social_features_embedding_size = social_features_embedding_size
-        self.social_attention = SoftAttention(batch_size,enc_hidden_size,social_features_embedding_size,dec_hidden_size ,nb_neighbors_max)
+        self.social_attention = SoftAttention(device,batch_size,enc_hidden_size,social_features_embedding_size,dec_hidden_size ,nb_neighbors_max)
         
         dec_input_size = gaussian_dim + 1*embedding_size + 0*embedding_size
         
-        self.generator = decoderLSTM(batch_size,dec_input_size,output_size,dec_hidden_size,dec_num_layer)
-        self.discriminator = discriminatorLSTM(2*batch_size,enc_input_size,embedding_size,disc_hidden_size,disc_nb_layer,pred_length + obs_length)
+        self.generator = decoderLSTM(device,batch_size,dec_input_size,output_size,dec_hidden_size,dec_num_layer)
+        # self.discriminator = discriminatorLSTM(2*batch_size,enc_input_size,embedding_size,disc_hidden_size,disc_nb_layer,pred_length + obs_length)
         
 
-    def forward(self,x,y):
+    def forward(self,x,z):
         B,N,S,I = x.size()
 
         # number of active agent per batch
@@ -336,61 +355,24 @@ class sophie(nn.Module):
         zero_weigths = np.ones((B,self.nb_neighbors_max))
         for i,n in enumerate(nb_padded_agents):
             zero_weigths[i][n:] = 0
-        zero_weigths = torch.FloatTensor(zero_weigths).view(B,1,self.nb_neighbors_max).cuda()
+        zero_weigths = torch.FloatTensor(zero_weigths).view(B,1,self.nb_neighbors_max).to(self.device)
         
         
         
         
 
         # C = torch.cat([Co,z], dim = 2)
-        generator_outputs = self.__generate(Vsos,zero_weigths)
+        # z = self.gaussian.sample((self.batch_size,1,)).to(self.device)
+        generator_outputs = self.__generate(Vsos,zero_weigths,z)
 
-        observations = x[:,0].view(self.batch_size,self.obs_length,self.output_size)
+        return generator_outputs
 
-        ground_truth = y[:,0].view(self.batch_size,self.pred_length,self.output_size)
-
-        pred_traj = torch.cat([observations,generator_outputs], dim = 1)
-        real_traj = torch.cat([observations,ground_truth], dim = 1)
-
-        pred_labels = torch.zeros(self.batch_size)
-        gt_labels = torch.ones(self.batch_size)
-
-
-        labels = torch.cat([pred_labels,gt_labels],dim = 0).cuda()
-        traj = torch.cat([pred_traj,real_traj],dim = 0)
-        
-        sort = np.arange(self.batch_size * 2)
-        np.random.shuffle(sort) 
-
-        labels = labels[sort]
-        traj = traj[sort]
-
-        disc_class = self.discriminator(traj).view(2*self.batch_size)
-        
-        gan_loss = nn.BCELoss()
-        g_loss = gan_loss(disc_class,labels)
-
-        mse = nn.MSELoss(reduction= "none")
-
-        # sum over a trajectory, average over batch size
-        mse_loss = torch.mean(torch.sum(torch.sum(mse(generator_outputs,ground_truth),dim = 2),dim = 1))
-
-
-
-        print(mse_loss.item())
-
-
-
-        
-
-        return
-
-    def __generate(self,Vsos,zero_weigths):
+    def __generate(self,Vsos,zero_weigths,z):
         state = self.generator.init_hidden_state()
         # geerate one random tensor per batch
-        z = self.gaussian.sample((self.batch_size,1,)).cuda()
+        
 
-        print(state[0].size())
+        # print(state[0].size())
         # apply social attention to get a unique feature vector per sample
         Co = self.social_attention(state[0][0].view(self.batch_size,1,self.dec_hidden_size),Vsos,zero_weigths)
         C = torch.cat([Co,z], dim = 2)
