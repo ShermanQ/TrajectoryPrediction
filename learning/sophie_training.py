@@ -111,6 +111,7 @@ def main():
     
     #losses
     criterion_gan = nn.BCELoss()
+    criterion_gen = custom_mse
     # criterion_train = 
     # criterion_eval = 
 
@@ -121,78 +122,11 @@ def main():
     
     # train_losses,eval_losses,batch_losses = training.training_loop(n_epochs,batch_size,net,device,train_loader,eval_loader,criterion_train,criterion_eval,optimizer,load_path = load_path)
     
-    for batch_idx, data in enumerate(train_loader):
-        inputs, labels = data
-        inputs, labels = inputs.to(device), labels.to(device)
-
-        # train discriminator
-        # discriminator.train()
-        # generator.eval()
-
-        optimizer_disc.zero_grad()
-        #### groundtruth batch
-        traj_obs = inputs[:,0].view(batch_size,obs_length,output_size)
-        traj_pred_real = labels[:,0].view(batch_size,pred_length,output_size)
-
-        real_traj = torch.cat([traj_obs,traj_pred_real], dim = 1)
-        real_labels = torch.ones(batch_size).to(device)
-        disc_class = discriminator(real_traj).view(batch_size)
-
-        real_loss = criterion_gan(disc_class,real_labels)
-
-        real_loss.backward()
+    # for batch_idx, data in enumerate(train_loader):
+    for epoch in range(0,n_epochs):
+        training.train_sophie(generator,discriminator,device,train_loader,criterion_gan,criterion_gen, 
+        optimizer_gen, optimizer_disc,epoch,batch_size,obs_length,pred_length,output_size)
         
-
-
-
-
-
-        #### generated batch
-
-        z = generator.gaussian.sample((batch_size,1,)).to(device)
-        traj_pred_fake = generator(inputs,z)
-
-        fake_traj = torch.cat([traj_obs,traj_pred_fake], dim = 1)
-
-        fake_labels = torch.zeros(batch_size).to(device)
-        disc_class = discriminator(fake_traj.detach()).view(batch_size)
-
-        fake_loss = criterion_gan(disc_class,fake_labels)
-
-        fake_loss.backward()
-
-        optimizer_disc.step()
-
-        #################
-        # train generator
-        
-        gen_labels = real_labels # we aim for the discriminator to predict 1
-        # discriminator.eval()
-        # generator.train()
-
-        optimizer_gen.zero_grad()
-
-        disc_class = discriminator(fake_traj).view(batch_size)
-
-        gen_loss_gan = criterion_gan(disc_class,gen_labels)
-
-        mse_loss = custom_mse(traj_pred_fake,traj_pred_real)
-
-        loss = gen_loss_gan + mse_loss
-
-        loss.backward()
-
-        optimizer_gen.step()
-
-
-
-        
-        if batch_idx % 100 == 0:
-            print(batch_idx)
-            print(real_loss.item())
-            print(fake_loss.item())
-            print(gen_loss_gan.item())
-            print(mse_loss)
 
 
 

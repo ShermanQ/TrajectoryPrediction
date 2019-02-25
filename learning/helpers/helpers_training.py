@@ -212,3 +212,102 @@ def training_loop(n_epochs,batch_size,net,device,train_loader,eval_loader,criter
         plt.show()
 
     return train_losses,eval_losses,batch_losses
+
+
+
+
+def train_sophie(
+        generator,
+        discriminator, 
+        device, 
+        train_loader,
+        criterion_gan,
+        criterion_gen, 
+        optimizer_gen,
+        optimizer_disc, 
+        epoch,
+        batch_size,
+        obs_length,
+        pred_length,
+        output_size,
+        print_every = 100):
+    # model.train()
+   
+    losses = {
+        "mse": 0.,
+        "real": 0.,
+        "fake": 0.,
+        "gen": 0.
+    }
+    batch_losses = {
+        "mse": [],
+        "real": [],
+        "fake": [],
+        "gen": []
+    }
+
+    batch_idx = 0
+    start_time = time.time()
+    for batch_idx, data in enumerate(train_loader):
+        inputs, labels = data
+        inputs, labels = inputs.to(device), labels.to(device)
+
+        # train discriminator
+        optimizer_disc.zero_grad()
+        #### groundtruth batch
+        traj_obs = inputs[:,0].view(batch_size,obs_length,output_size)
+        traj_pred_real = labels[:,0].view(batch_size,pred_length,output_size)
+
+        real_traj = torch.cat([traj_obs,traj_pred_real], dim = 1)
+        real_labels = torch.ones(batch_size).to(device)
+        disc_class = discriminator(real_traj).view(batch_size)
+
+        real_loss = criterion_gan(disc_class,real_labels)
+        real_loss.backward()
+
+        #### generated batch
+        z = generator.gaussian.sample((batch_size,1,)).to(device)
+        traj_pred_fake = generator(inputs,z)
+
+        fake_traj = torch.cat([traj_obs,traj_pred_fake], dim = 1)
+        fake_labels = torch.zeros(batch_size).to(device)
+        disc_class = discriminator(fake_traj.detach()).view(batch_size)
+
+        fake_loss = criterion_gan(disc_class,fake_labels)
+        fake_loss.backward()
+        optimizer_disc.step()
+
+        #################
+        # train generator        
+        gen_labels = real_labels # we aim for the discriminator to predict 1
+       
+        optimizer_gen.zero_grad()
+        disc_class = discriminator(fake_traj).view(batch_size)
+        gen_loss_gan = criterion_gan(disc_class,gen_labels)
+        mse_loss = criterion_gen(traj_pred_fake,traj_pred_real)
+        loss = gen_loss_gan + mse_loss
+        loss.backward()
+        optimizer_gen.step()
+
+
+        losses["mse"] += mse_loss.item()
+        losses["real"] += real_loss.item()
+        losses["fake"] += fake_loss.item()
+        losses["gen"] += gen_loss_gan.item()
+
+        batch_losses["mse"].append(mse_loss.item())
+        batch_losses["real"].append(real_loss.item())
+        batch_losses["fake"].append(fake_loss.item())
+        batch_losses["gen"].append(gen_loss_gan.item())
+
+
+
+        if batch_idx % print_every == 0:
+            print(batch_idx,time.time()-start_time)   
+            print("average mse loss summed over trajectory: {}, gan loss real: {},gan loss fake: {}, gen loss: {}".format(batch_losses["mse"][-1],batch_losses["real"][-1],batch_losses["fake"][-1],batch_losses["gen"][-1]))
+    for key in losses:
+        losses[key] /= batch_idx    
+    print('Epoch n {} Loss: {}, gan loss real: {},gan loss fake: {}, gen loss: {}'.format(epoch,losses["mse"],losses["real"],losses["fake"],losses["gen"]))
+
+
+    return losses,batch_losses
