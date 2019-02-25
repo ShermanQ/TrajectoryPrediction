@@ -126,7 +126,7 @@ def main():
     for epoch in range(0,n_epochs):
         training.train_sophie(generator,discriminator,device,train_loader,criterion_gan,criterion_gen, 
         optimizer_gen, optimizer_disc,epoch,batch_size,obs_length,pred_length,output_size)
-        
+        training.eval_sophie(generator,discriminator,device,eval_loader,criterion_gan,criterion_gen,epoch,batch_size,obs_length,pred_length,output_size)
 
 
 
