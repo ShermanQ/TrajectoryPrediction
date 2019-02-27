@@ -16,7 +16,7 @@ import time
 from classes.datasets import CustomDataset,CustomDatasetIATCNN
 from classes.sophie_gan import sophie,discriminatorLSTM,custom_mse
 import helpers.helpers_training as training
-
+import torchvision.models as models
 """
     This script trains a iatcnn model
     The data is loaded using custom dataset
@@ -50,7 +50,7 @@ def main():
         
     # parameters
     
-    batch_size= 32 #20
+    batch_size= 12 #20
     obs_length= 8
     pred_length  = 12
 
@@ -72,11 +72,12 @@ def main():
     n_epochs = 2
 
     load_path = None
-    load_path = "./learning/data/models/sophie_1551128311.430322.tar"
+    # load_path = "./learning/data/models/sophie_1551128311.430322.tar"
     # split train eval indices
     train_indices,eval_indices = train_test_split(np.array([i for i in range(nb_samples)]),test_size = 0.2,random_state = 42)
 
     print(type(train_indices))
+
 
     
     # load datasets

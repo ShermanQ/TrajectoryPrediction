@@ -76,11 +76,13 @@ def main():
 
     csv_file = "new_rates/bad_30.0to2.5.csv"
     csv_file = "bad.csv"
-    csv_file = "lankershim_inter2.csv"
+    # csv_file = "lankershim_inter2.csv"
+    csv_file = "fsc_0.csv"
+
     file_path = CSV + csv_file
     user = "car"
     # user = "pedestrian\n"
-    # user = None
+    user = None
     
     # id_scene = 1
     prefix = "minute number: "

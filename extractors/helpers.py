@@ -156,6 +156,7 @@ def frame_corrector(subscene_path):
                 # start_frame = frame
             if frame < start_frame:
                 start_frame = frame
+    
   
     return start_frame
 

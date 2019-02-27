@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as f 
 import random
 import numpy as np 
+import torchvision
 
 
 def custom_mse(pred_seq,gt_seq):
@@ -12,6 +13,46 @@ def custom_mse(pred_seq,gt_seq):
     mse_loss = torch.mean(torch.sum(torch.sum(mse(pred_seq,gt_seq),dim = 2),dim = 1))
 
     return mse_loss
+
+#input shape = (3*224*224)
+class customCNN(nn.Module):
+    
+    def __init__(self,device,batch_size,nb_channels_in = 3, nb_channels_out = 512, input_size = 224, output_size = 7, embedding_size = 16):
+        super(customCNN,self).__init__()
+
+        self.device = device
+        self.input_size = input_size
+        self.output_size = output_size
+
+        self.embedding_size = embedding_size
+        self.batch_size = batch_size
+        self.nb_channels_in = nb_channels_in
+        self.nb_channels_out = nb_channels_out
+
+        # out number of features is 25088 = 512 * 7 * 7 
+        self.cnn = torchvision.models.vgg19(pretrained=True).features
+        # self.embedding = nn.Linear(self.input_size,self.embedding_size)
+        self.projection = nn.Conv2d(nb_channels_out,1,1)
+        self.embedding = nn.Linear(output_size**2, embedding_size)
+
+        
+
+        
+
+    def forward(self,x):
+        x = x.view(self.batch_size,self.nb_channels_in,self.input_size,self.input_size)
+        cnn_features = self.cnn(x)
+
+        # cnn_features = cnn_features.view(self.batch_size,-1)
+        cnn_features = cnn_features.view(self.batch_size,self.nb_channels_out,self.output_size,self.output_size) 
+        projected_features = self.projection(cnn_features).view(self.batch_size,self.output_size**2) # B * 49
+
+        embedded_features = self.embedding(projected_features).view(self.batch_size,self.embedding_size)
+
+        return embedded_features
+
+
+
 """
     Straightforward LSTM encoder
 
@@ -290,7 +331,7 @@ class sophie(nn.Module):
         self.nb_neighbors_max = nb_neighbors_max
         self.pred_length = pred_length
         self.obs_length = obs_length
-
+        self.cnn = customCNN(device,batch_size)
         self.output_size = output_size
         # self.disc_hidden_size = disc_hidden_size
         # self.disc_nb_layer = disc_nb_layer
@@ -308,6 +349,11 @@ class sophie(nn.Module):
         
 
     def forward(self,x,z):
+
+        images = torch.randn(self.batch_size,3,224,224).to(self.device)
+        embedded_cnn_features = self.cnn(images)
+        del images
+        print(embedded_cnn_features.size())
         B,N,S,I = x.size()
 
         # number of active agent per batch
