@@ -31,6 +31,9 @@ class customCNN(nn.Module):
 
         # out number of features is 25088 = 512 * 7 * 7 
         self.cnn = torchvision.models.vgg19(pretrained=True).features
+
+        for param in self.cnn.parameters():
+            param.requires_grad = False
         # self.embedding = nn.Linear(self.input_size,self.embedding_size)
         self.projection = nn.Conv2d(nb_channels_out,1,1)
         self.embedding = nn.Linear(output_size**2, embedding_size)
@@ -41,6 +44,7 @@ class customCNN(nn.Module):
 
     def forward(self,x):
         x = x.view(self.batch_size,self.nb_channels_in,self.input_size,self.input_size)
+        # print("test")
         cnn_features = self.cnn(x)
 
         # cnn_features = cnn_features.view(self.batch_size,-1)
@@ -369,8 +373,8 @@ class sophie(nn.Module):
     def forward(self,x,z):
 
         # get embedded spatial features
-        images = torch.randn(self.batch_size,3,224,224)
-        Vsps = self.cnn(images.to(self.device))
+        images = torch.randn(self.batch_size,3,224,224).to(self.device)
+        Vsps = self.cnn(images)
         del images
 
         

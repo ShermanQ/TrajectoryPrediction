@@ -328,56 +328,61 @@ def eval_sophie(
         print_every = 100):
     # model.train()
    
-    generator.eval()
-    discriminator.eval()
+    # generator.eval()
+    # discriminator.eval()
+    with torch.no_grad():
+        losses = {
+            "mse": 0.,
+            "real": 0.,
+            "fake": 0.,
+            "gen": 0.
+        }
+        # generator.to(device)
+        # discriminator.to(device)
 
-    losses = {
-        "mse": 0.,
-        "real": 0.,
-        "fake": 0.,
-        "gen": 0.
-    }
+        batch_idx = 0
+        for batch_idx, data in enumerate(eval_loader):
+            inputs, labels = data
+            inputs, labels = inputs.to(device), labels.to(device)
 
-    batch_idx = 0
-    for batch_idx, data in enumerate(eval_loader):
-        inputs, labels = data
-        inputs, labels = inputs.to(device), labels.to(device)
+            # train discriminator
+            #### groundtruth batch
+            traj_obs = inputs[:,0].view(batch_size,obs_length,output_size)
+            traj_pred_real = labels[:,0].view(batch_size,pred_length,output_size)
 
-        # train discriminator
-        #### groundtruth batch
-        traj_obs = inputs[:,0].view(batch_size,obs_length,output_size)
-        traj_pred_real = labels[:,0].view(batch_size,pred_length,output_size)
+            real_traj = torch.cat([traj_obs,traj_pred_real], dim = 1)
+            real_labels = torch.ones(batch_size).to(device)
+            disc_class = discriminator(real_traj).view(batch_size)
 
-        real_traj = torch.cat([traj_obs,traj_pred_real], dim = 1)
-        real_labels = torch.ones(batch_size).to(device)
-        disc_class = discriminator(real_traj).view(batch_size)
+            real_loss = criterion_gan(disc_class,real_labels)
+            
+            
+            #### generated batch
+            z = generator.gaussian.sample((batch_size,1,))
+            z = z.to(device)
+            # print(generator)
+            traj_pred_fake = generator(inputs,z)
 
-        real_loss = criterion_gan(disc_class,real_labels)
-        
-        #### generated batch
-        z = generator.gaussian.sample((batch_size,1,)).to(device)
-        traj_pred_fake = generator(inputs,z)
+            fake_traj = torch.cat([traj_obs,traj_pred_fake], dim = 1)
+            fake_labels = torch.zeros(batch_size).to(device)
+            disc_class = discriminator(fake_traj.detach()).view(batch_size)
 
-        fake_traj = torch.cat([traj_obs,traj_pred_fake], dim = 1)
-        fake_labels = torch.zeros(batch_size).to(device)
-        disc_class = discriminator(fake_traj.detach()).view(batch_size)
+            fake_loss = criterion_gan(disc_class,fake_labels)
+            
+            mse_loss = criterion_gen(traj_pred_fake,traj_pred_real)
 
-        fake_loss = criterion_gan(disc_class,fake_labels)
-        
-        mse_loss = criterion_gen(traj_pred_fake,traj_pred_real)
-
-        losses["mse"] += mse_loss.item()
-        losses["real"] += real_loss.item()
-        losses["fake"] += fake_loss.item()
+            losses["mse"] += mse_loss.item()
+            losses["real"] += real_loss.item()
+            losses["fake"] += fake_loss.item()
 
 
 
-    for key in losses:
-        losses[key] /= batch_idx    
-    print('Eval Epoch n {} Loss: {}, gan loss real: {},gan loss fake: {}'.format(epoch,losses["mse"],losses["real"],losses["fake"]))
+        for key in losses:
+            losses[key] /= batch_idx    
+        print('Eval Epoch n {} Loss: {}, gan loss real: {},gan loss fake: {}'.format(epoch,losses["mse"],losses["real"],losses["fake"]))
 
-    generator.train()
-    discriminator.train()
+    # generator.train()
+    # discriminator.train()
     return losses
 
 

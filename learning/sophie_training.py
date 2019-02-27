@@ -50,9 +50,8 @@ def main():
         
     # parameters
     
-    # cuda out of memory if batch_size > 12
-    # if we want batch size > 12
-    batch_size= 12 #20
+    
+    batch_size= 32 #20
     obs_length= 8
     pred_length  = 12
 
