@@ -47,9 +47,10 @@ class customCNN(nn.Module):
         cnn_features = cnn_features.view(self.batch_size,self.nb_channels_out,self.output_size,self.output_size) 
         projected_features = self.projection(cnn_features).view(self.batch_size,self.output_size**2) # B * 49
 
-        embedded_features = self.embedding(projected_features).view(self.batch_size,self.embedding_size)
+        # embedded_features = self.embedding(projected_features).view(self.batch_size,self.embedding_size)
 
-        return embedded_features
+        # return embedded_features
+        return projected_features
 
 
 
@@ -161,7 +162,7 @@ class generatorLSTM(nn.Module):
 class SoftAttention(nn.Module):
     # def __init__(self,input_size,hidden_size,num_layers,output_size,batch_size,seq_len):
     
-    def __init__(self,device,batch_size,input_size,output_size,hdec_size ,nb_weights,layers = [64,128,64]):
+    def __init__(self,device,batch_size,input_size,output_size,hdec_size , nb_weights,apply_weigths_filter = True,layers = [64,128,64]):
         super(SoftAttention,self).__init__()
 
         self.device = device
@@ -171,6 +172,8 @@ class SoftAttention(nn.Module):
 
         self.nb_weights = nb_weights
         self.batch_size = batch_size
+        self.apply_weigths_filter = apply_weigths_filter
+
         self.layers = [hdec_size] + layers + [nb_weights]
         self.features_embedding = nn.Linear(input_size,output_size)
         modules = []
@@ -184,31 +187,35 @@ class SoftAttention(nn.Module):
 
         
 
-    def forward(self,hdec,features,zero_weigths = None,apply_weigths_filter = True):
+    def forward(self,hdec,features,zero_weigths = None):
         features = self.features_embedding(features)
         features = f.relu(features)
         # attn_weigths = f.softmax(self.core(hdec),dim = 1)
         attn_weigths = self.core(hdec)
 
         # set to zero the weight of padding(no vehicule present)
-        if apply_weigths_filter :
+        if self.apply_weigths_filter :
             attn_weigths *= zero_weigths
         
+        
 
+        if features.size()[1] == attn_weigths.size()[1]:
+            diags = []
+            for btch in features:
+
+                diags.append(torch.diag(btch))
+
+            features = torch.stack(diags).view(self.batch_size,self.output_size,self.output_size)
+            attn_weigths = attn_weigths.view(self.batch_size, 1 , attn_weigths.size()[1])
+        
 
         
 
         attn_applied = torch.bmm(attn_weigths, features)
+
         
         return attn_applied
 
-
-
-    def init_hidden_state(self,batch_size):
-        h_0 = torch.rand(self.num_layers,batch_size,self.hidden_size).to(self.device)
-        c_0 = torch.rand(self.num_layers,batch_size,self.hidden_size).to(self.device)
-
-        return (h_0,c_0)
 
     
 """
@@ -313,6 +320,7 @@ class sophie(nn.Module):
             output_size = 2,
             pred_length = 12,
             obs_length = 8,
+            # gpu_batch_limit = 12
 
             # disc_hidden_size = 64,
             # disc_nb_layer = 1
@@ -332,7 +340,13 @@ class sophie(nn.Module):
         self.pred_length = pred_length
         self.obs_length = obs_length
         self.cnn = customCNN(device,batch_size)
+        # batch_ size is either gpu_batch limit either a multiple of 
+        # gpu_batch_limit divided in mini batches of size gpu_batch_limit
+        # self.cnn = customCNN(device,gpu_batch_limit) 
+
         self.output_size = output_size
+        # self.gpu_batch_limit = gpu_batch_limit
+
         # self.disc_hidden_size = disc_hidden_size
         # self.disc_nb_layer = disc_nb_layer
 
@@ -342,7 +356,11 @@ class sophie(nn.Module):
         self.social_features_embedding_size = social_features_embedding_size
         self.social_attention = SoftAttention(device,batch_size,enc_hidden_size,social_features_embedding_size,dec_hidden_size ,nb_neighbors_max)
         
-        dec_input_size = gaussian_dim + 1*embedding_size + 0*embedding_size
+        self.spatial_attention = SoftAttention(device,batch_size,7*7,embedding_size,dec_hidden_size ,embedding_size,apply_weigths_filter = False)
+        
+        # device,batch_size,input_size,output_size,hdec_size ,nb_weights,layers = [64,128,64])
+
+        dec_input_size = gaussian_dim + 1*embedding_size + 1*embedding_size
         
         self.generator = decoderLSTM(device,batch_size,dec_input_size,output_size,dec_hidden_size,dec_num_layer)
         # self.discriminator = discriminatorLSTM(2*batch_size,enc_input_size,embedding_size,disc_hidden_size,disc_nb_layer,pred_length + obs_length)
@@ -350,10 +368,14 @@ class sophie(nn.Module):
 
     def forward(self,x,z):
 
-        images = torch.randn(self.batch_size,3,224,224).to(self.device)
-        embedded_cnn_features = self.cnn(images)
+        # get embedded spatial features
+        images = torch.randn(self.batch_size,3,224,224)
+        Vsps = self.cnn(images.to(self.device))
         del images
-        print(embedded_cnn_features.size())
+
+        
+
+
         B,N,S,I = x.size()
 
         # number of active agent per batch
@@ -409,19 +431,22 @@ class sophie(nn.Module):
 
         # C = torch.cat([Co,z], dim = 2)
         # z = self.gaussian.sample((self.batch_size,1,)).to(self.device)
-        generator_outputs = self.__generate(Vsos,zero_weigths,z)
+        generator_outputs = self.__generate(Vsos,Vsps,zero_weigths,z)
 
         return generator_outputs
 
-    def __generate(self,Vsos,zero_weigths,z):
+    def __generate(self,Vsos,Vsps,zero_weigths,z):
+        
         state = self.generator.init_hidden_state()
+        Csp = self.spatial_attention(state[0][0],Vsps)
+        
         # geerate one random tensor per batch
         
 
         # print(state[0].size())
         # apply social attention to get a unique feature vector per sample
         Co = self.social_attention(state[0][0].view(self.batch_size,1,self.dec_hidden_size),Vsos,zero_weigths)
-        C = torch.cat([Co,z], dim = 2)
+        C = torch.cat([Co,Csp,z], dim = 2)
 
         outputs = []
 
@@ -431,7 +456,7 @@ class sophie(nn.Module):
             outputs.append(output)
 
             Co = self.social_attention(state[0][0].view(self.batch_size,1,self.dec_hidden_size),Vsos,zero_weigths)
-            C = torch.cat([Co,z], dim = 2)
+            C = torch.cat([Co,Csp,z], dim = 2)
 
         outputs = torch.stack(outputs).view(self.batch_size,self.pred_length,self.output_size)
         return outputs
@@ -487,6 +512,23 @@ class sophie(nn.Module):
 
 
 
+    # batch_size needs to be a multiple of gpu_batch_limit
+    # def __gpu_memory_getaround(self,images):
+    #     _,c,i,_ = images.size()
+    #     if self.gpu_batch_limit + 1 > self.batch_size:
+    #         return self.cnn(images.to(self.device))
+    #     else:
+    #         images = images.view(-1,self.gpu_batch_limit,c,i,i)
+            
+
+    #         features = []
+    #         for img in images:
+    #             print(img.size())
+    #             features.append(self.cnn(img.to(self.device)).cpu())
+    #             torch.cuda.synchronize()
+                
+    #         features = torch.stack(features).view(self.batch,c,i,i)
+    #         return features
 
 
 
