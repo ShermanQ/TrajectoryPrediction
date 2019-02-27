@@ -165,7 +165,7 @@ def features_labels(len_traj,shift,t_obs,t_pred,current_id,ids,current_frame):
         sample_id: running id of the number of training sample
     out:
 """
-def persist_data(ids,parameters,current_id,current_frame,features,labels,data_writer,label_writer,sample_id):
+def persist_data(ids,parameters,current_id,current_frame,features,labels,data_writer,label_writer,scene_writer,sample_id,scene):
     
 
     # ids_list = sorted([id_ for id_ in ids if add_neighbor(parameters["t_obs"],ids,id_,current_frame)])
@@ -194,6 +194,7 @@ def persist_data(ids,parameters,current_id,current_frame,features,labels,data_wr
 
     data_writer.writerow(features)
     label_writer.writerow(labels)
+    scene_writer.writerow([scene])
 
     return sample_id
 def are_frames_continuous(frames):
@@ -227,42 +228,46 @@ def extract_data(parameters):
         os.remove(parameters["data_path"])
     if os.path.exists(parameters["label_path"]):
         os.remove(parameters["label_path"])
+    if os.path.exists(parameters["scene_path"]):
+        os.remove(parameters["scene_path"])
 
     with open(parameters["data_path"],"a") as data_csv:
         data_writer = csv.writer(data_csv)
         with open(parameters["label_path"],"a") as label_csv:
             label_writer = csv.writer(label_csv)
+            with open(parameters["scene_path"],"a") as scene_csv:
+                scene_writer = csv.writer(scene_csv)
+                with open(parameters["trajectories_temp"]) as trajectories:
+                    with open(parameters["frames_temp"]) as file_frames:
+                        for k,trajectory in enumerate(trajectories):
 
-            with open(parameters["trajectories_temp"]) as trajectories:
-                with open(parameters["frames_temp"]) as file_frames:
-                    for k,trajectory in enumerate(trajectories):
+                            
+                            trajectory = json.loads(trajectory)
 
-                        
-                        trajectory = json.loads(trajectory)
+                            scene_name = trajectory["scene"]
+                            file_frames,a = tee(file_frames)
+                            
+                            frames = trajectory["frames"]
+                            current_id = int(trajectory["id"])
+                            # if current_id == 63:
+                            #     print("63")
+                            continuous = are_frames_continuous(frames)
 
-                        file_frames,a = tee(file_frames)
-                        
-                        frames = trajectory["frames"]
-                        current_id = int(trajectory["id"])
-                        # if current_id == 63:
-                        #     print("63")
-                        continuous = are_frames_continuous(frames)
+                            if continuous:
+                                start,stop = frames[0],frames[-1] + 1
 
-                        if continuous:
-                            start,stop = frames[0],frames[-1] + 1
+                                ids = get_neighbors(islice(a,start,stop))
+                                len_traj = len(ids[current_id])
 
-                            ids = get_neighbors(islice(a,start,stop))
-                            len_traj = len(ids[current_id])
-
-                            for i in range(0,len_traj,parameters["shift"]):
-                                
-                                features,labels = features_labels(len_traj,parameters["shift"],parameters["t_obs"],parameters["t_pred"],current_id,ids,i)
-                                if features != []:
-                                    sample_id = persist_data(ids,parameters,current_id,i,features,labels,data_writer,label_writer,sample_id)
-                            # if sample_id == 39:
-                            #     print("")
-                        else:
-                            print("trajectory {} discarded".format(current_id))
+                                for i in range(0,len_traj,parameters["shift"]):
+                                    
+                                    features,labels = features_labels(len_traj,parameters["shift"],parameters["t_obs"],parameters["t_pred"],current_id,ids,i)
+                                    if features != []:
+                                        sample_id = persist_data(ids,parameters,current_id,i,features,labels,data_writer,label_writer,scene_writer,sample_id,scene_name)
+                                # if sample_id == 39:
+                                #     print("")
+                            else:
+                                print("trajectory {} discarded".format(current_id))
     
     os.remove(parameters["frames_temp"])
     os.remove(parameters["trajectories_temp"])

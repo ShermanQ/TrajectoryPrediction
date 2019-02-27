@@ -370,10 +370,10 @@ class sophie(nn.Module):
         # self.discriminator = discriminatorLSTM(2*batch_size,enc_input_size,embedding_size,disc_hidden_size,disc_nb_layer,pred_length + obs_length)
         
 
-    def forward(self,x,z):
+    def forward(self,x,images,z):
 
         # get embedded spatial features
-        images = torch.randn(self.batch_size,3,224,224).to(self.device)
+        # images = torch.randn(self.batch_size,3,224,224).to(self.device)
         Vsps = self.cnn(images)
         del images
 

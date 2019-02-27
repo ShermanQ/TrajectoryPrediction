@@ -249,8 +249,8 @@ def train_sophie(
     batch_idx = 0
     start_time = time.time()
     for batch_idx, data in enumerate(train_loader):
-        inputs, labels = data
-        inputs, labels = inputs.to(device), labels.to(device)
+        inputs,images, labels = data
+        inputs,images, labels = inputs.to(device),images.to(device), labels.to(device)
 
         # train discriminator
         optimizer_disc.zero_grad()
@@ -267,7 +267,7 @@ def train_sophie(
 
         #### generated batch
         z = generator.gaussian.sample((batch_size,1,)).to(device)
-        traj_pred_fake = generator(inputs,z)
+        traj_pred_fake = generator(inputs,images,z)
 
         fake_traj = torch.cat([traj_obs,traj_pred_fake], dim = 1)
         fake_labels = torch.zeros(batch_size).to(device)
@@ -342,8 +342,8 @@ def eval_sophie(
 
         batch_idx = 0
         for batch_idx, data in enumerate(eval_loader):
-            inputs, labels = data
-            inputs, labels = inputs.to(device), labels.to(device)
+            inputs,images, labels = data
+            inputs,images, labels = inputs.to(device),images.to(device), labels.to(device)
 
             # train discriminator
             #### groundtruth batch
@@ -361,7 +361,7 @@ def eval_sophie(
             z = generator.gaussian.sample((batch_size,1,))
             z = z.to(device)
             # print(generator)
-            traj_pred_fake = generator(inputs,z)
+            traj_pred_fake = generator(inputs,images,z)
 
             fake_traj = torch.cat([traj_obs,traj_pred_fake], dim = 1)
             fake_labels = torch.zeros(batch_size).to(device)

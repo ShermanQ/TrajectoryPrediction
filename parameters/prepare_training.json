@@ -8,7 +8,8 @@
     "scene": "lankershim_inter2",
     "framerate" : "1.0",
     "data_path": "./data/deep/data.csv",
-    "label_path": "./data/deep/labels.csv"
+    "label_path": "./data/deep/labels.csv",
+    "scene_path": "./data/deep/scenes.csv"
 
 
 }
