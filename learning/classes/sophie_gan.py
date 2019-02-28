@@ -4,7 +4,7 @@ import torch.nn.functional as f
 import random
 import numpy as np 
 import torchvision
-
+import imp
 
 def custom_mse(pred_seq,gt_seq):
     mse = nn.MSELoss(reduction= "none")
@@ -14,10 +14,21 @@ def custom_mse(pred_seq,gt_seq):
 
     return mse_loss
 
+# class VOCfc32(nn.Module):
+#     # def __init__(self,input_size,hidden_size,num_layers,output_size,batch_size,seq_len):
+    
+#     def __init__(self,layers):
+#         super(VOCfc32,self).__init__()
+
+#         self.net = layers
+
+#     def forward(self,x):
+           
+#         return self.net(x)
 #input shape = (3*224*224)
 class customCNN(nn.Module):
     
-    def __init__(self,device,batch_size,nb_channels_in = 3, nb_channels_out = 512, input_size = 224, output_size = 7, embedding_size = 16):
+    def __init__(self,device,batch_size,nb_channels_in = 3, nb_channels_out = 512, input_size = 224, output_size = 7, embedding_size = 16,weights_path = "./learning/data/pretrained_models/voc_fc32_state.tar"):
         super(customCNN,self).__init__()
 
         self.device = device
@@ -28,17 +39,29 @@ class customCNN(nn.Module):
         self.batch_size = batch_size
         self.nb_channels_in = nb_channels_in
         self.nb_channels_out = nb_channels_out
+        self.weights_path = weights_path
 
         # out number of features is 25088 = 512 * 7 * 7 
-        self.cnn = torchvision.models.vgg19(pretrained=True).features
+        # self.cnn = torchvision.models.vgg19(pretrained=True).features
+        self.__init_cnn()
+        # main_model = imp.load_source('MainModel', "./learning/data/pretrained_models/vgg16_voc.py")
+        # self.cnn = torch.load("./learning/data/pretrained_models/vgg16_voc.pth").to(device)
+        # print(self.cnn)
 
-        for param in self.cnn.parameters():
-            param.requires_grad = False
+        
         # self.embedding = nn.Linear(self.input_size,self.embedding_size)
         self.projection = nn.Conv2d(nb_channels_out,1,1)
         self.embedding = nn.Linear(output_size**2, embedding_size)
 
         
+    def __init_cnn(self):
+        self.cnn = torchvision.models.vgg16(pretrained=False).features
+        print(type(self.cnn))
+        
+        self.cnn.load_state_dict(torch.load(self.weights_path)["state_dict"])
+        for param in self.cnn.parameters():
+            param.requires_grad = False
+        self.cnn = self.cnn.to(self.device)
 
         
 
