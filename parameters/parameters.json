@@ -1,5 +1,9 @@
 {
     "koper_extractor":"./parameters/koper_extractor.json",
-    "sdd_extractor":"./parameters/sdd_extractor.json"
+    "sdd_extractor":"./parameters/sdd_extractor.json",
+    "highd_extractor":"./parameters/highd_extractor.json",
+    "ngsim_extractor":"./parameters/ngsim_extractor.json"
+
+
 
 }
