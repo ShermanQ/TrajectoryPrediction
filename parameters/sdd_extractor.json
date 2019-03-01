@@ -1,0 +1,23 @@
+{
+    "dataset":"sdd",
+    "user_types": {
+        "\"Biker\"" : "bicycle", 
+        "\"Pedestrian\"" : "pedestrian", 
+        "\"Cart\"" : "cart", 
+        "\"Car\"": "car", 
+        "\"Bus\"" : "bus", 
+        "\"Skater\"": "skate" },
+    "trajectory_file": "/annotations.txt",
+    "scene_dirs": [
+        "bookstore",
+        "coupa",
+        "deathCircle",
+        "gates",
+        "hyang",
+        "little",
+        "nexus",
+        "quad"
+
+    ],
+    "data_path":"sdd/trajectories/"
+}

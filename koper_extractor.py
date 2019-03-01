@@ -15,7 +15,7 @@ class KoperExtractor():
         param = json.load(open(param_path))
 
         self.dataset = param["dataset"]
-        self.original_dataset = data["original_datasets"] + param["dataset"] + "/"
+        self.original_dataset = data["original_datasets"] + param["data_path"]
         self.destination_file = data["extracted_datasets"] + param["dest_file"]
         self.user_types = param["user_types"]
     
@@ -39,13 +39,13 @@ class KoperExtractor():
                     ref = ref["features"][0][0]
 
                     for object_ in ref:
-                        row = self.__get_row(object_,frame,file_index)
+                        row = self.__parse_row(object_,frame,file_index)
                         csv_writer.writerow(row)           
                     frame += 1
 
     
 
-    def __get_row(self,object_,frame,file_index):
+    def __parse_row(self,object_,frame,file_index):
         theta = float(object_[6])
         width = float(object_[3])
         length = float(object_[4])
