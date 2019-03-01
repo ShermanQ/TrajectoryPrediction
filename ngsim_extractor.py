@@ -7,7 +7,7 @@ import json
 from sklearn import neural_network,preprocessing,metrics,model_selection
 import pandas as pd 
 import clip_scene
-
+#
 
 def del_files_containing_string(strings,dir_path):
     # in data/csv delete every csv file related to the selected scene

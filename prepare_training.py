@@ -195,7 +195,7 @@ def persist_data(ids,parameters,current_id,current_frame,features,labels,data_wr
     data_writer.writerow(features)
     label_writer.writerow(labels)
     scene_writer.writerow([scene])
-
+#
     return sample_id
 def are_frames_continuous(frames):
     continuous = True

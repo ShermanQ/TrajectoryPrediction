@@ -1,0 +1,9 @@
+{
+    "dataset":"koper",
+    "user_types": {
+        "0": "pedestrian",
+        "1": "bicycle",
+        "3": "car",
+        "5": "truck" },
+    "dest_file": "koper.csv"
+}

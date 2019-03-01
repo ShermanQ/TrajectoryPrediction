@@ -1,0 +1,5 @@
+{
+    "koper_extractor":"./parameters/koper_extractor.json",
+    "sdd_extractor":"./parameters/sdd_extractor.json"
+
+}

@@ -16,7 +16,7 @@ CSV = ROOT + "data/csv/"
 
 
 
-
+#
 
     # print(trajectory["id"],np.mean(deltas),np.std(deltas))
         

@@ -23,7 +23,7 @@ def get_boudaries(file_path):
             if y > max_y:
                 max_y = y
     return min_x,max_x,min_y,max_y
-
+#
 def min_max_scale(parameters):
     if os.path.exists(parameters["scene_dest"]):
         os.remove(parameters["scene_dest"])
