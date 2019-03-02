@@ -1,6 +1,6 @@
 import time
 import csv
-import extractors.helpers as helpers
+import helpers
 import os
 import sys
 import json

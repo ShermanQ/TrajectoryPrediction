@@ -1,8 +1,5 @@
 import csv
-import os
-import time
-import extractors.helpers as helpers
-import numpy as np
+import helpers
 import sys
 import json
 

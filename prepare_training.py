@@ -7,7 +7,7 @@ import time
 from itertools import tee
 import os
 
-  
+  #
 def round_coordinates(coordinates,decimal_nb = 2):
     x = coordinates[0]
     y = coordinates[1]

@@ -1,8 +1,6 @@
 import scipy.io as sio
-import numpy as np 
-import extractors.helpers as helpers
+import helpers
 import csv
-import os 
 import sys
 import json
 #TODO self.get_bb
