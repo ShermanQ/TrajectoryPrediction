@@ -80,6 +80,7 @@ def main():
     csv_file = "fsc_0.csv"
 
     file_path = CSV + csv_file
+    file_path = "data/temp/lankershim_inter2.csv"
     user = "car"
     # user = "pedestrian\n"
     user = None
