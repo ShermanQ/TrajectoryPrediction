@@ -8,5 +8,8 @@
     "reports": "./data/reports/",
     "temp": "./data/temp/",
     "framerates_json": "./parameters/framerates.json",
-    "scalers":"./data/scalers/"
+    "scalers":"./data/scalers/",
+    "prepared_samples": "./data/prepared_datasets/samples/",
+    "prepared_labels": "./data/prepared_datasets/labels/"
+
 }

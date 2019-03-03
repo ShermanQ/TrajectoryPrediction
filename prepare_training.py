@@ -7,13 +7,7 @@ import time
 from itertools import tee
 import os
 
-  #
-def round_coordinates(coordinates,decimal_nb = 2):
-    x = coordinates[0]
-    y = coordinates[1]
-    x = int( x * 10**decimal_nb)/float(10**decimal_nb)
-    y = int( y * 10**decimal_nb)/float(10**decimal_nb)
-    return [x,y]
+ 
 
 """
     in: 
@@ -26,7 +20,6 @@ def round_coordinates(coordinates,decimal_nb = 2):
         the given frame
 """
 def get_neighbors(frames):
-# def get_neighbors_coordinates(start,stop,frames,ids):
     ids = {}
     # with open(frames_path) as frames:
     for i,frame in enumerate(frames):
@@ -39,7 +32,7 @@ def get_neighbors(frames):
         
         for id_ in ids:
             if str(id_) in frame:
-                ids[id_].append(round_coordinates(frame[str(id_)]["coordinates"]))
+                ids[id_].append(frame[str(id_)]["coordinates"])
             else:
                 ids[id_].append([-1,-1])
     return ids
