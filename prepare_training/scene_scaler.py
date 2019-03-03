@@ -5,7 +5,7 @@ import numpy as np
 import helpers
 import json
 import sys
-
+import joblib
 # TODO save scaler
 
 class SceneScaler():
@@ -15,11 +15,10 @@ class SceneScaler():
         self.center = center
         self.temp = data["temp"] + "temp.csv"
         self.original_file = data["preprocessed_datasets"] + "{}.csv"
+        self.scaler_dest = data["scalers"] + "{}.joblib"
 
 
     def min_max_scale(self,scene):
-        # if os.path.exists(parameters["scene_dest"]):
-        #     os.remove(parameters["scene_dest"])
 
         self.original_file = self.original_file.format(scene)
 
@@ -57,6 +56,10 @@ class SceneScaler():
                         new_row[4 + i] = ps[i][0]
                     data_writer.writerow(row)
         helpers.remove_file(self.temp)
+
+        
+        helpers.remove_file(self.scaler_dest.format(scene))
+        joblib.dump(mms, self.scaler_dest.format(scene)) 
 
     def __get_boudaries(self,file_path):
         with open(file_path) as scene_csv:

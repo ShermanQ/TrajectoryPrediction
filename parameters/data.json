@@ -5,5 +5,6 @@
     "prepared_datasets": "./data/prepared_datasets/",
     "reports": "./data/reports/",
     "temp": "./data/temp/",
-    "framerates_json": "./parameters/framerates.json"
+    "framerates_json": "./parameters/framerates.json",
+    "scalers":"./data/scalers/"
 }
