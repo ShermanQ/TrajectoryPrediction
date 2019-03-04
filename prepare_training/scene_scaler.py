@@ -20,13 +20,13 @@ class SceneScaler():
 
     def min_max_scale(self,scene):
 
-        self.original_file = self.original_file.format(scene)
+        # self.original_file = self.original_file.format(scene)
 
         helpers.remove_file(self.temp)
-        os.rename(self.original_file,self.temp)
-        helpers.remove_file(self.original_file)
+        os.rename(self.original_file.format(scene),self.temp)
+        helpers.remove_file(self.original_file.format(scene))
 
-        with open(self.original_file,"a+") as data_csv:
+        with open(self.original_file.format(scene),"a+") as data_csv:
             data_writer = csv.writer(data_csv)
 
             mms = MinMaxScaler()

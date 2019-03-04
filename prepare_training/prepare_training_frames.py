@@ -132,6 +132,7 @@ class PrepareTrainingFrames():
         # with open(frames_path) as frames:
         for i,frame in enumerate(frames):
             frame = json.loads(frame)
+            frame = frame["ids"]
 
             for id_ in frame:
                 if id_ != "frame":

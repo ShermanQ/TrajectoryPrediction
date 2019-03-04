@@ -18,17 +18,17 @@ class DigitManager():
     def change_digit_number(self,scene_name):
 
         
-        self.original_file = self.original_file.format(scene_name)
-        self.destination_file = self.destination_file.format(scene_name)
+        # self.original_file = self.original_file.format(scene_name)
+        # self.destination_file = self.destination_file.format(scene_name)
 
         helpers.remove_file(self.temp)
-        os.rename(self.original_file,self.temp)
+        os.rename(self.original_file.format(scene_name),self.temp)
 
-        helpers.remove_file(self.original_file)
+        helpers.remove_file(self.original_file.format(scene_name))
 
         with open(self.temp) as scene_csv:
             csv_reader = csv.reader(scene_csv)
-            with open(self.original_file,"a") as new_csv:
+            with open(self.original_file.format(scene_name),"a") as new_csv:
                 csv_writer = csv.writer(new_csv)
             
                 for row in csv_reader:

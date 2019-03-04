@@ -21,9 +21,9 @@ class FramerateManager():
         
         rate_ratio = int(former_rate/self.new_rate)
 
-        self.destination_file = self.destination_file.format(scene_name)
+        # self.destination_file = self.destination_file.format(scene_name)
         
-        helpers.remove_file(self.destination_file)
+        helpers.remove_file(self.destination_file.format(scene_name))
 
         self.counter = 0
 
@@ -33,15 +33,15 @@ class FramerateManager():
                 frame = json.loads(frame)
                 i = frame["frame"]
                 if i % rate_ratio == 0:
-                    self.__write_frame(frame["ids"])
+                    self.__write_frame(frame["ids"],scene_name)
                     self.counter += 1   
         helpers.remove_file(self.temp) 
         
 
         
-    def __write_frame(self,frame):
+    def __write_frame(self,frame,scene):
 
-        with open(self.destination_file,"a") as file_:
+        with open(self.destination_file.format(scene),"a") as file_:
             file_writer = csv.writer(file_)
             for key in frame:
                 new_line = []
