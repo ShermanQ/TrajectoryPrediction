@@ -23,15 +23,16 @@ class SamplesManager():
 
     def regroup(self):
         print("Grouping samples")
-        self.__concatenate_csv(self.original_samples,self.dest_samples,False)
+        self.__concatenate_csv(self.original_samples,self.dest_samples,True)
         print("Grouping labels")
 
-        self.__concatenate_csv(self.original_labels,self.dest_labels,True)
+        self.__concatenate_csv(self.original_labels,self.dest_labels,False)
 
 
     def __concatenate_csv(self,files_dir,destination_file,save_ids):
         helpers.remove_file(destination_file)
-        helpers.remove_file(self.dest_ids)
+        if save_ids:
+            helpers.remove_file(self.dest_ids)
 
         
         ids = []
@@ -40,7 +41,7 @@ class SamplesManager():
 
             dest_writer = csv.writer(dest_csv)
             
-
+            max_ = 0
             for i,file_ in enumerate(self.scene_list):
                 file_csv = files_dir + file_ +".csv"
                 with open(file_csv) as file_csv:
@@ -50,6 +51,11 @@ class SamplesManager():
                         dest_writer.writerow(row)
                         id_ = file_ +"_"+ str( i * 1000000 +k)
                         ids.append(id_)
+                        if save_ids:
+                            nb_neighbors = int(row[1])
+                            if nb_neighbors > max_:
+                                max_ = nb_neighbors
+                        
             if save_ids:
                 with open(self.dest_ids,"a") as ids_json:
-                    json.dump({"ids":ids},ids_json)
+                    json.dump({"ids":ids,"max_neighbors": max_-1},ids_json)

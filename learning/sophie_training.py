@@ -17,6 +17,9 @@ from classes.datasets import CustomDataset,CustomDatasetIATCNN
 from classes.sophie_gan import sophie,discriminatorLSTM,custom_mse
 import helpers.helpers_training as training
 import torchvision.models as models
+
+import json 
+import sys
 """
     This script trains a iatcnn model
     The data is loaded using custom dataset
@@ -39,7 +42,7 @@ import torchvision.models as models
         eval ADE
         eval FDE
 """
-
+# python learning/sophie_training.py parameters/data.json
 def main():
           
     # set pytorch
@@ -75,7 +78,18 @@ def main():
     load_path = None
     # load_path = "./learning/data/models/sophie_1551128311.430322.tar"
     # split train eval indices
+    args = sys.argv
+    # data = json.load(open(args[1]))
+    data = json.load(open("parameters/data.json"))
+
+    ids = np.array(json.load(open(data["prepared_ids"]))["ids"])
+    nb_neighbors_max = np.array(json.load(open(data["prepared_ids"]))["max_neighbors"])
+
+    
     train_indices,eval_indices = train_test_split(np.array([i for i in range(nb_samples)]),test_size = 0.2,random_state = 42)
+
+    train_indices = ids[train_indices]
+    eval_indices = ids[eval_indices]
 
     print(type(train_indices))
 
@@ -96,7 +110,8 @@ def main():
                 enc_input_size,
                 enc_hidden_size,
                 enc_num_layers, 
-                embedding_size)
+                embedding_size,
+                nb_neighbors_max = nb_neighbors_max)
 
     discriminator = discriminatorLSTM(
         device,

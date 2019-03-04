@@ -440,23 +440,23 @@ def sophie_training_loop(n_epochs,batch_size,generator,discriminator,optimizer_g
 
     s = time.time()
     
-    try:
-        for epoch in range(start_epoch,n_epochs):
-            train_losses,_ = train_sophie(generator,discriminator,device,train_loader,criterion_gan,criterion_gen, 
-            optimizer_gen, optimizer_disc,epoch,batch_size,obs_length,pred_length,output_size)
+    # try:
+    for epoch in range(start_epoch,n_epochs):
+        train_losses,_ = train_sophie(generator,discriminator,device,train_loader,criterion_gan,criterion_gen, 
+        optimizer_gen, optimizer_disc,epoch,batch_size,obs_length,pred_length,output_size)
 
-            for key in train_losses:
-                losses["train"][key].append(train_losses[key])
+        for key in train_losses:
+            losses["train"][key].append(train_losses[key])
 
-            test_losses = eval_sophie(generator,discriminator,device,eval_loader,criterion_gan,criterion_gen,epoch,batch_size,obs_length,pred_length,output_size)
-            for key in test_losses:
-                losses["eval"][key].append(test_losses[key])
+        test_losses = eval_sophie(generator,discriminator,device,eval_loader,criterion_gan,criterion_gen,epoch,batch_size,obs_length,pred_length,output_size)
+        for key in test_losses:
+            losses["eval"][key].append(test_losses[key])
 
         
         print(time.time()-s)
         
-    except :
-        pass
+    # except :
+    #     pass
 
     save_sophie(epoch,generator,discriminator,optimizer_gen,optimizer_disc,losses)
     if plot:

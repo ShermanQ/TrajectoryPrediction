@@ -191,6 +191,8 @@ class SoftAttention(nn.Module):
     
     def __init__(self,device,batch_size,input_size,output_size,hdec_size , nb_weights,apply_weigths_filter = True,layers = [64,128,64]):
         super(SoftAttention,self).__init__()
+    
+        # self.social_attention = SoftAttention(device,batch_size,enc_hidden_size,social_features_embedding_size,dec_hidden_size ,nb_neighbors_max)
 
         self.device = device
         self.hdec_size = hdec_size
@@ -209,6 +211,8 @@ class SoftAttention(nn.Module):
             if i < len(self.layers) -1 :
                 modules.append(nn.ReLU())
         self.core = nn.Sequential(*modules)
+        print(self.core)
+        print(nb_weights)
         
 
 
@@ -340,7 +344,7 @@ class sophie(nn.Module):
             enc_num_layers = 1, 
             embedding_size = 16,
             dec_hidden_size = 32,
-            nb_neighbors_max = 51,
+            nb_neighbors_max = 204,
             social_features_embedding_size = 16,
             gaussian_dim = 8,
             dec_num_layer = 1,
@@ -381,6 +385,7 @@ class sophie(nn.Module):
 
         self.gaussian = torch.distributions.MultivariateNormal(torch.zeros(gaussian_dim),torch.eye(gaussian_dim))
         self.social_features_embedding_size = social_features_embedding_size
+        print(nb_neighbors_max)
         self.social_attention = SoftAttention(device,batch_size,enc_hidden_size,social_features_embedding_size,dec_hidden_size ,nb_neighbors_max)
         
         self.spatial_attention = SoftAttention(device,batch_size,7*7,embedding_size,dec_hidden_size ,embedding_size,apply_weigths_filter = False)

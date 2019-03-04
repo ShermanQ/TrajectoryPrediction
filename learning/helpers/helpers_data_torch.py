@@ -2,7 +2,9 @@ import csv
 import torch
 from scipy.spatial.distance import euclidean
 import random
-
+import shutil
+import os
+#
 """
 INPUT:
     trajectory: sequence of 2D coordinates
@@ -73,7 +75,20 @@ def extract_tensors(data_path,label_path,samples_path,labels_path):
 
 """
 """
-def extract_tensors_sophie(data_path,label_path,scene_path,samples_path,labels_path,img_path,images_path,stopped_threshold = 0.01, stopped_prop = 1.0):
+def extract_tensors_sophie(data_path,label_path,ids,samples_path,labels_path,img_path,images_path,stopped_threshold = 0.01, stopped_prop = 1.0):
+    
+    shutil.rmtree(samples_path)
+    shutil.rmtree(labels_path)
+    shutil.rmtree(img_path)
+
+    try:  
+        os.mkdir(samples_path)
+        os.mkdir(labels_path)
+        os.mkdir(img_path)
+
+    except OSError:  
+        print ("Creation of one of the directories failed")
+    
     total_samples = 0
     stopped_samples = 0
     stopped_samples_kept = 0
@@ -82,57 +97,74 @@ def extract_tensors_sophie(data_path,label_path,scene_path,samples_path,labels_p
     nb_max = max_object(data_path)
     print(nb_max)
     id_ = 0
+    print(data_path)
     with open(data_path) as data_csv :
         with open(label_path) as label_csv:
-            with open(scene_path) as scene_csv:
+            # with open(scene_path) as scene_csv:
 
-                data_reader = csv.reader(data_csv)
-                label_reader = csv.reader(label_csv)
-                scene_reader = csv.reader(scene_csv)
-
-
-                for data,label,scene in zip(data_reader,label_reader,scene_reader):
-                    sample_id,nb_objects,t_obs,t_pred = data[0],int(data[1]),int(data[2]),int(data[3])
-                    features = data[4:]
-                    labels = label[1:]
-
-                    features = torch.FloatTensor([float(f) for f in features]+[float(-1) for _ in range( (nb_max-nb_objects) * t_obs * 2)])
-                    features = features.view(nb_max,t_obs,2)
+            data_reader = csv.reader(data_csv)
+            label_reader = csv.reader(label_csv)
+            # scene_reader = csv.reader(scene_csv)
 
 
-                    labels = torch.FloatTensor([float(f) for f in labels] + [float(-1) for _ in range( (nb_max-nb_objects) * t_pred * 2)])
-                    labels = labels.view(nb_max,t_pred,2)
-                    
-                    # is the groundtruth trajectory moving
-                    l_stopped = is_stopped(labels[0].cpu().detach().numpy(),stopped_threshold)
-                    
-                    # if not we keep the sample with probability stopped_prop given by uniform distribution between 0 and 1
-                    if l_stopped:
-                        stopped_samples += 1
-                        keep = True if random.random() < stopped_prop else False
-                        if keep:
-                            torch.save(features,samples_path+"sample"+str(id_)+".pt")
-                            torch.save(labels,labels_path+"label"+str(id_)+".pt")
-                            with open(img_path +"img"+str(id_)+".txt","w" ) as img_writer:
-                                path_to_img = images_path + scene[0] + ".png"
-                                img_writer.write(path_to_img)
-                            stopped_samples_kept += 1
-                            id_+= 1
-                    # if trajectory is movin' add the sample
-                    else:
-                        
-                        torch.save(features,samples_path+"sample"+str(id_)+".pt")
-                        torch.save(labels,labels_path+"label"+str(id_)+".pt")
-                        with open(img_path +"img"+str(id_)+".txt","w" ) as img_writer:
-                            path_to_img = images_path + scene[0] + ".png"
+            for data,label,sample_id in zip(data_reader,label_reader,ids):
+                # sample_id,nb_objects,t_obs,t_pred = data[0],int(data[1]),int(data[2]),int(data[3])
+                nb_objects,t_obs,t_pred = int(data[1]),int(data[2]),int(data[3])
+
+                features = data[4:]
+                labels = label[1:]
+
+                features = torch.FloatTensor([float(f) for f in features]+[float(-1) for _ in range( (nb_max-nb_objects) * t_obs * 2)])
+                features = features.view(nb_max,t_obs,2)
+
+
+                labels = torch.FloatTensor([float(f) for f in labels] + [float(-1) for _ in range( (nb_max-nb_objects) * t_pred * 2)])
+                labels = labels.view(nb_max,t_pred,2)
+                
+                # is the groundtruth trajectory moving
+                l_stopped = is_stopped(labels[0].cpu().detach().numpy(),stopped_threshold)
+                
+                # if not we keep the sample with probability stopped_prop given by uniform distribution between 0 and 1
+                if l_stopped:
+                    stopped_samples += 1
+                    keep = True if random.random() < stopped_prop else False
+                    if keep:
+                        # torch.save(features,samples_path+"sample"+str(id_)+".pt")
+                        # torch.save(labels,labels_path+"label"+str(id_)+".pt")
+
+                        torch.save(features,samples_path+"sample_"+sample_id+".pt")
+                        torch.save(labels,labels_path+"label_"+sample_id+".pt")
+
+                        # with open(img_path +"img"+str(id_)+".txt","w" ) as img_writer:
+                        with open(img_path +"img_"+sample_id+".txt","w" ) as img_writer:
+
+                            sample_scene = "_".join(sample_id.split("_")[:-1])
+                            path_to_img = images_path + sample_scene + ".jpg"
                             img_writer.write(path_to_img)
-
-
-                        
-                        moving_samples += 1
+                        stopped_samples_kept += 1
                         id_+= 1
-                        
-                    total_samples += 1
+                # if trajectory is movin' add the sample
+                else:
+                    
+                    # torch.save(features,samples_path+"sample"+str(id_)+".pt")
+                    # torch.save(labels,labels_path+"label"+str(id_)+".pt")
+
+                    torch.save(features,samples_path+"sample_"+sample_id+".pt")
+                    torch.save(labels,labels_path+"label_"+sample_id+".pt")
+                    # with open(img_path +"img"+str(id_)+".txt","w" ) as img_writer:
+                    #     path_to_img = images_path + scene[0] + ".png"
+                    with open(img_path +"img_"+sample_id+".txt","w" ) as img_writer:
+
+                        sample_scene = "_".join(sample_id.split("_")[:-1])
+                        path_to_img = images_path + sample_scene + ".jpg"
+                        img_writer.write(path_to_img)
+
+
+                    
+                    moving_samples += 1
+                    id_+= 1
+                    
+                total_samples += 1
 
 
                 

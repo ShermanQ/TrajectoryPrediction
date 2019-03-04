@@ -74,7 +74,7 @@ class CustomDatasetIATCNN(data.Dataset):
       #   X = torch.load(self.data_path + "samples/sample" + str(ID) + '.pt')[0].view(-1)
       #   y = torch.load(self.data_path + "labels/label" + str(ID) + '.pt')[0].view(-1)
 
-            with open(self.data_path+"img/img" + str(ID) + '.txt') as f:
+            with open(self.data_path+"img/img_" + str(ID) + '.txt') as f:
                   img_path = f.read()
                   
                   img = cv2.imread(img_path)
@@ -83,7 +83,7 @@ class CustomDatasetIATCNN(data.Dataset):
                   img = torch.FloatTensor(img)
                   i,_,c = img.size()
                   img = img.view(c,i,i)
-                  X = torch.load(self.data_path + "samples/sample" + str(ID) + '.pt')
-                  y = torch.load(self.data_path + "labels/label" + str(ID) + '.pt')
+                  X = torch.load(self.data_path + "samples/sample_" + str(ID) + '.pt')
+                  y = torch.load(self.data_path + "labels/label_" + str(ID) + '.pt')
             
             return X,img, y
