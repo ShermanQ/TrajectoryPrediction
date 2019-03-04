@@ -1,0 +1,30 @@
+{
+    "n_epochs" : 2,
+    "batch_size": 32,
+    "obs_length": 8,
+    "pred_length"  : 12,
+    "seq_length"  : 20,
+
+
+    "encoder_input_size" : 2,
+    "encoder_hidden_size" : 32,
+    "encoder_num_layers" : 1,
+    "embedding_size" : 16,
+
+    "discriminator_hidden_size" : 64,
+    "discriminator_nb_layer" : 1,
+    "output_size" : 2,
+
+    "nb_samples" : 1000,
+    "num_workers" : 0,
+
+    "lr_generator" : 0.001,
+    "lr_discriminator" : 0.001,    
+
+    "load_path" : "",
+    "decoder_hidden_size" : 32,
+    "social_features_embedding_size" : 16,
+    "gaussian_dimension" : 8,
+    "decoder_num_layer" : 1,
+    "plot": 1
+}

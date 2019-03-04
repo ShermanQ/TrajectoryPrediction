@@ -42,51 +42,24 @@ import sys
         eval ADE
         eval FDE
 """
-# python learning/sophie_training.py parameters/data.json
+#
+# python learning/sophie_training.py parameters/data.json parameters/sophie_training.json
 def main():
-          
+    args = sys.argv   
+
+    data = json.load(open(args[1]))
+    ids = np.array(json.load(open(data["prepared_ids"]))["ids"])
+    nb_neighbors_max = np.array(json.load(open(data["prepared_ids"]))["max_neighbors"])   
+
+    training_param = json.load(open(args[2]))
     # set pytorch
     # torch.manual_seed(10)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")    
     print(device)
     print(torch.cuda.is_available())
         
-    # parameters
-    
-    
-    batch_size= 32 #20
-    obs_length= 8
-    pred_length  = 12
-
-    enc_input_size = 2
-    enc_hidden_size = 32
-    enc_num_layers = 1
-    embedding_size = 16
-
-    disc_hidden_size = 64
-    disc_nb_layer = 1
-    output_size = 2
-
-    nb_samples = 1000
-    num_workers = 0
-
-    lr_gen = 0.001
-    lr_disc = 0.001
-
-    n_epochs = 2
-
-    load_path = None
-    # load_path = "./learning/data/models/sophie_1551128311.430322.tar"
-    # split train eval indices
-    args = sys.argv
-    # data = json.load(open(args[1]))
-    data = json.load(open("parameters/data.json"))
-
-    ids = np.array(json.load(open(data["prepared_ids"]))["ids"])
-    nb_neighbors_max = np.array(json.load(open(data["prepared_ids"]))["max_neighbors"])
-
-    
-    train_indices,eval_indices = train_test_split(np.array([i for i in range(nb_samples)]),test_size = 0.2,random_state = 42)
+   
+    train_indices,eval_indices = train_test_split(np.array([i for i in range(training_param["nb_samples"])]),test_size = 0.2,random_state = 42)
 
     train_indices = ids[train_indices]
     eval_indices = ids[eval_indices]
@@ -100,27 +73,38 @@ def main():
     eval_dataset = CustomDatasetIATCNN(eval_indices,"./learning/data/")
 
     # create dataloaders
-    train_loader = torch.utils.data.DataLoader( train_dataset, batch_size= batch_size, shuffle=True,num_workers= num_workers,drop_last = True)
-    eval_loader = torch.utils.data.DataLoader( eval_dataset, batch_size= batch_size, shuffle=False,num_workers= num_workers,drop_last = True)
+    train_loader = torch.utils.data.DataLoader( train_dataset, batch_size= training_param["batch_size"], shuffle=True,num_workers= training_param["num_workers"],drop_last = True)
+    eval_loader = torch.utils.data.DataLoader( eval_dataset, batch_size= training_param["batch_size"], shuffle=False,num_workers= training_param["num_workers"],drop_last = True)
 
    
 
     # init model and send it to gpu
-    generator = sophie(device,batch_size,
-                enc_input_size,
-                enc_hidden_size,
-                enc_num_layers, 
-                embedding_size,
-                nb_neighbors_max = nb_neighbors_max)
+    generator = sophie(device,
+                batch_size = training_param["batch_size"],
+                enc_input_size = training_param["encoder_input_size"],
+                enc_hidden_size = training_param["encoder_hidden_size"],
+                enc_num_layers = training_param["encoder_num_layers"],
+                embedding_size = training_param["embedding_size"],
+                dec_hidden_size = training_param["decoder_hidden_size"],
+                nb_neighbors_max = nb_neighbors_max,
+                social_features_embedding_size = training_param["social_features_embedding_size"],
+                gaussian_dim = training_param["gaussian_dimension"],
+                dec_num_layer = training_param["decoder_num_layer"],
+                output_size = training_param["output_size"],
+                pred_length = training_param["pred_length"],
+                obs_length = training_param["obs_length"]
+    )
 
+    
     discriminator = discriminatorLSTM(
         device,
-        batch_size,
-        enc_input_size,
-        embedding_size,
-        disc_hidden_size,
-        disc_nb_layer,
-        pred_length + obs_length)
+        batch_size = training_param["batch_size"],
+        input_size = training_param["encoder_input_size"],
+        embedding_size = training_param["embedding_size"],
+        hidden_size = training_param["discriminator_hidden_size"],
+        num_layers = training_param["discriminator_nb_layer"],
+        seq_len = training_param["seq_length"]
+    )
     
     generator.to(device)
     discriminator.to(device)
@@ -128,20 +112,16 @@ def main():
     #losses
     criterion_gan = nn.BCELoss()
     criterion_gen = custom_mse
-    # criterion_train = 
-    # criterion_eval = 
 
     # optimizer
-    optimizer_gen = optim.Adam(generator.parameters(),lr = lr_gen)
-    optimizer_disc = optim.Adam(discriminator.parameters(),lr = lr_disc)
+    optimizer_gen = optim.Adam(generator.parameters(),lr = training_param["lr_generator"])
+    optimizer_disc = optim.Adam(discriminator.parameters(),lr = training_param["lr_discriminator"])
 
-    
-    # train_losses,eval_losses,batch_losses = training.training_loop(n_epochs,batch_size,net,device,train_loader,eval_loader,criterion_train,criterion_eval,optimizer,load_path = load_path)
-    
+        
     # for batch_idx, data in enumerate(train_loader):
-    training.sophie_training_loop(n_epochs,batch_size,generator,discriminator,optimizer_gen,optimizer_disc,device,
-        train_loader,eval_loader,obs_length, criterion_gan,criterion_gen, 
-        pred_length, output_size,True, load_path)
+    training.sophie_training_loop(training_param["n_epochs"],training_param["batch_size"],generator,discriminator,optimizer_gen,optimizer_disc,device,
+        train_loader,eval_loader,training_param["obs_length"], criterion_gan,criterion_gen, 
+        training_param["pred_length"], training_param["output_size"],training_param["plot"], training_param["load_path"])
 
 
     
