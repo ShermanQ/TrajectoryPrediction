@@ -10,6 +10,11 @@
     "framerates_json": "./parameters/framerates.json",
     "scalers":"./data/scalers/",
     "prepared_samples": "./data/prepared_datasets/samples/",
-    "prepared_labels": "./data/prepared_datasets/labels/"
+    "prepared_labels": "./data/prepared_datasets/labels/",
+    "prepared_samples_grouped": "./data/prepared_datasets/samples.csv",
+    "prepared_labels_grouped": "./data/prepared_datasets/labels.csv",
+    "prepared_ids": "./data/prepared_datasets/ids.json"
+
+
 
 }

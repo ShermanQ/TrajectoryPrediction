@@ -2,7 +2,7 @@
     "shift": 8,
     "t_obs": 8,
     "t_pred": 12,
-    "framerate" : "2.5",
+    "framerate" : "1.0",
     "samples_frames": 0,
     "number_digits":2,
     "center":1,

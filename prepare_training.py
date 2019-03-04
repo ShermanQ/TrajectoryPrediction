@@ -1,10 +1,13 @@
 from extractors import highd_extractor,koper_extractor,ngsim_extractor,sdd_extractor
-from prepare_training import framerate_manager,digit_manager,scene_scaler,img_scaler,prepare_training,prepare_training_frames
+from prepare_training import framerate_manager,digit_manager,scene_scaler
+from prepare_training import img_scaler,prepare_training,prepare_training_frames
+from prepare_training import samples_manager
 import sys
 import json
+import csv
+import helpers
 
-
-#python prepare_training parameters/parameters.json parameters/prepare_training.json parameters/data.json
+#python prepare_training.py parameters/parameters.json parameters/prepare_training.json parameters/data.json
 def main():
     args = sys.argv
 
@@ -50,18 +53,24 @@ def main():
     #     scaler.scale(scene)
 
 
-    prepare_frames = int(prepare_training_params["samples_frames"])
-    sampler = None
-    if prepare_frames:
-        print("frames sampling")
-        sampler = prepare_training_frames.PrepareTrainingFrames(data_params,args[2])
-    else:
-        print("trajectory sampling")
-        sampler = prepare_training.PrepareTraining(data_params,args[2])
+    # prepare_frames = int(prepare_training_params["samples_frames"])
+    # sampler = None
+    # if prepare_frames:
+    #     print("frames sampling")
+    #     sampler = prepare_training_frames.PrepareTrainingFrames(data_params,args[2])
+    # else:
+    #     print("trajectory sampling")
+    #     sampler = prepare_training.PrepareTraining(data_params,args[2])
 
-    for scene in scene_list:
-        print(scene)
-        sampler.extract_data(scene)
+    # for scene in scene_list:
+    #     print(scene)
+    #     sampler.extract_data(scene)
+
+
+    samples_mgr = samples_manager.SamplesManager(data_params,args[2])
+    samples_mgr.regroup()
+
+    
 
 if __name__ == "__main__":
     main()
