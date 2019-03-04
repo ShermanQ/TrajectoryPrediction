@@ -27,23 +27,30 @@ def main():
 
     
     scene_list = prepare_training_params["selected_scenes"]
-    # new_rate = float(prepare_training_params["framerate"])
-    # rate_manager = framerate_manager.FramerateManager(args[3],new_rate)
-    # for scene in scene_list:
-    #     print(scene)
-    #     rate_manager.change_rate(scene)
+    new_rate = float(prepare_training_params["framerate"])
 
-    # nb_digits = int(prepare_training_params["number_digits"])
-    # digit_man = digit_manager.DigitManager(data_params,nb_digits)
-    # for scene in scene_list:
-    #     print(scene)
-    #     digit_man.change_digit_number(scene)
+    print("Managing framerate")
+    rate_manager = framerate_manager.FramerateManager(args[3],new_rate)
+    for scene in scene_list:
+        print(scene)
+        rate_manager.change_rate(scene)
+    print("DOne!")
 
-    # center = int(prepare_training_params["center"])
-    # scaler = scene_scaler.SceneScaler(data_params,center)
-    # for scene in scene_list:
-    #     print(scene)
-    #     scaler.min_max_scale(scene)
+    print("Managing decimal number")
+    nb_digits = int(prepare_training_params["number_digits"])
+    digit_man = digit_manager.DigitManager(data_params,nb_digits)
+    for scene in scene_list:
+        print(scene)
+        digit_man.change_digit_number(scene)
+    print("DOne!")
+
+    print("Normalizing scenes")
+    center = int(prepare_training_params["center"])
+    scaler = scene_scaler.SceneScaler(data_params,center)
+    for scene in scene_list:
+        print(scene)
+        scaler.min_max_scale(scene)
+    print("DOne!")
 
     # img_size = int(prepare_training_params["img_size"])
     # scaler = img_scaler.ImgScaler(data_params,img_size)  
@@ -67,8 +74,8 @@ def main():
     #     sampler.extract_data(scene)
 
 
-    samples_mgr = samples_manager.SamplesManager(data_params,args[2])
-    samples_mgr.regroup()
+    # samples_mgr = samples_manager.SamplesManager(data_params,args[2])
+    # samples_mgr.regroup()
 
     
 

@@ -50,7 +50,7 @@ class KoperExtractor():
         x = float(object_[0])
         y = float(object_[1])
         # t,b,pm = helpers.get_bbox(theta,width,length,x,y)
-        t = b = [-1,-1]
+        t = b = [-10000,-10000]
         pm = [x,y]
 
         row = []

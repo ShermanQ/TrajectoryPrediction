@@ -60,7 +60,7 @@ class HighdExtractor():
                                 last_id = new_id
     def __parse_row(self,row,row_meta,new_scene_name):
         
-        unknown = -1
+        unknown = -10000
         new_row = []
         new_row.append(self.dataset) #dataset
         new_row.append(new_scene_name) #scene

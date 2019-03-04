@@ -34,12 +34,14 @@ class SceneScaler():
 
             min_x,max_x,min_y,max_y = self.__get_boudaries(self.temp)
             
+            print(min_x,max_x,min_y,max_y)
             x_mean = (min_x + max_x)/2.0
             y_mean = (min_y + max_y)/2.0
 
             min_ = min(min_x - x_mean,min_y - y_mean) 
             max_ = max(max_x - x_mean,max_y  - y_mean)
 
+            # print(min_,max_)
             mms = mms.fit([[min_],[max_]])
             
 
@@ -50,11 +52,16 @@ class SceneScaler():
                         row = self.__center_scene(row,x_mean,y_mean)
                     new_row = row
                     
-                    ps = mms.transform([[float(row[i])] for i in range(4,10)])
+                    ps_untransformed = [[float(row[i])] for i in range(4,10)]
+                    ps = mms.transform(ps_untransformed)
 
+                    
                     for i in range(len(ps)):
-                        new_row[4 + i] = ps[i][0]
-                    data_writer.writerow(row)
+                        if ps_untransformed[i][0] == -10000:
+                            new_row[4 + i] = -1
+                        else:
+                            new_row[4 + i] = ps[i][0]
+                    data_writer.writerow(new_row)
         helpers.remove_file(self.temp)
 
         
@@ -69,25 +76,33 @@ class SceneScaler():
             max_x,max_y = 10e-30,10e-30
             
             for row in data_reader:
-                x = np.min([[float(row[4])],[float(row[6])],[float(row[8])]])
-                y = np.min([[float(row[5])],[float(row[7])],[float(row[9])]])
+                
+                # x = np.min([[float(row[4])],[float(row[6])],[float(row[8])]])
+                # y = np.min([[float(row[5])],[float(row[7])],[float(row[9])]])
+                # print([[float(row[i])] for i in range(4,10,2) ])
+                # print([[float(row[i])] for i in range(5,11,2) ])
 
-                if x < min_x:
+                x = np.min([[float(row[i])] for i in range(4,10,2) if float(row[i]) != -10000])
+                y = np.min([[float(row[i])] for i in range(5,11,2) if float(row[i]) != -10000])
+
+                if x < min_x and x != -1:
                     min_x = x
-                if y < min_y:
+                if y < min_y and y != -1:
                     min_y = y
-                if x > max_x:
+                if x > max_x and x != -1:
                     max_x = x
-                if y > max_y:
+                if y > max_y and y != -1:
                     max_y = y
         return min_x,max_x,min_y,max_y
 
     def __center_scene(self,row,x_mean,y_mean):
         new_row = row
         for i in range(4,10,2):
-            new_row[i] = float(row[i]) - x_mean
+            if float(row[i]) != -10000:
+                new_row[i] = float(row[i]) - x_mean
         for i in range(5,11,2):
-            new_row[i] = float(row[i]) - y_mean
+            if float(row[i]) != -10000:
+                new_row[i] = float(row[i]) - y_mean
         return new_row           
 
 
