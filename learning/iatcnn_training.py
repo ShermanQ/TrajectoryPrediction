@@ -14,8 +14,10 @@ import numpy as np
 import time
 
 from classes.datasets import CustomDataset,CustomDatasetIATCNN
-from classes.seq2seq_model import seq2seq
+from classes.tcnn import IATCNN
 import helpers.helpers_training as training
+import sys
+import json
 
 """
     This script trains a iatcnn model
@@ -39,7 +41,7 @@ import helpers.helpers_training as training
         eval ADE
         eval FDE
 """
-
+#python learning/iatcnn_training.py parameters/data.json parameters/iatcnn_training.json
 def main():
           
     # set pytorch
@@ -48,36 +50,45 @@ def main():
     print(device)
     print(torch.cuda.is_available())
         
-    # parameters
-    
-    batch_size= 12 #20
-    seq_len= 8
-    seq_len_d  = 12
-    nb_samples = 2708
-    num_workers = 0
+    args = sys.argv   
 
-    learning_rate = 0.001
-    n_epochs = 15
+    # data = json.load(open(args[1]))
+    data = json.load(open("parameters/data.json"))
 
-    load_path = None
-    # load_path = "./learning/data/models/model_1550002069.1353667.tar"
+    ids = np.array(json.load(open(data["prepared_ids"]))["ids"])
+    nb_neighbors_max = np.array(json.load(open(data["prepared_ids"]))["max_neighbors"])   
+
+    # training_param = json.load(open(args[2]))
+    training_param = json.load(open("parameters/iatcnn_training.json"))
+
+
 
     # split train eval indices
-    train_indices,eval_indices = train_test_split(np.array([i for i in range(nb_samples)]),test_size = 0.2,random_state = 42)
+    train_indices,eval_indices = train_test_split(np.array([i for i in range(training_param["nb_samples"])]),test_size = 0.2,random_state = 42)
 
-    print(type(train_indices))
+    train_indices = ids[train_indices]
+    eval_indices = ids[eval_indices]
 
     
     # load datasets
-    train_dataset = CustomDatasetIATCNN(train_indices,"./learning/data/")
-    eval_dataset = CustomDatasetIATCNN(eval_indices,"./learning/data/")
+    train_dataset = CustomDatasetIATCNN(train_indices,data["torch_data"])
+    eval_dataset = CustomDatasetIATCNN(eval_indices,data["torch_data"])
 
     # create dataloaders
-    train_loader = torch.utils.data.DataLoader( train_dataset, batch_size= batch_size, shuffle=True,num_workers= num_workers,drop_last = True)
-    eval_loader = torch.utils.data.DataLoader( eval_dataset, batch_size= batch_size, shuffle=False,num_workers= num_workers,drop_last = True)
+    train_loader = torch.utils.data.DataLoader( train_dataset, batch_size= training_param["batch_size"], shuffle=True,num_workers= training_param["num_workers"],drop_last = True)
+    eval_loader = torch.utils.data.DataLoader( eval_dataset, batch_size= training_param["batch_size"], shuffle=False,num_workers= training_param["num_workers"],drop_last = True)
 
-   
-
+    input_dim = training_param["input_dim"]
+    output_channels = training_param["output_channels"]
+    net = IATCNN(
+        n_inputs = input_dim * (nb_neighbors_max + 1),
+        n_outputs = output_channels,
+        kernel_size = training_param["kernel_size"],
+        stride = training_param["stride"],
+        padding = training_param["padding"])
+    for data in train_loader:
+        samples,labels = data
+        net(samples)
     # init model and send it to gpu
     # net = 
     # net.to(device)

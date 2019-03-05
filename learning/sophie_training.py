@@ -13,7 +13,7 @@ from sklearn.model_selection import train_test_split
 import numpy as np
 import time
 
-from classes.datasets import CustomDataset,CustomDatasetIATCNN
+from classes.datasets import CustomDataset,CustomDatasetSophie
 from classes.sophie_gan import sophie,discriminatorLSTM,custom_mse
 import helpers.helpers_training as training
 import torchvision.models as models
@@ -69,8 +69,8 @@ def main():
 
     
     # load datasets
-    train_dataset = CustomDatasetIATCNN(train_indices,"./learning/data/")
-    eval_dataset = CustomDatasetIATCNN(eval_indices,"./learning/data/")
+    train_dataset = CustomDatasetSophie(train_indices,"./learning/data/")
+    eval_dataset = CustomDatasetSophie(eval_indices,"./learning/data/")
 
     # create dataloaders
     train_loader = torch.utils.data.DataLoader( train_dataset, batch_size= training_param["batch_size"], shuffle=True,num_workers= training_param["num_workers"],drop_last = True)

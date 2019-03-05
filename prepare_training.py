@@ -52,30 +52,30 @@ def main():
         scaler.min_max_scale(scene)
     print("DOne!")
 
-    # img_size = int(prepare_training_params["img_size"])
-    # scaler = img_scaler.ImgScaler(data_params,img_size)  
+    img_size = int(prepare_training_params["img_size"])
+    scaler = img_scaler.ImgScaler(data_params,img_size)  
 
-    # for scene in scene_list:
-    #     print(scene)
-    #     scaler.scale(scene)
-
-
-    # prepare_frames = int(prepare_training_params["samples_frames"])
-    # sampler = None
-    # if prepare_frames:
-    #     print("frames sampling")
-    #     sampler = prepare_training_frames.PrepareTrainingFrames(data_params,args[2])
-    # else:
-    #     print("trajectory sampling")
-    #     sampler = prepare_training.PrepareTraining(data_params,args[2])
-
-    # for scene in scene_list:
-    #     print(scene)
-    #     sampler.extract_data(scene)
+    for scene in scene_list:
+        print(scene)
+        scaler.scale(scene)
 
 
-    # samples_mgr = samples_manager.SamplesManager(data_params,args[2])
-    # samples_mgr.regroup()
+    prepare_frames = int(prepare_training_params["samples_frames"])
+    sampler = None
+    if prepare_frames:
+        print("frames sampling")
+        sampler = prepare_training_frames.PrepareTrainingFrames(data_params,args[2])
+    else:
+        print("trajectory sampling")
+        sampler = prepare_training.PrepareTraining(data_params,args[2])
+
+    for scene in scene_list:
+        print(scene)
+        sampler.extract_data(scene)
+
+
+    samples_mgr = samples_manager.SamplesManager(data_params,args[2])
+    samples_mgr.regroup()
 
     
 
