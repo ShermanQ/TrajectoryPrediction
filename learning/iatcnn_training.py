@@ -85,7 +85,10 @@ def main():
         n_outputs = output_channels,
         kernel_size = training_param["kernel_size"],
         stride = training_param["stride"],
-        padding = training_param["padding"])
+        input_length = training_param["obs_length"],
+        output_length = training_param["pred_length"],
+        output_size = training_param["output_size"],
+        max_neighbors = nb_neighbors_max + 1)
     for data in train_loader:
         samples,labels = data
         net(samples)
