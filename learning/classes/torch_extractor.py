@@ -23,6 +23,10 @@ class TorchExtractor():
         self.samples_torch = torch_params["samples_torch"]
         self.labels_torch = torch_params["labels_torch"]
         self.img_links_torch = torch_params["img_links_torch"]
+        self.new_padding = torch_params["new_padding"]
+        self.old_padding = torch_params["old_padding"]
+
+
         self.input_size = 2
 
     def extract_tensors_sophie(self):
@@ -59,14 +63,14 @@ class TorchExtractor():
                     features = data[4:]
                     labels = label[1:]
 
-                    features = torch.FloatTensor([float(f) for f in features]+[float(-1) for _ in range( (nb_max-nb_objects) * t_obs * self.input_size)])
+                    features = torch.FloatTensor([float(f) if f != self.old_padding else self.new_padding for f in features  ]+[float(self.new_padding) for _ in range( (nb_max-nb_objects) * t_obs * self.input_size)])
                     features = features.view(nb_max,t_obs,self.input_size)
                     
-                    features = torch.FloatTensor([float(f) for f in features]+[float(-1) for _ in range( (nb_max-nb_objects) * t_obs * self.input_size)])
-                    features = features.view(nb_max,t_obs,self.input_size)
+                    # features = torch.FloatTensor([float(f) for f in features]+[float(-1) for _ in range( (nb_max-nb_objects) * t_obs * self.input_size)])
+                    # features = features.view(nb_max,t_obs,self.input_size)
 
 
-                    labels = torch.FloatTensor([float(f) for f in labels] + [float(-1) for _ in range( (nb_max-nb_objects) * t_pred * self.input_size)])
+                    labels = torch.FloatTensor([float(f) if f != self.old_padding else self.new_padding for f in labels] + [float(self.new_padding) for _ in range( (nb_max-nb_objects) * t_pred * self.input_size)])
                     labels = labels.view(nb_max,t_pred,self.input_size)
                     
                     # is the groundtruth trajectory moving

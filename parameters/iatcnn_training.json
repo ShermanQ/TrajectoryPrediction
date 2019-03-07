@@ -1,6 +1,6 @@
 {
     "n_epochs" : 2,
-    "batch_size": 32,
+    "batch_size": 32 ,
     "obs_length": 8,
     "pred_length"  : 12,
     "seq_length"  : 20,

@@ -14,7 +14,7 @@ import numpy as np
 import time
 
 from classes.datasets import CustomDataset,CustomDatasetIATCNN
-from classes.tcnn import IATCNN
+from classes.tcnn import IATCNN,nlloss
 import helpers.helpers_training as training
 import sys
 import json
@@ -89,9 +89,31 @@ def main():
         output_length = training_param["pred_length"],
         output_size = training_param["output_size"],
         max_neighbors = nb_neighbors_max + 1)
+
+    net = net.to(device)
+    optimizer = optim.Adam(net.parameters(),lr = training_param["lr"])
+    batch_losses = []
     for data in train_loader:
-        samples,labels = data
-        net(samples)
+        optimizer.zero_grad()
+        samples,targets = data
+        samples = samples.to(device)
+        targets = targets.to(device)
+
+        outputs = net(samples)
+        outputs = outputs.contiguous().view(-1,training_param["output_size"])
+        targets = targets.contiguous().view(-1,training_param["input_dim"])
+        nll_loss = nlloss(outputs,targets)
+        nll_loss.backward()
+    #     print("----")
+        optimizer.step()
+    #     print("----")
+        print(nll_loss)
+    #     batch_losses.append(nll_loss.item())
+        
+
+    # print(batch_losses)   
+
+
     # init model and send it to gpu
     # net = 
     # net.to(device)
