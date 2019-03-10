@@ -26,6 +26,9 @@ def covariance_matrix(parameters):
     return mu,cov_m
 
 def nlloss(outputs,targets,eps = 1e-15):
+
+    outputs = outputs.contiguous().view(-1,outputs.size()[-1])
+    targets = targets.contiguous().view(-1,targets.size()[-1])
     
     b,o = outputs.size()
     mu = outputs[:,:2]
@@ -33,18 +36,23 @@ def nlloss(outputs,targets,eps = 1e-15):
     sigma2 = outputs[:,3]
     rho = outputs[:,4]
     cov = torch.mul(torch.mul(sigma1,sigma2),rho).view(b,1)
-    sigma1 = (sigma1 ** 2).view(b,1) + eps
-    sigma2 = (sigma2 ** 2).view(b,1) +eps
+    sigma1 = (sigma1 ** 2).view(b,1)
+    sigma2 = (sigma2 ** 2).view(b,1)
 
     matrix = torch.cat([sigma1,cov,cov,sigma2,],dim = 1).view(b,mu.size()[1],mu.size()[1])
     
     mat_inv = torch.inverse(matrix)
     diff = targets.sub(mu).view(b,mu.size()[1],1)
+    a = (targets[:,0] != 0. ).cuda()
+    b = (targets[:,1] != 0. ).cuda()
+    c = torch.max(a,b)
 
     right_product = torch.bmm(mat_inv,diff)
     left_product = torch.bmm(diff.permute(0,2,1),right_product)
-    loss = 0.5 * torch.sum(left_product)
     
+    loss = 0.5 * torch.sum(left_product[c])
+    loss2 = 0.5 * torch.sum(left_product)
+
     return loss
 
 class Chomp1d(nn.Module):
@@ -90,6 +98,7 @@ class TemporalBlock(nn.Module):
 
     def forward(self, x):
         x = self.net(x)
+        x = torch.tanh(x)
         return x
 #         out = self.net(x)
 #         res = x if self.downsample is None else self.downsample(x)
@@ -122,6 +131,7 @@ class IATCNN(nn.Module):
         x = self.net(x).permute(0,2,1)
 
         x = self.time_distributed(x)
+        # x = torch.sigmoid(x)
         b,s,_ = x.size()
         x = x.view(b,s,self.max_neighbors,self.output_size).permute(0,2,1,3)
         return x

@@ -46,7 +46,7 @@ def train(model, device, train_loader,criterion, optimizer, epoch,batch_size,pri
         inputs, labels = data
         inputs, labels = inputs.to(device), labels.to(device)
         optimizer.zero_grad()
-        output = model(inputs,labels)
+        output = model(inputs)
 
         # print("---------")
         # print(output.size())
@@ -98,8 +98,8 @@ def evaluate(model, device, eval_loader,criterion, epoch, batch_size):
         inputs, labels = data
         inputs, labels = inputs.to(device), labels.to(device)
         
-        output = model(inputs,labels)
-        print("---------")
+        output = model(inputs)
+        # print("---------")
         # print(output.size())
         # print(labels.size())
 
@@ -117,14 +117,16 @@ def evaluate(model, device, eval_loader,criterion, epoch, batch_size):
 
         # print(output[:,-1].view(200,1,2))
         # print(labels.size())
-        fde_loss += criterion(output[:,-1].view(batch_size,1,-1), labels[:,-1].view(batch_size,1,-1)).item()
+        # fde_loss += criterion(output[:,-1].view(batch_size,1,-1), labels[:,-1].view(batch_size,1,-1)).item()
         
         eval_loss += loss.item()
 
              
     eval_loss /= float(len(eval_loader))        
-    fde_loss /= float(len(eval_loader))        
-    print('Epoch n {} Evaluation Loss: {}, FDE Loss {}'.format(epoch,eval_loss,fde_loss))
+    # fde_loss /= float(len(eval_loader))        
+    # print('Epoch n {} Evaluation Loss: {}, FDE Loss {}'.format(epoch,eval_loss,fde_loss))
+    print('Epoch n {} Evaluation Loss: {}'.format(epoch,eval_loss))
+
 
     return eval_loss,fde_loss
 
@@ -170,7 +172,7 @@ def training_loop(n_epochs,batch_size,net,device,train_loader,eval_loader,criter
     start_epoch = 0
 
 
-    if load_path is not None:
+    if load_path != "":
         print("loading former model from {}".format(load_path))
         checkpoint = torch.load(load_path)
         net.load_state_dict(checkpoint['state_dict'])
@@ -184,31 +186,31 @@ def training_loop(n_epochs,batch_size,net,device,train_loader,eval_loader,criter
 
     s = time.time()
     
-    try:
-        for epoch in range(start_epoch,n_epochs):
-            train_loss,batches_loss = train(net, device, train_loader,criterion_train, optimizer, epoch,batch_size)
-            batch_losses += batches_loss
-            train_losses.append(train_loss)
+    # try:
+    for epoch in range(start_epoch,n_epochs):
+        train_loss,batches_loss = train(net, device, train_loader,criterion_train, optimizer, epoch,batch_size)
+        batch_losses += batches_loss
+        train_losses.append(train_loss)
 
-            temp = net.teacher_forcing
-            net.teacher_forcing = False
-            eval_loss,fde_loss = evaluate(net, device, eval_loader,criterion_eval, epoch, batch_size)
-            net.teacher_forcing = temp
+        # temp = net.teacher_forcing
+        # net.teacher_forcing = False
+        eval_loss,fde_loss = evaluate(net, device, eval_loader,criterion_eval, epoch, batch_size)
+        # net.teacher_forcing = temp
 
-            eval_losses.append(eval_loss)
-            fde_losses.append(fde_loss)
-            print(time.time()-s)
+        eval_losses.append(eval_loss)
+        fde_losses.append(fde_loss)
+        print(time.time()-s)
         
-    except :
-        # logging.error(traceback.format_exc())
-        # save_model(epoch,net,optimizer,train_losses,eval_losses,batch_losses,save_path)
-        pass
+    # except :
+    #     # logging.error(traceback.format_exc())
+    #     # save_model(epoch,net,optimizer,train_losses,eval_losses,batch_losses,save_path)
+    #     pass
 
     save_model(epoch,net,optimizer,train_losses,eval_losses,batch_losses,fde_losses)
     if plot:
         plt.plot(train_losses)
         plt.plot(eval_losses)
-        plt.plot(fde_losses)
+        # plt.plot(fde_losses)
         plt.show()
 
     return train_losses,eval_losses,batch_losses

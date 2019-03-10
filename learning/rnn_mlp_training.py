@@ -13,8 +13,8 @@ from sklearn.model_selection import train_test_split
 import numpy as np
 import time
 
-from classes.datasets import CustomDataset,CustomDatasetIATCNN
-from classes.tcnn import IATCNN,nlloss
+from classes.datasets import CustomDataset
+from classes.rnn_mlp import RNN_MLP,custom_mse
 import helpers.helpers_training as training
 import sys
 import json
@@ -41,7 +41,7 @@ import matplotlib.pyplot as plt
         eval ADE
         eval FDE
 """
-#python learning/iatcnn_training.py parameters/data.json parameters/iatcnn_training.json
+#python learning/rnn_mlp_training.py parameters/data.json parameters/rnn_mlp_training.json
 def main():
           
     # set pytorch
@@ -56,10 +56,10 @@ def main():
     data = json.load(open("parameters/data.json"))
 
     ids = np.array(json.load(open(data["prepared_ids"]))["ids"])
-    nb_neighbors_max = np.array(json.load(open(data["prepared_ids"]))["max_neighbors"])   
+    # nb_neighbors_max = np.array(json.load(open(data["prepared_ids"]))["max_neighbors"])   
 
     # training_param = json.load(open(args[2]))
-    training_param = json.load(open("parameters/iatcnn_training.json"))
+    training_param = json.load(open("parameters/rnn_mlp_training.json"))
 
 
 
@@ -75,32 +75,41 @@ def main():
 
     
     # load datasets
-    train_dataset = CustomDatasetIATCNN(train_indices,data["torch_data"])
-    eval_dataset = CustomDatasetIATCNN(eval_indices,data["torch_data"])
+    train_dataset = CustomDataset(train_indices,data["torch_data"])
+    eval_dataset = CustomDataset(eval_indices,data["torch_data"])
 
     # create dataloaders
     train_loader = torch.utils.data.DataLoader( train_dataset, batch_size= training_param["batch_size"], shuffle=True,num_workers= training_param["num_workers"],drop_last = True)
     eval_loader = torch.utils.data.DataLoader( eval_dataset, batch_size= training_param["batch_size"], shuffle=False,num_workers= training_param["num_workers"],drop_last = True)
 
-    # eval_loader = torch.utils.data.DataLoader( train_dataset, batch_size= training_param["batch_size"], shuffle=True,num_workers= training_param["num_workers"],drop_last = True)
-    # train_loader = torch.utils.data.DataLoader( eval_dataset, batch_size= training_param["batch_size"], shuffle=False,num_workers= training_param["num_workers"],drop_last = True)
 
-    input_dim = training_param["input_dim"]
-    output_channels = training_param["output_channels"]
-    net = IATCNN(
-        n_inputs = input_dim * (nb_neighbors_max + 1),
-        n_outputs = output_channels,
-        kernel_size = training_param["kernel_size"],
-        stride = training_param["stride"],
-        input_length = training_param["obs_length"],
-        output_length = training_param["pred_length"],
-        output_size = training_param["output_size"],
-        max_neighbors = nb_neighbors_max + 1)
+    # input_dim = training_param["input_dim"]
+    # output_channels = training_param["output_channels"]
+    # net = IATCNN(
+    #     n_inputs = input_dim * (nb_neighbors_max + 1),
+    #     n_outputs = output_channels,
+    #     kernel_size = training_param["kernel_size"],
+    #     stride = training_param["stride"],
+    #     input_length = training_param["obs_length"],
+    #     output_length = training_param["pred_length"],
+    #     output_size = training_param["output_size"],
+    #     max_neighbors = nb_neighbors_max + 1)
 
 
     # load_path = "./learning/data/models/model_1552166089.4612148.tar"
     # checkpoint = torch.load(load_path)
     # net.load_state_dict(checkpoint['state_dict'])
+    net = RNN_MLP(
+        device = device,
+        batch_size = training_param["batch_size"],
+        input_dim = training_param["input_dim"],
+        hidden_size = training_param["hidden_size"],
+        recurrent_layer = training_param["recurrent_layer"],
+        mlp_layers = training_param["mlp_layers"],
+        output_size = training_param["output_size"]
+    )
+
+    print(net)
     net = net.to(device)
 
     # for data in eval_loader:
@@ -122,7 +131,7 @@ def main():
     #     nll_loss = nlloss(outputs,targets)
 
     optimizer = optim.Adam(net.parameters(),lr = training_param["lr"])
-    criterion = nlloss
+    criterion = custom_mse
 
     training.training_loop(training_param["n_epochs"],training_param["batch_size"],
         net,device,train_loader,eval_loader,criterion,criterion,optimizer,

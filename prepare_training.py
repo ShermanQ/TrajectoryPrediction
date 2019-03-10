@@ -44,20 +44,20 @@ def main():
         digit_man.change_digit_number(scene)
     print("DOne!")
 
-    print("Normalizing scenes")
-    center = int(prepare_training_params["center"])
-    scaler = scene_scaler.SceneScaler(data_params,center)
-    for scene in scene_list:
-        print(scene)
-        scaler.min_max_scale(scene)
-    print("DOne!")
+    # print("Normalizing scenes")
+    # center = int(prepare_training_params["center"])
+    # scaler = scene_scaler.SceneScaler(data_params,center)
+    # for scene in scene_list:
+    #     print(scene)
+    #     scaler.min_max_scale(scene)
+    # print("DOne!")
 
-    img_size = int(prepare_training_params["img_size"])
-    scaler = img_scaler.ImgScaler(data_params,img_size)  
+    # img_size = int(prepare_training_params["img_size"])
+    # scaler = img_scaler.ImgScaler(data_params,img_size)  
 
-    for scene in scene_list:
-        print(scene)
-        scaler.scale(scene)
+    # for scene in scene_list:
+    #     print(scene)
+    #     scaler.scale(scene)
 
 
     prepare_frames = int(prepare_training_params["samples_frames"])
