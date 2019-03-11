@@ -4,7 +4,7 @@
     "obs_length": 8,
     "pred_length"  : 12,
     "seq_length"  : 20,
-    "nb_samples" : 5144,
+    "nb_samples" : 9892,
     "num_workers" : 0,
     "lr" : 0.001, 
     "load_path" : "",    

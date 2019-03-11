@@ -14,7 +14,9 @@ class TorchExtractor():
 
         self.prepared_samples = data["prepared_samples_grouped"]
         self.prepared_labels = data["prepared_labels_grouped"]
-        self.samples_ids = json.load(open(data["prepared_ids"]))["ids"]
+        self.ids_path = data["prepared_ids"]
+        self.samples_ids = json.load(open(self.ids_path))["ids"]
+        self.kept_ids = torch_params["ids_path"]
 
         self.prepared_images = data["prepared_images"]
         self.stopped_threshold = torch_params["stopped_threshold"]
@@ -51,6 +53,8 @@ class TorchExtractor():
         print(nb_max)
         id_ = 0
         print(self.prepared_samples)
+
+        kept_ids = []
         with open(self.prepared_samples) as data_csv :
             with open(self.prepared_labels) as label_csv:
                 data_reader = csv.reader(data_csv)
@@ -81,6 +85,8 @@ class TorchExtractor():
                         stopped_samples += 1
                         keep = True if random.random() < self.stopped_prop else False
                         if keep:
+                            kept_ids.append(sample_id)
+
 
                             torch.save(features,self.samples_torch+"sample_"+sample_id+".pt")
                             torch.save(labels,self.labels_torch+"label_"+sample_id+".pt")
@@ -94,6 +100,7 @@ class TorchExtractor():
                             id_+= 1
                     # if trajectory is movin' add the sample
                     else:
+                        kept_ids.append(sample_id)
                         torch.save(features,self.samples_torch+"sample_"+sample_id+".pt")
                         torch.save(labels,self.labels_torch+"label_"+sample_id+".pt")
                         with open(self.img_links_torch +"img_"+sample_id+".txt","w" ) as img_writer:
@@ -105,6 +112,10 @@ class TorchExtractor():
                         id_+= 1
                         
                     total_samples += 1
+
+        ids_json = json.load(open(self.ids_path))
+        ids_json["ids"] = kept_ids
+        json.dump(ids_json,open(self.kept_ids,"w"))
 
 
                     

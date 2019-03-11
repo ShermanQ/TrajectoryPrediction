@@ -175,7 +175,7 @@ def evaluate(model, device, eval_loader,criterion, epoch, batch_size,scalers_pat
     print('Epoch n {} Evaluation Loss: {}, ADE: {}, FDE: {}'.format(epoch,eval_loss,ade,fde))
 
 
-    return eval_loss,fde
+    return eval_loss,fde,ade
 
 
 """
@@ -216,6 +216,8 @@ def training_loop(n_epochs,batch_size,net,device,train_loader,eval_loader,criter
     eval_losses = []
     batch_losses = []
     fde_losses = []
+    ade_losses = []
+
     start_epoch = 0
 
 
@@ -241,11 +243,13 @@ def training_loop(n_epochs,batch_size,net,device,train_loader,eval_loader,criter
 
         # temp = net.teacher_forcing
         # net.teacher_forcing = False
-        eval_loss,fde_loss = evaluate(net, device, eval_loader,criterion_eval, epoch, batch_size,scalers_path)
+        eval_loss,fde,ade = evaluate(net, device, eval_loader,criterion_eval, epoch, batch_size,scalers_path)
         # net.teacher_forcing = temp
 
         eval_losses.append(eval_loss)
-        fde_losses.append(fde_loss)
+        fde_losses.append(fde)
+        ade_losses.append(ade)
+
         print(time.time()-s)
         
     # except :
@@ -257,6 +261,11 @@ def training_loop(n_epochs,batch_size,net,device,train_loader,eval_loader,criter
     if plot:
         plt.plot(train_losses)
         plt.plot(eval_losses)
+        # plt.plot(fde_losses)
+        plt.show()
+
+        plt.plot(ade_losses)
+        plt.plot(fde_losses)
         # plt.plot(fde_losses)
         plt.show()
 

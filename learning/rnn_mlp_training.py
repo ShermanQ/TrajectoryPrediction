@@ -41,7 +41,7 @@ import matplotlib.pyplot as plt
         eval ADE
         eval FDE
 """
-#python learning/rnn_mlp_training.py parameters/data.json parameters/rnn_mlp_training.json
+#python learning/rnn_mlp_training.py parameters/data.json parameters/rnn_mlp_training.json parameters/torch_extractors.json
 def main():
           
     # set pytorch
@@ -53,9 +53,12 @@ def main():
     args = sys.argv   
 
     # data = json.load(open(args[1]))
-    data = json.load(open("parameters/data.json"))
+    # torch_param = json.load(open(args[3]))
 
-    ids = np.array(json.load(open(data["prepared_ids"]))["ids"])
+    data = json.load(open("parameters/data.json"))
+    torch_param = json.load(open("parameters/torch_extractors.json"))
+
+    ids = np.array(json.load(open(torch_param["ids_path"]))["ids"])
     # nb_neighbors_max = np.array(json.load(open(data["prepared_ids"]))["max_neighbors"])   
 
     # training_param = json.load(open(args[2]))

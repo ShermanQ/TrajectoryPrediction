@@ -2,6 +2,7 @@ import skimage
 import json
 import helpers
 import sys
+from skimage import io,transform,util
 
 class ImgScaler():
     def __init__(self,data,target_size):
@@ -12,14 +13,14 @@ class ImgScaler():
 
     def scale(self,scene):
         
-        img = skimage.io.imread(self.original_image.format(scene))
+        img = io.imread(self.original_image.format(scene))
         biggest_dim = max(img.shape[0],img.shape[1])
         ratio = self.target_size/float(biggest_dim)
-        img = skimage.transform.rescale(img,ratio,anti_aliasing= True,mode='constant',multichannel=True)
+        img = transform.rescale(img,ratio,anti_aliasing= True,mode='constant',multichannel=True)
         
         img = self.__pad(img)
         helpers.remove_file(self.destination_image.format(scene))
-        skimage.io.imsave(self.destination_image.format(scene),img)
+        io.imsave(self.destination_image.format(scene),img)
         
   
             
@@ -31,7 +32,7 @@ class ImgScaler():
         paddings = [pad0,pad1,pad2]
 
 
-        img = skimage.util.pad(img,paddings,'constant', constant_values=(0,0))
+        img = util.pad(img,paddings,'constant', constant_values=(0,0))
         return img
 
     def __get_padding(self,dim):

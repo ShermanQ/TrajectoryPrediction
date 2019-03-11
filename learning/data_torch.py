@@ -16,6 +16,8 @@ def main():
 
     s = time.time()
     extractor = torch_extractor.TorchExtractor(args[1],args[2])
+    # extractor = torch_extractor.TorchExtractor("parameters/data.json","parameters/torch_extractors.json")
+
     extractor.extract_tensors_sophie()
     print(time.time()-s)
        

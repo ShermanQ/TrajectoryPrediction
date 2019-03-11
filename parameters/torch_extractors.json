@@ -2,8 +2,9 @@
     "samples_torch" : "./learning/data/samples/",
     "labels_torch" : "./learning/data/labels/",
     "img_links_torch" : "./learning/data/img/",
-    "stopped_threshold" : 0.01,
-    "stopped_prop" : 1.0,
+    "ids_path": "./learning/data/ids.json",
+    "stopped_threshold" : 0.001,
+    "stopped_prop" : 0.0,
     "new_padding":0.0,
     "old_padding":-1
 

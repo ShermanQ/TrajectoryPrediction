@@ -1,5 +1,5 @@
 {
-    "shift": 1,
+    "shift": 4,
     "t_obs": 8,
     "t_pred": 12,
     "framerate" : "1.0",
