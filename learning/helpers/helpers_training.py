@@ -43,27 +43,14 @@ def train(model, device, train_loader,criterion, optimizer, epoch,batch_size,pri
 
     start_time = time.time()
     for batch_idx, data in enumerate(train_loader):
-        inputs, labels = data
+        inputs, labels, ids = data
         inputs, labels = inputs.to(device), labels.to(device)
         optimizer.zero_grad()
         output = model(inputs)
+        output = output.view(labels.size())
 
-        # print("---------")
-        # print(output.size())
-        # print(labels.size())
+        # revert_scaling(ids,labels,output)
         loss = criterion(output, labels)
-        # loss = custom_loss(output, labels)
-
-
-
-        # output = model(inputs)
-        
-
-        # print(loss.size())
-        # print(output[0])
-        # print(labels[0])
-        # print(loss)
-
         loss.backward()
         optimizer.step()
 
@@ -77,6 +64,71 @@ def train(model, device, train_loader,criterion, optimizer, epoch,batch_size,pri
 
     return epoch_loss,batches_loss
 
+from joblib import load
+
+
+def revert_scaling(ids,labels,outputs,scalers_root):
+    scaler_ids = ["_".join(id_.split("_")[:-1]) for id_ in ids]
+    scalers_path = [scalers_root + id_ +".joblib" for id_ in scaler_ids]
+    # scaler_ids = [id_.split()for id_ in ids]
+
+    # get samples ids for each scaler
+    scaler_sample = {}
+    for scaler in scalers_path:
+        if scaler not in scaler_sample:
+            scaler_sample[scaler] = []
+
+            for i,scaler1 in enumerate(scalers_path):
+                if scaler == scaler1:
+                    scaler_sample[scaler].append(i)
+
+    for scaler_id in scaler_sample:
+        scaler = load(scaler_id)
+        samples_ids = scaler_sample[scaler_id]
+
+        sub_labels = labels[samples_ids]
+        b,s,i = sub_labels.size()
+
+        sub_labels = sub_labels.contiguous().view(-1,1).cpu().numpy()
+        inv_sub_labels = torch.FloatTensor(scaler.inverse_transform(sub_labels)).view(b,s,i).cuda()
+        labels[samples_ids] = inv_sub_labels
+
+        sub_outputs = outputs[samples_ids]
+        b,s,i = sub_outputs.size()
+
+        sub_outputs = sub_outputs.contiguous().view(-1,1).cpu().detach().numpy()
+        inv_sub_outputs = torch.FloatTensor(scaler.inverse_transform(sub_outputs)).view(b,s,i).cuda()
+        outputs[samples_ids] = inv_sub_outputs
+    
+    
+    return labels,outputs
+
+
+def ade_loss(outputs,targets):
+    outputs = outputs.contiguous().view(-1,2)
+    targets = targets.contiguous().view(-1,2)
+    mse = nn.MSELoss(reduction= "none")
+
+    mse_loss = mse(outputs,targets )
+    mse_loss = torch.sum(mse_loss,dim = 1 )
+    mse_loss = torch.sqrt(mse_loss )
+    mse_loss = torch.mean(mse_loss )
+
+    return mse_loss
+
+def fde_loss(outputs,targets):
+    outputs = outputs[:,-1,:]
+    targets = targets[:,-1,:]
+    mse = nn.MSELoss(reduction= "none")
+
+    mse_loss = mse(outputs,targets )
+    mse_loss = torch.sum(mse_loss,dim = 1 )
+    mse_loss = torch.sqrt(mse_loss )
+    mse_loss = torch.mean(mse_loss )
+
+    return mse_loss
+
+
 """
     Evaluation loop for an epoch
     Uses cuda if available
@@ -87,48 +139,43 @@ def train(model, device, train_loader,criterion, optimizer, epoch,batch_size,pri
     FDE loss is added using MSEerror on the last point of prediction and target
     sequences
 """
-def evaluate(model, device, eval_loader,criterion, epoch, batch_size):
+def evaluate(model, device, eval_loader,criterion, epoch, batch_size,scalers_path):
     model.eval()
     eval_loss = 0.
-    fde_loss = 0.
+    fde = 0.
+    ade = 0.
+
     nb_sample = len(eval_loader)*batch_size
     
     start_time = time.time()
     for data in eval_loader:
-        inputs, labels = data
+        inputs, labels, ids = data
         inputs, labels = inputs.to(device), labels.to(device)
         
         output = model(inputs)
-        # print("---------")
-        # print(output.size())
-        # print(labels.size())
+        output = output.view(labels.size())
 
         loss = criterion(output, labels)
-        # print(loss.size())
+        inv_labels,inv_outputs = revert_scaling(ids,labels,output,scalers_path)
 
         
-        # print(inputs[-10:])
-        # print(labels[-10:])
-        # print(output[-10:])
-        # print(labels[:10])
-        # print(output[:10])
-        # print(loss.item())
-        # print("---------")
 
-        # print(output[:,-1].view(200,1,2))
-        # print(labels.size())
-        # fde_loss += criterion(output[:,-1].view(batch_size,1,-1), labels[:,-1].view(batch_size,1,-1)).item()
-        
+        ade += ade_loss(inv_outputs,inv_labels).item()
+        fde += fde_loss(inv_outputs,inv_labels).item()
+      
         eval_loss += loss.item()
 
              
-    eval_loss /= float(len(eval_loader))        
+    eval_loss /= float(len(eval_loader))  
+    ade /= float(len(eval_loader))        
+    fde /= float(len(eval_loader))        
+
     # fde_loss /= float(len(eval_loader))        
     # print('Epoch n {} Evaluation Loss: {}, FDE Loss {}'.format(epoch,eval_loss,fde_loss))
-    print('Epoch n {} Evaluation Loss: {}'.format(epoch,eval_loss))
+    print('Epoch n {} Evaluation Loss: {}, ADE: {}, FDE: {}'.format(epoch,eval_loss,ade,fde))
 
 
-    return eval_loss,fde_loss
+    return eval_loss,fde
 
 
 """
@@ -163,7 +210,7 @@ def save_model(epoch,net,optimizer,train_losses,eval_losses,batch_losses,fde_los
     if plot, display the different losses
     If exception during training, model is stored
 """
-def training_loop(n_epochs,batch_size,net,device,train_loader,eval_loader,criterion_train,criterion_eval,optimizer,plot = True,early_stopping = True,load_path = None):
+def training_loop(n_epochs,batch_size,net,device,train_loader,eval_loader,criterion_train,criterion_eval,optimizer,scalers_path,plot = True,early_stopping = True,load_path = None):
 
     train_losses = []
     eval_losses = []
@@ -194,7 +241,7 @@ def training_loop(n_epochs,batch_size,net,device,train_loader,eval_loader,criter
 
         # temp = net.teacher_forcing
         # net.teacher_forcing = False
-        eval_loss,fde_loss = evaluate(net, device, eval_loader,criterion_eval, epoch, batch_size)
+        eval_loss,fde_loss = evaluate(net, device, eval_loader,criterion_eval, epoch, batch_size,scalers_path)
         # net.teacher_forcing = temp
 
         eval_losses.append(eval_loss)

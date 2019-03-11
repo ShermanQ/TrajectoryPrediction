@@ -11,7 +11,7 @@ import collections
 def custom_mse(pred_seq,gt_seq):
     mse = nn.MSELoss(reduction= "none")
 
-    pred_seq = pred_seq.view(pred_seq.size()[0],12,2)
+    # pred_seq = pred_seq.view(pred_seq.size()[0],12,2)
     
 
     # sum over a trajectory, average over batch size

@@ -42,7 +42,7 @@ class CustomDataset(data.Dataset):
       #   print(X)
       #   print("y")
       #   print(y)
-        return X, y
+        return X, y, ID
 
 
 """
