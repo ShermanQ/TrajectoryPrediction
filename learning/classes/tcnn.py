@@ -159,6 +159,14 @@ class IATCNN(nn.Module):
         b,a,_ = x.size()
         x = x.view(b,a,self.output_length,self.time_dist_input_size)
         x = self.time_distributed(x)
+
+        mux_muy = x[:,:,:,:2]
+        sx_sy = torch.exp(x[:,:,:,2:4])
+        corr = torch.tanh(x[:,:,:,4]).unsqueeze(3)
+
+        x = torch.cat([mux_muy,sx_sy,corr], dim = 3)
+
+        
         return x
 
 
