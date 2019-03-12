@@ -12,18 +12,9 @@ import torchvision
 import imp
 from torch.nn.utils import weight_norm
 import collections
+import math
 
-def covariance_matrix(parameters):
-    mu = parameters[:2]
-    sigma = parameters[2:4]
-    rho = parameters[4]
 
-    cov = rho*sigma[0]*sigma[1]
-    
-    cov_m = torch.diag(sigma)**2
-    cov_m[1,0] = cov_m[0,1] = cov
-
-    return mu,cov_m
 
 def nlloss(outputs,targets,eps = 1e-15):
 
@@ -31,29 +22,33 @@ def nlloss(outputs,targets,eps = 1e-15):
     targets = targets.contiguous().view(-1,targets.size()[-1])
     
     b,o = outputs.size()
-    mu = outputs[:,:2]
-    sigma1 = outputs[:,2]
-    sigma2 = outputs[:,3]
-    rho = outputs[:,4]
-    cov = torch.mul(torch.mul(sigma1,sigma2),rho).view(b,1)
-    sigma1 = (sigma1 ** 2).view(b,1)
-    sigma2 = (sigma2 ** 2).view(b,1)
 
-    matrix = torch.cat([sigma1,cov,cov,sigma2,],dim = 1).view(b,mu.size()[1],mu.size()[1])
+    mu,sigma1,sigma2,rho = outputs[:,:2],outputs[:,2],outputs[:,3],outputs[:,4]
     
+    cov = torch.mul(torch.mul(sigma1,sigma2),rho).view(b,1)
+    sigma1, sigma2 = (sigma1 ** 2).view(b,1),(sigma2 ** 2).view(b,1)
+     
+
+    matrix = torch.cat([sigma1,cov,cov,sigma2,],dim = 1).view(b,mu.size()[1],mu.size()[1])    
     mat_inv = torch.inverse(matrix)
+    # mat_inv = matrix
+
+
     diff = targets.sub(mu).view(b,mu.size()[1],1)
-    a = (targets[:,0] != 0. ).cuda()
-    b = (targets[:,1] != 0. ).cuda()
-    c = torch.max(a,b)
+    
 
     right_product = torch.bmm(mat_inv,diff)
-    left_product = torch.bmm(diff.permute(0,2,1),right_product)
-    
-    loss = 0.5 * torch.sum(left_product[c])
-    loss2 = 0.5 * torch.sum(left_product)
+    square_mahalanobis = torch.bmm(diff.permute(0,2,1),right_product)
 
-    return loss
+    lloss = 0.5 * torch.sum( square_mahalanobis)
+    return lloss
+
+
+# a = (targets[:,0] != 0. ).cuda()
+# b = (targets[:,1] != 0. ).cuda()
+# c = torch.max(a,b)
+# loss = 0.5 * torch.sum(left_product[c])
+
 
 class Chomp2d(nn.Module):
     def __init__(self, chomp_h_size,chomp_w_size):
@@ -72,13 +67,6 @@ class Chomp2d(nn.Module):
         elif self.chomp_w_size != 0 :
             return x[:, :,:, :-self.chomp_w_size].contiguous()
 
-# class Chomp1d(nn.Module):
-#     def __init__(self, chomp_size):
-#         super(Chomp1d, self).__init__()
-#         self.chomp_size = chomp_size
-
-#     def forward(self, x):
-#         return x[:, :, :-self.chomp_size].contiguous()
 
 class TemporalBlock(nn.Module):
     def __init__(self, n_inputs, n_outputs,n_layers, kernel_size, stride, dropout=0.2):
@@ -88,6 +76,7 @@ class TemporalBlock(nn.Module):
         self.conv_idx = []
         for i in range(n_layers):
             dilation = (2**i,2**i)
+            
             # padding = (i+1) * (kernel_size-1)
             padding_s = int(   (  (kernel_size[0]-1) * dilation[0]  )// 2  )#always divisible by 2 except for i = 0
             if i == 0:
@@ -96,9 +85,6 @@ class TemporalBlock(nn.Module):
             padding = (padding_s,padding_t)
 
             if i == 0:
-                # self.net["conv{}".format(i)] = nn.Conv1d(n_inputs, n_outputs, kernel_size,
-                #                             stride=stride, padding=padding, dilation=dilation)
-
                 self.net["conv{}".format(i)] = nn.Conv2d(n_inputs, n_outputs, kernel_size,
                                             stride=stride, padding=padding, dilation=dilation)
                 
@@ -151,7 +137,9 @@ class IATCNN(nn.Module):
         self.time_distributed = nn.Linear(self.time_dist_input_size,output_size)
 
     def forward(self,x):
+        # torch.backends.cudnn.benchmark = True
         x = self.net(x)
+        # torch.backends.cudnn.benchmark = False
         x = x[:,:,:,-1].permute(0,2,1)
 
         x = self.fc_layer(x)
@@ -173,6 +161,46 @@ class IATCNN(nn.Module):
 
 
 
+# class TemporalBlock(nn.Module):
+#     def __init__(self, n_inputs, n_outputs,n_layers, kernel_size, stride, dropout=0.2):
+#         super(TemporalBlock, self).__init__()
+
+#         self.net = collections.OrderedDict()
+#         self.conv_idx = []
+#         for i in range(n_layers):
+#             dilation = (2**i,2**i)
+#             # padding = (i+1) * (kernel_size-1)
+#             padding_s = int(   (  (kernel_size[0]-1) * dilation[0]  )// 2  )#always divisible by 2 except for i = 0
+#             if i == 0:
+#                 padding_s = padding_s + 1
+#             padding_t = (kernel_size[1]-1) * dilation[1]  
+#             padding = (padding_s,padding_t)
+
+#             if i == 0:
+#                 self.net["conv{}".format(i)] = nn.Conv2d(n_inputs, n_outputs, kernel_size,
+#                                             stride=stride, padding=padding, dilation=dilation)
+                
+#                 self.net["chomp{}".format(i)] = Chomp2d(1,padding_t)
+#             else:
+#                 self.net["conv{}".format(i)] = nn.Conv2d(n_outputs, n_outputs, kernel_size,
+#                                             stride=stride, padding=padding, dilation=dilation)
+#                 self.net["chomp{}".format(i)] = Chomp2d(0,padding_t)     
+                                       
+#             self.net["tanh{}".format(i)] = nn.Tanh()
+#             self.net["dropout{}".format(i)] = nn.Dropout(dropout)
+#             self.conv_idx.append(i*4)
+
+#         self.net = nn.Sequential(self.net)
+#         self.init_weights()
+
+
+#     def init_weights(self):
+#         for index in self.conv_idx:            
+#             self.net[index].weight.data.normal_(0, 0.01)
+
+#     def forward(self, x):
+#         x = self.net(x)
+#         return x
 
 
 

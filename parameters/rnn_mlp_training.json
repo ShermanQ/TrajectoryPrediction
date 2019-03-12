@@ -13,5 +13,6 @@
     "hidden_size":32,
     "recurrent_layer":1,
     "mlp_layers":[100],
-    "output_size":24
+    "output_size":24,
+    "model_type": 0
 }

@@ -47,6 +47,8 @@ def main():
     # set pytorch
     # torch.manual_seed(10)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")    
+    torch.backends.cudnn.benchmark = True
+    # device = "cpu"
     print(device)
     print(torch.cuda.is_available())
         
@@ -115,8 +117,9 @@ def main():
     # load_path = "./learning/data/models/model_1552166089.4612148.tar"
     # checkpoint = torch.load(load_path)
     # net.load_state_dict(checkpoint['state_dict'])
+    
     net = net.to(device)
-
+    print(net)
     # for data in eval_loader:
     #     samples,targets = data
     #     samples = samples.to(device)
@@ -139,7 +142,7 @@ def main():
     criterion = nlloss
 
     training.training_loop(training_param["n_epochs"],training_param["batch_size"],
-        net,device,train_loader,eval_loader,criterion,criterion,optimizer,data["scalers"],
+        net,device,train_loader,eval_loader,criterion,criterion,optimizer,data["scalers"],training_param["model_type"],
         plot = training_param["plot"],early_stopping = True,load_path = training_param["load_path"])
 
 

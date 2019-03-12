@@ -44,24 +44,33 @@ def train(model, device, train_loader,criterion, optimizer, epoch,batch_size,pri
     start_time = time.time()
     for batch_idx, data in enumerate(train_loader):
         inputs, labels, ids = data
+        # print(time.time()-start_time)
         inputs, labels = inputs.to(device), labels.to(device)
+        # print(time.time()-start_time)
         optimizer.zero_grad()
         output = model(inputs)
-        output = output.view(labels.size())
+        # print(time.time()-start_time)
+        # output = output.view(labels.size())
 
         # revert_scaling(ids,labels,output)
         loss = criterion(output, labels)
+        # print(time.time()-start_time)
         loss.backward()
+        # print(time.time()-start_time)
         optimizer.step()
+        # print(time.time()-start_time)
 
         epoch_loss += loss.item()
         batches_loss.append(loss.item())
 
         if batch_idx % print_every == 0:
-            print(batch_idx,loss.item(),time.time()-start_time)       
+            print(batch_idx,loss.item(),time.time()-start_time)  
+            # print(time.time()-start_time)        
     epoch_loss /= float(len(train_loader))        
     print('Epoch n {} Loss: {}'.format(epoch,epoch_loss))
 
+
+    # print(time.time()-start_time)
     return epoch_loss,batches_loss
 
 from joblib import load
@@ -86,18 +95,18 @@ def revert_scaling(ids,labels,outputs,scalers_root):
         scaler = load(scaler_id)
         samples_ids = scaler_sample[scaler_id]
 
-        sub_labels = labels[samples_ids]
-        b,s,i = sub_labels.size()
+        sub_labels_torch = labels[samples_ids]
+        # b,a,s,i = sub_labels.size()
 
-        sub_labels = sub_labels.contiguous().view(-1,1).cpu().numpy()
-        inv_sub_labels = torch.FloatTensor(scaler.inverse_transform(sub_labels)).view(b,s,i).cuda()
+        sub_labels = sub_labels_torch.contiguous().view(-1,1).cpu().numpy()
+        inv_sub_labels = torch.FloatTensor(scaler.inverse_transform(sub_labels)).view(sub_labels_torch.size()).cuda()
         labels[samples_ids] = inv_sub_labels
 
-        sub_outputs = outputs[samples_ids]
-        b,s,i = sub_outputs.size()
+        sub_outputs_torch = outputs[samples_ids]
+        # b,a,s,i = sub_outputs.size()
 
-        sub_outputs = sub_outputs.contiguous().view(-1,1).cpu().detach().numpy()
-        inv_sub_outputs = torch.FloatTensor(scaler.inverse_transform(sub_outputs)).view(b,s,i).cuda()
+        sub_outputs = sub_outputs_torch.contiguous().view(-1,1).cpu().detach().numpy()
+        inv_sub_outputs = torch.FloatTensor(scaler.inverse_transform(sub_outputs)).view(sub_outputs_torch.size()).cuda()
         outputs[samples_ids] = inv_sub_outputs
     
     
@@ -138,8 +147,11 @@ def fde_loss(outputs,targets):
 
     FDE loss is added using MSEerror on the last point of prediction and target
     sequences
+
+    model: 0 rnn_mlp
+           1 iatcnn
 """
-def evaluate(model, device, eval_loader,criterion, epoch, batch_size,scalers_path):
+def evaluate(model, device, eval_loader,criterion, epoch, batch_size,scalers_path,model_type ):
     model.eval()
     eval_loss = 0.
     fde = 0.
@@ -153,10 +165,15 @@ def evaluate(model, device, eval_loader,criterion, epoch, batch_size,scalers_pat
         inputs, labels = inputs.to(device), labels.to(device)
         
         output = model(inputs)
-        output = output.view(labels.size())
+        # output = output.view(labels.size())
 
         loss = criterion(output, labels)
-        inv_labels,inv_outputs = revert_scaling(ids,labels,output,scalers_path)
+        inv_labels,inv_outputs = None,None
+        if model_type == 0:
+            inv_labels,inv_outputs = revert_scaling(ids,labels,output,scalers_path)
+            inv_outputs = inv_outputs.view(inv_labels.size())
+        elif model_type == 1:
+            inv_labels,inv_outputs = revert_scaling(ids,labels,output[:,:,:,:2],scalers_path)
 
         
 
@@ -210,7 +227,7 @@ def save_model(epoch,net,optimizer,train_losses,eval_losses,batch_losses,fde_los
     if plot, display the different losses
     If exception during training, model is stored
 """
-def training_loop(n_epochs,batch_size,net,device,train_loader,eval_loader,criterion_train,criterion_eval,optimizer,scalers_path,plot = True,early_stopping = True,load_path = None):
+def training_loop(n_epochs,batch_size,net,device,train_loader,eval_loader,criterion_train,criterion_eval,optimizer,scalers_path,model_type,plot = True,early_stopping = True,load_path = None):
 
     train_losses = []
     eval_losses = []
@@ -242,7 +259,7 @@ def training_loop(n_epochs,batch_size,net,device,train_loader,eval_loader,criter
         train_losses.append(train_loss)
 
         
-        # eval_loss,fde,ade = evaluate(net, device, eval_loader,criterion_eval, epoch, batch_size,scalers_path)
+        eval_loss,fde,ade = evaluate(net, device, eval_loader,criterion_eval, epoch, batch_size,scalers_path,model_type)
         
 
         # eval_losses.append(eval_loss)

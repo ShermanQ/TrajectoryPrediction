@@ -4,16 +4,17 @@
     "obs_length": 8,
     "pred_length"  : 12,
     "seq_length"  : 20,
-    "nb_samples" : 5144,
+    "nb_samples" : 906,
     "num_workers" : 0,
     "lr" : 0.001, 
     "load_path" : "",    
     "plot": 1,
     "input_dim":2,
     "output_channels":128,
-    "kernel_size":[10,3],
+    "kernel_size":[102,10],
     "stride":1,
     "padding":4,
-    "output_size":5
+    "output_size":5,
+    "model_type": 1
 
 }

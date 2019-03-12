@@ -9,6 +9,7 @@ from torch.nn.utils import weight_norm
 import collections
 
 def custom_mse(pred_seq,gt_seq):
+    pred_seq = pred_seq.view(gt_seq.size())
     mse = nn.MSELoss(reduction= "none")
 
     # pred_seq = pred_seq.view(pred_seq.size()[0],12,2)

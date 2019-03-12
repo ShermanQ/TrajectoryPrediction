@@ -104,7 +104,7 @@ def main():
     criterion = custom_mse
 
     training.training_loop(training_param["n_epochs"],training_param["batch_size"],
-        net,device,train_loader,eval_loader,criterion,criterion,optimizer, data["scalers"],
+        net,device,train_loader,eval_loader,criterion,criterion,optimizer, data["scalers"],training_param["model_type"],
         plot = training_param["plot"],early_stopping = True,load_path = training_param["load_path"])
 
 
