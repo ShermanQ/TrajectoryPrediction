@@ -92,7 +92,7 @@ def main():
     input_dim = training_param["input_dim"]
     output_channels = training_param["output_channels"]
     net = IATCNN(
-        n_inputs = input_dim * (nb_neighbors_max + 1),
+        n_inputs = input_dim,
         n_outputs = output_channels,
         kernel_size = training_param["kernel_size"],
         stride = training_param["stride"],
@@ -100,6 +100,16 @@ def main():
         output_length = training_param["pred_length"],
         output_size = training_param["output_size"],
         max_neighbors = nb_neighbors_max + 1)
+
+    # net = IATCNN(
+    #     n_inputs = input_dim * (nb_neighbors_max + 1),
+    #     n_outputs = output_channels,
+    #     kernel_size = training_param["kernel_size"],
+    #     stride = training_param["stride"],
+    #     input_length = training_param["obs_length"],
+    #     output_length = training_param["pred_length"],
+    #     output_size = training_param["output_size"],
+    #     max_neighbors = nb_neighbors_max + 1)
 
 
     # load_path = "./learning/data/models/model_1552166089.4612148.tar"
@@ -129,7 +139,7 @@ def main():
     criterion = nlloss
 
     training.training_loop(training_param["n_epochs"],training_param["batch_size"],
-        net,device,train_loader,eval_loader,criterion,criterion,optimizer,
+        net,device,train_loader,eval_loader,criterion,criterion,optimizer,data["scalers"],
         plot = training_param["plot"],early_stopping = True,load_path = training_param["load_path"])
 
 

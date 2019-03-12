@@ -122,11 +122,13 @@ class CustomDatasetIATCNN(data.Dataset):
             X = torch.load(self.data_path + "samples/sample_" + str(ID) + '.pt')
             y = torch.load(self.data_path + "labels/label_" + str(ID) + '.pt')
 
-            xs = X[:,:,0].view(X.size()[0],X.size()[1],1)
-            ys = X[:,:,1].view(X.size()[0],X.size()[1],1)
+            X = X.permute(2,0,1)
 
-            X = torch.cat([xs,ys],dim = 0)
-            X = X.view(X.size()[0],X.size()[1])
+            # xs = X[:,:,0].view(X.size()[0],X.size()[1],1)
+            # ys = X[:,:,1].view(X.size()[0],X.size()[1],1)
+
+            # X = torch.cat([xs,ys],dim = 0)
+            # X = X.view(X.size()[0],X.size()[1])
             
             # return X,img, y
-            return X, y
+            return X, y , ID

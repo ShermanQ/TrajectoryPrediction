@@ -241,14 +241,13 @@ def training_loop(n_epochs,batch_size,net,device,train_loader,eval_loader,criter
         batch_losses += batches_loss
         train_losses.append(train_loss)
 
-        # temp = net.teacher_forcing
-        # net.teacher_forcing = False
-        eval_loss,fde,ade = evaluate(net, device, eval_loader,criterion_eval, epoch, batch_size,scalers_path)
-        # net.teacher_forcing = temp
+        
+        # eval_loss,fde,ade = evaluate(net, device, eval_loader,criterion_eval, epoch, batch_size,scalers_path)
+        
 
-        eval_losses.append(eval_loss)
-        fde_losses.append(fde)
-        ade_losses.append(ade)
+        # eval_losses.append(eval_loss)
+        # fde_losses.append(fde)
+        # ade_losses.append(ade)
 
         print(time.time()-s)
         
