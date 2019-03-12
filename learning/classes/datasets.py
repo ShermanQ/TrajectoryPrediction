@@ -88,7 +88,7 @@ class CustomDatasetSophie(data.Dataset):
                   X = torch.load(self.data_path + "samples/sample_" + str(ID) + '.pt')
                   y = torch.load(self.data_path + "labels/label_" + str(ID) + '.pt')
             
-            return X,img, y
+            return X,img, y, ID
 
 class CustomDatasetIATCNN(data.Dataset):
       'Characterizes a dataset for PyTorch'

@@ -505,7 +505,7 @@ class sophie(nn.Module):
 
         Vsos = []
         for hiddens,d in zip(output,dist):
-            ids = np.argsort(d)
+            ids = np.argsort(d.cpu())
             hiddens = hiddens[ids]
             Vso = hiddens-hiddens[0].repeat(N,1)
             Vso = Vso[1:]

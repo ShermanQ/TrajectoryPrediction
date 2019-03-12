@@ -262,9 +262,9 @@ def training_loop(n_epochs,batch_size,net,device,train_loader,eval_loader,criter
         eval_loss,fde,ade = evaluate(net, device, eval_loader,criterion_eval, epoch, batch_size,scalers_path,model_type)
         
 
-        # eval_losses.append(eval_loss)
-        # fde_losses.append(fde)
-        # ade_losses.append(ade)
+        eval_losses.append(eval_loss)
+        fde_losses.append(fde)
+        ade_losses.append(ade)
 
         print(time.time()-s)
         
@@ -323,7 +323,7 @@ def train_sophie(
     batch_idx = 0
     start_time = time.time()
     for batch_idx, data in enumerate(train_loader):
-        inputs,images, labels = data
+        inputs,images, labels,ids = data
         inputs,images, labels = inputs.to(device),images.to(device), labels.to(device)
 
         # train discriminator
@@ -399,6 +399,7 @@ def eval_sophie(
         obs_length,
         pred_length,
         output_size,
+        scalers_path,
         print_every = 100):
     # model.train()
    
@@ -409,14 +410,16 @@ def eval_sophie(
             "mse": 0.,
             "real": 0.,
             "fake": 0.,
-            "gen": 0.
+            "gen": 0.,
+            "ade":0.,
+            "fde":0.
         }
         # generator.to(device)
         # discriminator.to(device)
 
         batch_idx = 0
         for batch_idx, data in enumerate(eval_loader):
-            inputs,images, labels = data
+            inputs,images, labels,ids = data
             inputs,images, labels = inputs.to(device),images.to(device), labels.to(device)
 
             # train discriminator
@@ -445,6 +448,14 @@ def eval_sophie(
             
             mse_loss = criterion_gen(traj_pred_fake,traj_pred_real)
 
+            ###################################
+            inv_labels,inv_outputs = revert_scaling(ids,traj_pred_real,traj_pred_fake,scalers_path)
+            inv_outputs = inv_outputs.view(inv_labels.size())
+
+            losses["ade"] += ade_loss(inv_outputs,inv_labels).item()
+            losses["fde"] += fde_loss(inv_outputs,inv_labels).item()
+            ####################################
+
             losses["mse"] += mse_loss.item()
             losses["real"] += real_loss.item()
             losses["fake"] += fake_loss.item()
@@ -454,7 +465,7 @@ def eval_sophie(
         for key in losses:
             losses[key] /= batch_idx    
         print('Eval Epoch n {} Loss: {}, gan loss real: {},gan loss fake: {}'.format(epoch,losses["mse"],losses["real"],losses["fake"]))
-
+        print('Eval Epoch n {}  ade: {},fde: {}'.format(epoch,losses["ade"],losses["fde"]))
     # generator.train()
     # discriminator.train()
     return losses
@@ -479,7 +490,7 @@ def save_sophie(epoch,generator,discriminator,optimizer_gen,optimizer_disc,losse
 
 def sophie_training_loop(n_epochs,batch_size,generator,discriminator,optimizer_gen,optimizer_disc,device,
         train_loader,eval_loader,obs_length, criterion_gan,criterion_gen, 
-        pred_length, output_size,plot = True,load_path = None):
+        pred_length, output_size,scalers_path,plot = True,load_path = None):
 
     
     losses = {
@@ -493,7 +504,10 @@ def sophie_training_loop(n_epochs,batch_size,generator,discriminator,optimizer_g
             "mse": [],
             "real": [],
             "fake": [],
-            "gen": []
+            "gen": [],
+            "ade": [],
+            "fde": []
+
         }        
     }
     
@@ -514,23 +528,23 @@ def sophie_training_loop(n_epochs,batch_size,generator,discriminator,optimizer_g
 
     s = time.time()
     
-    try:
-        for epoch in range(start_epoch,n_epochs):
-            train_losses,_ = train_sophie(generator,discriminator,device,train_loader,criterion_gan,criterion_gen, 
-            optimizer_gen, optimizer_disc,epoch,batch_size,obs_length,pred_length,output_size)
+    # try:
+    for epoch in range(start_epoch,n_epochs):
+        train_losses,_ = train_sophie(generator,discriminator,device,train_loader,criterion_gan,criterion_gen, 
+        optimizer_gen, optimizer_disc,epoch,batch_size,obs_length,pred_length,output_size)
 
-            for key in train_losses:
-                losses["train"][key].append(train_losses[key])
+        for key in train_losses:
+            losses["train"][key].append(train_losses[key])
 
-            test_losses = eval_sophie(generator,discriminator,device,eval_loader,criterion_gan,criterion_gen,epoch,batch_size,obs_length,pred_length,output_size)
-            for key in test_losses:
-                losses["eval"][key].append(test_losses[key])
+        test_losses = eval_sophie(generator,discriminator,device,eval_loader,criterion_gan,criterion_gen,epoch,batch_size,obs_length,pred_length,output_size,scalers_path)
+        for key in test_losses:
+            losses["eval"][key].append(test_losses[key])
 
-            
-            print(time.time()-s)
         
-    except :
-        pass
+        print(time.time()-s)
+        
+    # except :
+    #     pass
 
     save_sophie(epoch,generator,discriminator,optimizer_gen,optimizer_disc,losses)
     if plot:
