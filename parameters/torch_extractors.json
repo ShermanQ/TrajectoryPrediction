@@ -4,7 +4,7 @@
     "img_links_torch" : "./learning/data/img/",
     "ids_path": "./learning/data/ids.json",
     "stopped_threshold" : 0.001,
-    "stopped_prop" : 0.0,
+    "stopped_prop" : 0.2,
     "new_padding":0.0,
     "old_padding":-1
 

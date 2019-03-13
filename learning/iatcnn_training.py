@@ -88,9 +88,7 @@ def main():
     train_loader = torch.utils.data.DataLoader( train_dataset, batch_size= training_param["batch_size"], shuffle=True,num_workers= training_param["num_workers"],drop_last = True)
     eval_loader = torch.utils.data.DataLoader( eval_dataset, batch_size= training_param["batch_size"], shuffle=False,num_workers= training_param["num_workers"],drop_last = True)
 
-    # eval_loader = torch.utils.data.DataLoader( train_dataset, batch_size= training_param["batch_size"], shuffle=True,num_workers= training_param["num_workers"],drop_last = True)
-    # train_loader = torch.utils.data.DataLoader( eval_dataset, batch_size= training_param["batch_size"], shuffle=False,num_workers= training_param["num_workers"],drop_last = True)
-
+   
     input_dim = training_param["input_dim"]
     output_channels = training_param["output_channels"]
     net = IATCNN(
@@ -103,15 +101,6 @@ def main():
         output_size = training_param["output_size"],
         max_neighbors = nb_neighbors_max + 1)
 
-    # net = IATCNN(
-    #     n_inputs = input_dim * (nb_neighbors_max + 1),
-    #     n_outputs = output_channels,
-    #     kernel_size = training_param["kernel_size"],
-    #     stride = training_param["stride"],
-    #     input_length = training_param["obs_length"],
-    #     output_length = training_param["pred_length"],
-    #     output_size = training_param["output_size"],
-    #     max_neighbors = nb_neighbors_max + 1)
 
 
     # load_path = "./learning/data/models/model_1552166089.4612148.tar"
@@ -120,23 +109,7 @@ def main():
     
     net = net.to(device)
     print(net)
-    # for data in eval_loader:
-    #     samples,targets = data
-    #     samples = samples.to(device)
-    #     targets = targets.to(device)
-    #     # for row in samples.cpu().numpy()[0]:
-    #     #     print(row)
-
-        
-        
-    #     outputs = net(samples)
-
-    #     # for row in outputs.detach().cpu().numpy()[0]:
-    #     #     print(row)
-
-        
-        
-    #     nll_loss = nlloss(outputs,targets)
+    
 
     optimizer = optim.Adam(net.parameters(),lr = training_param["lr"])
     criterion = nlloss
@@ -147,90 +120,6 @@ def main():
         plot = training_param["plot"],early_stopping = True,load_path = training_param["load_path"])
 
 
-    # load_path = "./learning/data/models/model_1552166089.4612148.tar"
-    # checkpoint = torch.load(load_path)
-    # net.load_state_dict(checkpoint['state_dict'])
-    # losses = []
-    # test_losses = []
-    # for epoch in range(training_param["n_epochs"]):
-
-
-    #     net.eval()
-
-    #     batch_test_losses = []
-    #     for data in eval_loader:
-    #         optimizer.zero_grad()
-    #         samples,targets = data
-    #         samples = samples.to(device)
-    #         targets = targets.to(device)
-    #         outputs = net(samples)
-    #         # outputs = outputs.contiguous().view(-1,training_param["output_size"])
-    #         # targets = targets.contiguous().view(-1,training_param["input_dim"])
-        
-    #         nll_loss = nlloss(outputs,targets)
-            
-    #         batch_test_losses.append(nll_loss.item())
-    #     test_losses.append(np.mean(batch_test_losses))
-
-    #     batch_losses = []
-    #     net.train()
-    #     for data in train_loader:
-    #         optimizer.zero_grad()
-    #         samples,targets = data
-    #         samples = samples.to(device)
-    #         targets = targets.to(device)
-
-    #         outputs = net(samples)
-    #         # outputs = outputs.contiguous().view(-1,training_param["output_size"])
-    #         # targets = targets.contiguous().view(-1,training_param["input_dim"])
-        
-    #         nll_loss = nlloss(outputs,targets)
-    #         nll_loss.backward()
-    #     #     print("----")
-    #         optimizer.step()
-    #     #     print("----")
-    #         # print(nll_loss)
-    #         batch_losses.append(nll_loss.item())
-    #         # losses.append(nll_loss.item())
-    #     losses.append(np.mean(batch_losses))
-        
-
-    #     print("epoch{}".format(epoch))
-    #     print(np.mean(batch_losses))
-    #     print(np.mean(batch_test_losses))
-
-    # print(losses)
-    # print(test_losses)
-
-    # plt.plot(losses)
-    # plt.plot(test_losses)
-
-    # plt.show()
-
-    # plt.plot(losses)
-    # plt.plot(test_losses)
-
-    # plt.show()
-
-
-        
-
-    # print(batch_losses)   
-
-
-    # init model and send it to gpu
-    # net = 
-    # net.to(device)
-    
-    #losses
-    # criterion_train = 
-    # criterion_eval = 
-
-    #optimizer
-    # optimizer = optim.Adam(net.parameters(),lr = 0.001)
-    
-    # train_losses,eval_losses,batch_losses = training.training_loop(n_epochs,batch_size,net,device,train_loader,eval_loader,criterion_train,criterion_eval,optimizer,load_path = load_path)
-    
 
 if __name__ == "__main__":
     main()

@@ -3,32 +3,9 @@ import time
 import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
+import numpy as np
+from joblib import load
 
-
-class Regress_Loss(torch.nn.Module):
-    
-    def __init__(self):
-        super(Regress_Loss,self).__init__()
-        
-    def forward(self,outputs,labels):
-        mse = nn.MSELoss()
-        loss = mse(outputs, labels)
-        # loss = torch.sum(loss,dim = 2 , keepdim = False)
-        # loss = torch.mean(loss, dim = 1)
-        # # loss = torch.sum(loss, dim = 1)
-
-        # loss = torch.mean(loss,dim = 0)
-        return loss
-
-# def custom_loss(outputs,labels):
-#     mse = nn.MSELoss(reduction = "none")
-#     loss = mse(outputs, labels)
-#     loss = torch.sum(loss,dim = 2 , keepdim = False)
-#     loss = torch.mean(loss, dim = 1)
-#     # loss = torch.sum(loss, dim = 1)
-
-#     loss = torch.mean(loss,dim = 0)
-#     return loss
 """
     Train loop for an epoch
     Uses cuda if available
@@ -44,110 +21,32 @@ def train(model, device, train_loader,criterion, optimizer, epoch,batch_size,pri
     start_time = time.time()
     for batch_idx, data in enumerate(train_loader):
         inputs, labels, ids = data
-        # print(time.time()-start_time)
         inputs, labels = inputs.to(device), labels.to(device)
-        # print(time.time()-start_time)
         optimizer.zero_grad()
-        output = model(inputs)
-        # print(time.time()-start_time)
-        # output = output.view(labels.size())
+        outputs = model(inputs)
+####################
+        mask = mask_loss(labels.detach().cpu().numpy())
+        outputs = outputs.contiguous().view([outputs.size()[0] * outputs.size()[1]] + list(outputs.size()[2:]))
 
-        # revert_scaling(ids,labels,output)
-        loss = criterion(output, labels)
-        # print(time.time()-start_time)
+        labels = labels.contiguous().view([labels.size()[0] * labels.size()[1]] + list(labels.size()[2:]))
+
+        outputs = outputs[mask]
+        labels = labels[mask]
+###########################
+        loss = criterion(outputs, labels)
         loss.backward()
-        # print(time.time()-start_time)
         optimizer.step()
-        # print(time.time()-start_time)
 
         epoch_loss += loss.item()
         batches_loss.append(loss.item())
 
         if batch_idx % print_every == 0:
-            print(batch_idx,loss.item(),time.time()-start_time)  
-            # print(time.time()-start_time)        
+            print(batch_idx,loss.item(),time.time()-start_time)     
     epoch_loss /= float(len(train_loader))        
     print('Epoch n {} Loss: {}'.format(epoch,epoch_loss))
 
-
-    # print(time.time()-start_time)
     return epoch_loss,batches_loss
 
-from joblib import load
-
-
-def revert_scaling(ids,labels,outputs,scalers_root,multiple_scalers = 1):
-    if multiple_scalers:
-        scaler_ids = ["_".join(id_.split("_")[:-1]) for id_ in ids]
-        scalers_path = [scalers_root + id_ +".joblib" for id_ in scaler_ids]
-        # scaler_ids = [id_.split()for id_ in ids]
-
-        # get samples ids for each scaler
-        scaler_sample = {}
-        for scaler in scalers_path:
-            if scaler not in scaler_sample:
-                scaler_sample[scaler] = []
-
-                for i,scaler1 in enumerate(scalers_path):
-                    if scaler == scaler1:
-                        scaler_sample[scaler].append(i)
-
-        for scaler_id in scaler_sample:
-            scaler = load(scaler_id)
-            samples_ids = scaler_sample[scaler_id]
-
-            sub_labels_torch = labels[samples_ids]
-            # b,a,s,i = sub_labels.size()
-
-            sub_labels = sub_labels_torch.contiguous().view(-1,1).cpu().numpy()
-            inv_sub_labels = torch.FloatTensor(scaler.inverse_transform(sub_labels)).view(sub_labels_torch.size()).cuda()
-            labels[samples_ids] = inv_sub_labels
-
-            sub_outputs_torch = outputs[samples_ids]
-            # b,a,s,i = sub_outputs.size()
-
-            sub_outputs = sub_outputs_torch.contiguous().view(-1,1).cpu().detach().numpy()
-            inv_sub_outputs = torch.FloatTensor(scaler.inverse_transform(sub_outputs)).view(sub_outputs_torch.size()).cuda()
-            outputs[samples_ids] = inv_sub_outputs
-        return labels,outputs
-    else:
-
-        scaler = load(scalers_root)
-        torch_labels = labels.contiguous().view(-1,1).cpu().numpy()
-        torch_outputs = outputs.contiguous().view(-1,1).cpu().detach().numpy()
-
-        inv_labels = torch.FloatTensor(scaler.inverse_transform(torch_labels)).view(labels.size()).cuda()
-        inv_outputs = torch.FloatTensor(scaler.inverse_transform(torch_outputs)).view(outputs.size()).cuda()
-
-        return inv_labels,inv_outputs
-    
-    
-    
-
-
-def ade_loss(outputs,targets):
-    outputs = outputs.contiguous().view(-1,2)
-    targets = targets.contiguous().view(-1,2)
-    mse = nn.MSELoss(reduction= "none")
-
-    mse_loss = mse(outputs,targets )
-    mse_loss = torch.sum(mse_loss,dim = 1 )
-    mse_loss = torch.sqrt(mse_loss )
-    mse_loss = torch.mean(mse_loss )
-
-    return mse_loss
-
-def fde_loss(outputs,targets):
-    outputs = outputs[:,-1,:]
-    targets = targets[:,-1,:]
-    mse = nn.MSELoss(reduction= "none")
-
-    mse_loss = mse(outputs,targets )
-    mse_loss = torch.sum(mse_loss,dim = 1 )
-    mse_loss = torch.sqrt(mse_loss )
-    mse_loss = torch.mean(mse_loss )
-
-    return mse_loss
 
 
 """
@@ -176,16 +75,25 @@ def evaluate(model, device, eval_loader,criterion, epoch, batch_size,scalers_pat
         inputs, labels, ids = data
         inputs, labels = inputs.to(device), labels.to(device)
         
-        output = model(inputs)
+        outputs = model(inputs)
         # output = output.view(labels.size())
 
-        loss = criterion(output, labels)
+####################
+        mask = mask_loss(labels.detach().cpu().numpy())
+        outputs = outputs.contiguous().view([outputs.size()[0] * outputs.size()[1]] + list(outputs.size()[2:]))
+
+        labels = labels.contiguous().view([labels.size()[0] * labels.size()[1]] + list(labels.size()[2:]))
+
+        outputs = outputs[mask]
+        labels = labels[mask]
+###########################
+        loss = criterion(outputs, labels)
         inv_labels,inv_outputs = None,None
         if model_type == 0:
-            inv_labels,inv_outputs = revert_scaling(ids,labels,output,scalers_path,multiple_scalers)
+            inv_labels,inv_outputs = revert_scaling(ids,labels,outputs,scalers_path,multiple_scalers)
             inv_outputs = inv_outputs.view(inv_labels.size())
         elif model_type == 1:
-            inv_labels,inv_outputs = revert_scaling(ids,labels,output[:,:,:,:2],scalers_path,multiple_scalers)
+            inv_labels,inv_outputs = revert_scaling(ids,labels,outputs[:,:,:2],scalers_path,multiple_scalers)
 
         
 
@@ -199,8 +107,6 @@ def evaluate(model, device, eval_loader,criterion, epoch, batch_size,scalers_pat
     ade /= float(len(eval_loader))        
     fde /= float(len(eval_loader))        
 
-    # fde_loss /= float(len(eval_loader))        
-    # print('Epoch n {} Evaluation Loss: {}, FDE Loss {}'.format(epoch,eval_loss,fde_loss))
     print('Epoch n {} Evaluation Loss: {}, ADE: {}, FDE: {}'.format(epoch,eval_loss,ade,fde))
 
 
@@ -289,12 +195,10 @@ def training_loop(n_epochs,batch_size,net,device,train_loader,eval_loader,criter
     if plot:
         plt.plot(train_losses)
         plt.plot(eval_losses)
-        # plt.plot(fde_losses)
         plt.show()
 
         plt.plot(ade_losses)
         plt.plot(fde_losses)
-        # plt.plot(fde_losses)
         plt.show()
 
     return train_losses,eval_losses,batch_losses
@@ -566,3 +470,106 @@ def sophie_training_loop(n_epochs,batch_size,generator,discriminator,optimizer_g
         plt.show()
 
     return losses
+
+
+
+
+
+
+
+
+
+
+def revert_scaling(ids,labels,outputs,scalers_root,multiple_scalers = 1):
+    if multiple_scalers:
+        scaler_ids = ["_".join(id_.split("_")[:-1]) for id_ in ids]
+        scalers_path = [scalers_root + id_ +".joblib" for id_ in scaler_ids]
+       
+        scaler_sample = {}
+        for scaler in scalers_path:
+            if scaler not in scaler_sample:
+                scaler_sample[scaler] = []
+
+                for i,scaler1 in enumerate(scalers_path):
+                    if scaler == scaler1:
+                        scaler_sample[scaler].append(i)
+
+        for scaler_id in scaler_sample:
+            scaler = load(scaler_id)
+            samples_ids = scaler_sample[scaler_id]
+
+            sub_labels_torch = labels[samples_ids]
+            # b,a,s,i = sub_labels.size()
+
+            sub_labels = sub_labels_torch.contiguous().view(-1,1).cpu().numpy()
+            inv_sub_labels = torch.FloatTensor(scaler.inverse_transform(sub_labels)).view(sub_labels_torch.size()).cuda()
+            labels[samples_ids] = inv_sub_labels
+
+            sub_outputs_torch = outputs[samples_ids]
+            # b,a,s,i = sub_outputs.size()
+
+            sub_outputs = sub_outputs_torch.contiguous().view(-1,1).cpu().detach().numpy()
+            inv_sub_outputs = torch.FloatTensor(scaler.inverse_transform(sub_outputs)).view(sub_outputs_torch.size()).cuda()
+            outputs[samples_ids] = inv_sub_outputs
+        return labels,outputs
+    else:
+
+        scaler = load(scalers_root)
+        torch_labels = labels.contiguous().view(-1,1).cpu().numpy()
+        torch_outputs = outputs.contiguous().view(-1,1).cpu().detach().numpy()
+
+        non_zeros_labels = np.argwhere(torch_labels.reshape(-1))
+        non_zeros_outputs = np.argwhere(torch_outputs.reshape(-1))
+
+         
+        torch_labels[non_zeros_labels] = np.expand_dims( scaler.inverse_transform(torch_labels[non_zeros_labels].squeeze(-1)) ,axis = 1)
+        
+        torch_outputs[non_zeros_outputs] = np.expand_dims( scaler.inverse_transform(torch_outputs[non_zeros_outputs].squeeze(-1)),axis = 1)
+
+        inv_labels = torch.FloatTensor(torch_labels).cuda()
+        inv_outputs = torch.FloatTensor(torch_outputs).cuda()
+
+        inv_labels = inv_labels.view(labels.size())
+        inv_outputs = inv_outputs.view(outputs.size())
+
+
+        return inv_labels,inv_outputs
+
+
+def mask_loss(targets):
+    b,a = targets.shape[0],targets.shape[1]
+    mask = targets.reshape(b,a,-1)
+    mask = np.sum(mask,axis = 2)
+    mask = mask.reshape(-1)
+    mask = np.argwhere(mask).reshape(-1)
+    return mask    
+
+
+def ade_loss(outputs,targets):
+
+    
+    outputs = outputs.contiguous().view(-1,2)
+    targets = targets.contiguous().view(-1,2)
+    mse = nn.MSELoss(reduction= "none")
+
+    mse_loss = mse(outputs,targets )
+    mse_loss = torch.sum(mse_loss,dim = 1 )
+    mse_loss = torch.sqrt(mse_loss )
+    mse_loss = torch.mean(mse_loss )
+
+    return mse_loss
+
+def fde_loss(outputs,targets):
+
+    
+
+    outputs = outputs[:,-1,:]
+    targets = targets[:,-1,:]
+    mse = nn.MSELoss(reduction= "none")
+
+    mse_loss = mse(outputs,targets )
+    mse_loss = torch.sum(mse_loss,dim = 1 )
+    mse_loss = torch.sqrt(mse_loss )
+    mse_loss = torch.mean(mse_loss )
+
+    return mse_loss

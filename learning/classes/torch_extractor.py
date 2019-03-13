@@ -27,7 +27,7 @@ class TorchExtractor():
         self.img_links_torch = torch_params["img_links_torch"]
         self.new_padding = torch_params["new_padding"]
         self.old_padding = torch_params["old_padding"]
-
+#
 
         self.input_size = 2
 

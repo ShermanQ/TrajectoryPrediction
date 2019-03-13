@@ -37,6 +37,7 @@ class CustomDataset(data.Dataset):
       #   y = torch.load(self.data_path + "labels/label" + str(ID) + '.pt')[0]
         X = torch.load(self.data_path + "samples/sample_" + str(ID) + '.pt')[0]
         y = torch.load(self.data_path + "labels/label_" + str(ID) + '.pt')[0]
+        y = y.unsqueeze(0)
         
       #   print("x")
       #   print(X)
