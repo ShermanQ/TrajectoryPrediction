@@ -25,7 +25,8 @@ def nlloss(outputs,targets,eps = 1e-15):
 
     mu,sigma1,sigma2,rho = outputs[:,:2],outputs[:,2],outputs[:,3],outputs[:,4]
     
-    cov = torch.mul(torch.mul(sigma1,sigma2),rho).view(b,1)
+    s1_s2 = torch.mul(sigma1,sigma2)
+    cov = torch.mul(s1_s2,rho).view(b,1)
     sigma1, sigma2 = (sigma1 ** 2).view(b,1),(sigma2 ** 2).view(b,1)
      
 
@@ -39,8 +40,18 @@ def nlloss(outputs,targets,eps = 1e-15):
 
     right_product = torch.bmm(mat_inv,diff)
     square_mahalanobis = torch.bmm(diff.permute(0,2,1),right_product)
+    log_num = -0.5 * square_mahalanobis.squeeze()
+    
+    # deter = s1_s2.sub((cov.squeeze(1)) ** 2)
+    # epsilons = torch.ones(s1_s2.size()) * eps
+    
+    # deter = torch.max( deter, epsilons.cuda() )
 
-    lloss = 0.5 * torch.sum( square_mahalanobis)
+    # log_den= -0.5 * ( 2 * math.log(2 * math.pi) + torch.log(deter) )
+
+    # lloss =  -1.0 * torch.sum( log_num + log_den ) 
+    lloss =  -1.0 * torch.sum( log_num  ) 
+
     return lloss
 
 

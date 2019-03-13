@@ -13,7 +13,10 @@ def main():
 
     parameters_path = json.load(open(args[1]))
     prepare_training_params = json.load(open(args[2]))
-    data_params = args[3]
+    
+    data_params_path = args[3]
+    data = json.load(open(data_params_path))
+
 
     # extractor_list = [
     #     highd_extractor.HighdExtractor(data_params,parameters_path["highd_extractor"]),
@@ -38,22 +41,31 @@ def main():
 
     print("Managing decimal number")
     nb_digits = int(prepare_training_params["number_digits"])
-    digit_man = digit_manager.DigitManager(data_params,nb_digits)
+    digit_man = digit_manager.DigitManager(data_params_path,nb_digits)
     for scene in scene_list:
         print(scene)
         digit_man.change_digit_number(scene)
     print("DOne!")
 
+
     print("Normalizing scenes")
     center = int(prepare_training_params["center"])
-    scaler = scene_scaler.SceneScaler(data_params,center)
+    scaler = None
+    if data["multiple_scalers"]:
+        print("-----------multiple scalers")
+        scaler = scene_scaler.SceneScaler(data_params_path,center)        
+    else:
+        print("-----------unique scaler")
+        scaler = scene_scaler.SceneScalerMultiScene(data_params_path,center,scene_list)
+        
     for scene in scene_list:
         print(scene)
         scaler.min_max_scale(scene)
     print("DOne!")
 
+
     img_size = int(prepare_training_params["img_size"])
-    scaler = img_scaler.ImgScaler(data_params,img_size)  
+    scaler = img_scaler.ImgScaler(data_params_path,img_size)  
 
     for scene in scene_list:
         print(scene)
@@ -64,17 +76,17 @@ def main():
     sampler = None
     if prepare_frames:
         print("frames sampling")
-        sampler = prepare_training_frames.PrepareTrainingFrames(data_params,args[2])
+        sampler = prepare_training_frames.PrepareTrainingFrames(data_params_path,args[2])
     else:
         print("trajectory sampling")
-        sampler = prepare_training.PrepareTraining(data_params,args[2])
+        sampler = prepare_training.PrepareTraining(data_params_path,args[2])
 
     for scene in scene_list:
         print(scene)
         sampler.extract_data(scene)
 
 
-    samples_mgr = samples_manager.SamplesManager(data_params,args[2])
+    samples_mgr = samples_manager.SamplesManager(data_params_path,args[2])
     samples_mgr.regroup()
 
     

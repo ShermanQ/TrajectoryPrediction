@@ -36,7 +36,7 @@ class Regress_Loss(torch.nn.Module):
     THen averaged batch losses are averaged
     over the number of batches
 """
-def train(model, device, train_loader,criterion, optimizer, epoch,batch_size,print_every = 100):
+def train(model, device, train_loader,criterion, optimizer, epoch,batch_size,print_every = 1):
     model.train()
     epoch_loss = 0.
     batches_loss = []
@@ -76,41 +76,53 @@ def train(model, device, train_loader,criterion, optimizer, epoch,batch_size,pri
 from joblib import load
 
 
-def revert_scaling(ids,labels,outputs,scalers_root):
-    scaler_ids = ["_".join(id_.split("_")[:-1]) for id_ in ids]
-    scalers_path = [scalers_root + id_ +".joblib" for id_ in scaler_ids]
-    # scaler_ids = [id_.split()for id_ in ids]
+def revert_scaling(ids,labels,outputs,scalers_root,multiple_scalers = 1):
+    if multiple_scalers:
+        scaler_ids = ["_".join(id_.split("_")[:-1]) for id_ in ids]
+        scalers_path = [scalers_root + id_ +".joblib" for id_ in scaler_ids]
+        # scaler_ids = [id_.split()for id_ in ids]
 
-    # get samples ids for each scaler
-    scaler_sample = {}
-    for scaler in scalers_path:
-        if scaler not in scaler_sample:
-            scaler_sample[scaler] = []
+        # get samples ids for each scaler
+        scaler_sample = {}
+        for scaler in scalers_path:
+            if scaler not in scaler_sample:
+                scaler_sample[scaler] = []
 
-            for i,scaler1 in enumerate(scalers_path):
-                if scaler == scaler1:
-                    scaler_sample[scaler].append(i)
+                for i,scaler1 in enumerate(scalers_path):
+                    if scaler == scaler1:
+                        scaler_sample[scaler].append(i)
 
-    for scaler_id in scaler_sample:
-        scaler = load(scaler_id)
-        samples_ids = scaler_sample[scaler_id]
+        for scaler_id in scaler_sample:
+            scaler = load(scaler_id)
+            samples_ids = scaler_sample[scaler_id]
 
-        sub_labels_torch = labels[samples_ids]
-        # b,a,s,i = sub_labels.size()
+            sub_labels_torch = labels[samples_ids]
+            # b,a,s,i = sub_labels.size()
 
-        sub_labels = sub_labels_torch.contiguous().view(-1,1).cpu().numpy()
-        inv_sub_labels = torch.FloatTensor(scaler.inverse_transform(sub_labels)).view(sub_labels_torch.size()).cuda()
-        labels[samples_ids] = inv_sub_labels
+            sub_labels = sub_labels_torch.contiguous().view(-1,1).cpu().numpy()
+            inv_sub_labels = torch.FloatTensor(scaler.inverse_transform(sub_labels)).view(sub_labels_torch.size()).cuda()
+            labels[samples_ids] = inv_sub_labels
 
-        sub_outputs_torch = outputs[samples_ids]
-        # b,a,s,i = sub_outputs.size()
+            sub_outputs_torch = outputs[samples_ids]
+            # b,a,s,i = sub_outputs.size()
 
-        sub_outputs = sub_outputs_torch.contiguous().view(-1,1).cpu().detach().numpy()
-        inv_sub_outputs = torch.FloatTensor(scaler.inverse_transform(sub_outputs)).view(sub_outputs_torch.size()).cuda()
-        outputs[samples_ids] = inv_sub_outputs
+            sub_outputs = sub_outputs_torch.contiguous().view(-1,1).cpu().detach().numpy()
+            inv_sub_outputs = torch.FloatTensor(scaler.inverse_transform(sub_outputs)).view(sub_outputs_torch.size()).cuda()
+            outputs[samples_ids] = inv_sub_outputs
+        return labels,outputs
+    else:
+
+        scaler = load(scalers_root)
+        torch_labels = labels.contiguous().view(-1,1).cpu().numpy()
+        torch_outputs = outputs.contiguous().view(-1,1).cpu().detach().numpy()
+
+        inv_labels = torch.FloatTensor(scaler.inverse_transform(torch_labels)).view(labels.size()).cuda()
+        inv_outputs = torch.FloatTensor(scaler.inverse_transform(torch_outputs)).view(outputs.size()).cuda()
+
+        return inv_labels,inv_outputs
     
     
-    return labels,outputs
+    
 
 
 def ade_loss(outputs,targets):
@@ -151,7 +163,7 @@ def fde_loss(outputs,targets):
     model: 0 rnn_mlp
            1 iatcnn
 """
-def evaluate(model, device, eval_loader,criterion, epoch, batch_size,scalers_path,model_type ):
+def evaluate(model, device, eval_loader,criterion, epoch, batch_size,scalers_path,multiple_scalers,model_type ):
     model.eval()
     eval_loss = 0.
     fde = 0.
@@ -170,10 +182,10 @@ def evaluate(model, device, eval_loader,criterion, epoch, batch_size,scalers_pat
         loss = criterion(output, labels)
         inv_labels,inv_outputs = None,None
         if model_type == 0:
-            inv_labels,inv_outputs = revert_scaling(ids,labels,output,scalers_path)
+            inv_labels,inv_outputs = revert_scaling(ids,labels,output,scalers_path,multiple_scalers)
             inv_outputs = inv_outputs.view(inv_labels.size())
         elif model_type == 1:
-            inv_labels,inv_outputs = revert_scaling(ids,labels,output[:,:,:,:2],scalers_path)
+            inv_labels,inv_outputs = revert_scaling(ids,labels,output[:,:,:,:2],scalers_path,multiple_scalers)
 
         
 
@@ -227,7 +239,7 @@ def save_model(epoch,net,optimizer,train_losses,eval_losses,batch_losses,fde_los
     if plot, display the different losses
     If exception during training, model is stored
 """
-def training_loop(n_epochs,batch_size,net,device,train_loader,eval_loader,criterion_train,criterion_eval,optimizer,scalers_path,model_type,plot = True,early_stopping = True,load_path = None):
+def training_loop(n_epochs,batch_size,net,device,train_loader,eval_loader,criterion_train,criterion_eval,optimizer,scalers_path,multiple_scalers,model_type,plot = True,early_stopping = True,load_path = None):
 
     train_losses = []
     eval_losses = []
@@ -259,7 +271,7 @@ def training_loop(n_epochs,batch_size,net,device,train_loader,eval_loader,criter
         train_losses.append(train_loss)
 
         
-        eval_loss,fde,ade = evaluate(net, device, eval_loader,criterion_eval, epoch, batch_size,scalers_path,model_type)
+        eval_loss,fde,ade = evaluate(net, device, eval_loader,criterion_eval, epoch, batch_size,scalers_path,multiple_scalers,model_type)
         
 
         eval_losses.append(eval_loss)
@@ -400,6 +412,7 @@ def eval_sophie(
         pred_length,
         output_size,
         scalers_path,
+        multiple_scalers,
         print_every = 100):
     # model.train()
    
@@ -449,7 +462,7 @@ def eval_sophie(
             mse_loss = criterion_gen(traj_pred_fake,traj_pred_real)
 
             ###################################
-            inv_labels,inv_outputs = revert_scaling(ids,traj_pred_real,traj_pred_fake,scalers_path)
+            inv_labels,inv_outputs = revert_scaling(ids,traj_pred_real,traj_pred_fake,scalers_path,multiple_scalers)
             inv_outputs = inv_outputs.view(inv_labels.size())
 
             losses["ade"] += ade_loss(inv_outputs,inv_labels).item()
@@ -490,7 +503,7 @@ def save_sophie(epoch,generator,discriminator,optimizer_gen,optimizer_disc,losse
 
 def sophie_training_loop(n_epochs,batch_size,generator,discriminator,optimizer_gen,optimizer_disc,device,
         train_loader,eval_loader,obs_length, criterion_gan,criterion_gen, 
-        pred_length, output_size,scalers_path,plot = True,load_path = None):
+        pred_length, output_size,scalers_path,multiple_scalers,plot = True,load_path = None):
 
     
     losses = {
@@ -536,7 +549,7 @@ def sophie_training_loop(n_epochs,batch_size,generator,discriminator,optimizer_g
         for key in train_losses:
             losses["train"][key].append(train_losses[key])
 
-        test_losses = eval_sophie(generator,discriminator,device,eval_loader,criterion_gan,criterion_gen,epoch,batch_size,obs_length,pred_length,output_size,scalers_path)
+        test_losses = eval_sophie(generator,discriminator,device,eval_loader,criterion_gan,criterion_gen,epoch,batch_size,obs_length,pred_length,output_size,scalers_path,multiple_scalers)
         for key in test_losses:
             losses["eval"][key].append(test_losses[key])
 
