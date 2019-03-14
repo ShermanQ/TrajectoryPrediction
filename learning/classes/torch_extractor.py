@@ -8,9 +8,13 @@ import json
 
 
 class TorchExtractor():
+    # def __init__(self,data,torch_params,prepare_params):
     def __init__(self,data,torch_params):
+
         data = json.load(open(data))
         torch_params = json.load(open(torch_params))
+        # prepare_params = json.load(open(prepare_params))
+
 
         self.prepared_samples = data["prepared_samples_grouped"]
         self.prepared_labels = data["prepared_labels_grouped"]
@@ -27,6 +31,14 @@ class TorchExtractor():
         self.img_links_torch = torch_params["img_links_torch"]
         self.new_padding = torch_params["new_padding"]
         self.old_padding = torch_params["old_padding"]
+
+        # self.test_scenes = list(prepare_params["test_scenes"])
+        # self.train_scenes = list(prepare_params["train_scenes"])
+
+
+
+
+
 #
 
         self.input_size = 2
@@ -53,8 +65,11 @@ class TorchExtractor():
         print(nb_max)
         id_ = 0
         print(self.prepared_samples)
+        
 
+        # kept_ids = {"train":[], "test":[]}
         kept_ids = []
+
         with open(self.prepared_samples) as data_csv :
             with open(self.prepared_labels) as label_csv:
                 data_reader = csv.reader(data_csv)
@@ -85,6 +100,11 @@ class TorchExtractor():
                         stopped_samples += 1
                         keep = True if random.random() < self.stopped_prop else False
                         if keep:
+                            # if sample_id.split("_")[0] in self.test_scenes:
+                            #     kept_ids["test"].append(sample_id)
+                            # elif sample_id.split("_")[0] in self.train_scenes:
+                            #     kept_ids["train"].append(sample_id)
+
                             kept_ids.append(sample_id)
 
 
@@ -100,6 +120,10 @@ class TorchExtractor():
                             id_+= 1
                     # if trajectory is movin' add the sample
                     else:
+                        # if sample_id.split("_")[0] in self.test_scenes:
+                        #     kept_ids["test"].append(sample_id)
+                        # elif sample_id.split("_")[0] in self.train_scenes:
+                        #     kept_ids["train"].append(sample_id)
                         kept_ids.append(sample_id)
                         torch.save(features,self.samples_torch+"sample_"+sample_id+".pt")
                         torch.save(labels,self.labels_torch+"label_"+sample_id+".pt")

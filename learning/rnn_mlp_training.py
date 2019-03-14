@@ -41,7 +41,7 @@ import matplotlib.pyplot as plt
         eval ADE
         eval FDE
 """
-#python learning/rnn_mlp_training.py parameters/data.json parameters/rnn_mlp_training.json parameters/torch_extractors.json
+#python learning/rnn_mlp_training.py parameters/data.json parameters/rnn_mlp_training.json parameters/torch_extractors.json parameters/prepare_training.json
 def main():
           
     # set pytorch
@@ -54,27 +54,21 @@ def main():
 
     # data = json.load(open(args[1]))
     # torch_param = json.load(open(args[3]))
-
+    # training_param = json.load(open(args[2]))
+    # prepare_param = json.load(open(args[4]))
+    training_param = json.load(open("parameters/rnn_mlp_training.json"))
     data = json.load(open("parameters/data.json"))
     torch_param = json.load(open("parameters/torch_extractors.json"))
+    prepare_param = json.load(open("parameters/prepare_training.json"))
 
-    ids = np.array(json.load(open(torch_param["ids_path"]))["ids"])
-    # nb_neighbors_max = np.array(json.load(open(data["prepared_ids"]))["max_neighbors"])   
+    # ids = np.array(json.load(open(torch_param["ids_path"]))["ids"])
+    ids = json.load(open(torch_param["ids_path"]))["ids"]
 
-    # training_param = json.load(open(args[2]))
-    training_param = json.load(open("parameters/rnn_mlp_training.json"))
+    train_ids,eval_ids,test_ids = training.split_train_eval_test(ids,prepare_param["train_scenes"],prepare_param["test_scenes"], eval_prop = prepare_param["eval_prop"])
+    
 
-
-
-    # split train eval indices
-    train_indices,eval_indices = train_test_split(np.array([i for i in range(training_param["nb_samples"])]),test_size = 0.2,random_state = 42)
-
-    train_indices = np.arange(int(0.8*training_param["nb_samples"]))
-    eval_indices = np.arange(int(0.8*training_param["nb_samples"]),training_param["nb_samples"])
-
-
-    train_indices = ids[train_indices]
-    eval_indices = ids[eval_indices]
+    train_indices = train_ids
+    eval_indices = eval_ids
 
     
     # load datasets

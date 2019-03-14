@@ -59,3 +59,5 @@ class SamplesManager():
             if save_ids:
                 with open(self.dest_ids,"a") as ids_json:
                     json.dump({"ids":ids,"max_neighbors": max_-1},ids_json)
+
+                    

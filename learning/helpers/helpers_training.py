@@ -6,6 +6,31 @@ import torch.nn as nn
 import numpy as np
 from joblib import load
 
+
+def split_train_eval_test(ids,train_scenes,test_scenes, eval_prop = 0.8):
+    test_ids,train_ids,eval_ids = [],[],[]
+    train = {}
+
+    for id_ in ids:
+        scene = id_.split("_")[0]
+        if scene in test_scenes:
+            test_ids.append(id_)
+        elif scene in train_scenes:
+            if scene not in train:
+                train[scene] = []
+            train[scene].append(id_)
+    
+    for key in train:
+        nb_scene_samples = len(train[key])
+        nb_train = int(eval_prop*nb_scene_samples)
+
+        train_ids += train[key][:nb_train]
+        eval_ids += train[key][nb_train:]
+
+    return train_ids,eval_ids,test_ids
+
+
+
 """
     Train loop for an epoch
     Uses cuda if available

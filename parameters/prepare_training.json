@@ -10,9 +10,19 @@
     "selected_scenes": [
         
          
-        "lankershim_inter2",
-        "lankershim_inter1" 
+        "bookstore0",
+        "coupa0",
+        "deathCircle0"
 
         
-    ]
+    ],
+    "train_scenes":[
+        "bookstore0",
+        "coupa0"
+    ],
+    "test_scenes":[
+        "deathCircle0"
+
+    ],
+    "eval_prop":0.8
 }
