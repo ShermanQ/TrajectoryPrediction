@@ -1,7 +1,7 @@
 from extractors import highd_extractor,koper_extractor,ngsim_extractor,sdd_extractor
 from prepare_training import framerate_manager,digit_manager,scene_scaler
 from prepare_training import img_scaler,prepare_training,prepare_training_frames
-from prepare_training import samples_manager
+from prepare_training import samples_manager,sdd_pixel2meter
 import sys
 import json
 import csv
@@ -42,6 +42,15 @@ def main():
         print(scene)
         rate_manager.change_rate(scene)
     print("DOne!")
+
+    print("sdd pixel to meter conversion")
+
+    unit_manager = sdd_pixel2meter.Pixel2Meters(args[3],prepare_training_params["pixel2meters_sdd"])
+    for scene in scene_list:
+        print(scene)
+        unit_manager.convert(scene)
+    print("DOne!")
+
 
     print("Managing decimal number")
     nb_digits = int(prepare_training_params["number_digits"])

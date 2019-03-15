@@ -68,7 +68,7 @@ def main():
     
 
     train_indices = train_ids
-    eval_indices = eval_ids
+    eval_indices = test_ids
 
     
     # load datasets

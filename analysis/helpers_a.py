@@ -1,8 +1,10 @@
 import sys 
 import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from extractors.helpers import get_dir_names,extract_frames,bb_intersection_over_union,extract_trajectories
+# sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# from extractors.helpers import get_dir_names,extract_frames,bb_intersection_over_union,extract_trajectories
 
+
+import helpers
 import time
 import json
 import numpy as np
@@ -90,7 +92,7 @@ def collisions_in_frame(frame,threshold = 0.1):
             for key_id2 in frame:
                 if key_id1 != key_id2 and key_id2 != "frame" and key_id2 not in old_ids:
                     object2 = frame[key_id2]
-                    iou = bb_intersection_over_union(object1["bbox"], object2["bbox"])
+                    iou = helpers.bb_intersection_over_union(object1["bbox"], object2["bbox"])
                     ious.append(iou)
 
                     if iou > threshold:
@@ -120,7 +122,7 @@ def collisions_in_frame(frame,threshold = 0.1):
 """
 def collisions_in_scene(file_path,temp_path = "./temp.txt"):
     # to be called in notebook with dataframe describe for further analysis
-    extract_frames(file_path,temp_path,save=True)
+    helpers.extract_frames(file_path,temp_path,save=True)
     nb_collisions_total = []
     nb_objects_total = []
     ious_total = []
@@ -162,7 +164,7 @@ def collisions_in_scene(file_path,temp_path = "./temp.txt"):
 """
 def trajectories_continuity(file_path,temp_path = "./temp.txt"):
     # to be called in notebook with dataframe describe for further analysis
-    extract_trajectories(file_path,temp_path, save = True)
+    helpers.extract_trajectories(file_path,temp_path, save = True)
     trajectories_deltas = {}
     trajectories_length = {}
     trajectories_outliers = {}

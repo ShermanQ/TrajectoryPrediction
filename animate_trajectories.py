@@ -4,7 +4,7 @@ import numpy as np
 import sys 
 import os
 # sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import extractors.helpers as helpers
+import helpers
 import analysis.helpers_v as vis
 
 import csv
@@ -14,16 +14,29 @@ from collections import deque
 
 
 
-CSV = "./data/csv/"
+# CSV = "./data/csv/"
 
-CSV = "./data/csv/new_rates/"
+# CSV = "./data/csv/new_rates/"
+
+# python animate_trajectories.py parameters/data.json scene 1
 def main():
 
-    file_path = CSV + "new_rates/gates8_30.0to2.5.csv"
-    file_path = CSV + "bad.csv"
-    file_path = CSV + "lankershim_inter2_10.0to1.0.csv"
+    # file_path = CSV + "new_rates/gates8_30.0to2.5.csv"
+    # file_path = CSV + "bad.csv"
+    # file_path = CSV + "lankershim_inter2_10.0to1.0.csv"
     # file_path = CSV + "deathCircle1.csv"
     # file_path = CSV + "01_tracks.csv"
+
+    args = sys.argv
+    data = json.load(open(args[1]))
+    original = int(args[3])
+
+    file_path = ""
+    if original:
+        file_path = data["extracted_datasets"] + args[2] + ".csv"
+    else:
+        file_path = data["preprocessed_datasets"] + args[2] + ".csv"
+    
 
     
 

@@ -1,7 +1,7 @@
 import sys 
 import os
 
-import extractors.helpers as helpers
+import  helpers
 
 import time
 
@@ -72,17 +72,18 @@ def plot_trajectories(file_path, user_type = None,selected_subscenes = [],plot_c
         os.remove(temp_path)        
     return
 
+# python visualize.py parameters/data.json scene original
 def main():
+    args = sys.argv
+    data = json.load(open(args[1]))
+    original = int(args[3])
 
-    csv_file = "new_rates/bad_30.0to2.5.csv"
-    csv_file = "bad.csv"
-    # csv_file = "lankershim_inter2.csv"
-    csv_file = "fsc_0.csv"
-
-    file_path = CSV + csv_file
-    file_path = "data/temp/lankershim_inter2.csv"
-    user = "car"
-    # user = "pedestrian\n"
+    file_path = ""
+    if original:
+        file_path = data["extracted_datasets"] + args[2] + ".csv"
+    else:
+        file_path = data["preprocessed_datasets"] + args[2] + ".csv"
+    
     user = None
     
     # id_scene = 1

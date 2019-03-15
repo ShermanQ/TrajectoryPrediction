@@ -24,5 +24,6 @@
         "deathCircle0"
 
     ],
-    "eval_prop":0.8
+    "eval_prop":0.8,
+    "pixel2meters_sdd": 1
 }
