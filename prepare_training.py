@@ -30,6 +30,10 @@ def main():
 
     
     scene_list = prepare_training_params["selected_scenes"]
+    train_list = prepare_training_params["train_scenes"]
+    test_list = prepare_training_params["test_scenes"]
+
+
     new_rate = float(prepare_training_params["framerate"])
 
     print("Managing framerate")
@@ -81,9 +85,24 @@ def main():
         print("trajectory sampling")
         sampler = prepare_training.PrepareTraining(data_params_path,args[2])
 
-    for scene in scene_list:
+    # for scene in scene_list:
+    #     print(scene)
+    #     sampler.extract_data(scene)
+
+    print("---train")
+    for scene in train_list:
         print(scene)
         sampler.extract_data(scene)
+
+    print("---test")
+
+    sampler = prepare_training.PrepareTraining(data_params_path,args[2])
+
+    for scene in test_list:
+        print(scene)
+        sampler.extract_data(scene)
+
+    
 
 
     samples_mgr = samples_manager.SamplesManager(data_params_path,args[2])
