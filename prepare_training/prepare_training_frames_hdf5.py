@@ -50,36 +50,48 @@ class PrepareTrainingFramesHdf5():
         ]
     """
     def extract_data(self,scene):
+
+        max_neighbors = self.__nb_max_neighbors(scene)
+        print(max_neighbors)
+
         helpers.extract_frames(self.original_file.format(scene),self.frames_temp,save = True)
         
-        helpers.remove_file(self.samples_dest.format(scene))
-        helpers.remove_file(self.labels_dest.format(scene))
+        with h5py.File(self.hdf5_dest,"r+") as f:
+            group = f["frames"]
+            dset = None
+            data_shape = (max_neighbors,self.t_obs + self.t_pred,2)
 
-        
+            if scene in group:
+                print("in")
+                del group[scene] 
+            dset = group.create_dataset(scene,shape=(0,data_shape[0],data_shape[1],data_shape[2]),maxshape = (None,data_shape[0],data_shape[1],data_shape[2]),dtype='float32')
+  
+            with open(self.frames_temp) as frames:
+                observations = {}
+                sample_id = 0
+                for frame in frames:
+                    delete_ids = []
+                    observations[sample_id] = []
+                    sample_id += 1
 
-        with open(self.samples_dest.format(scene),"a") as data_csv:
-            data_writer = csv.writer(data_csv)
-            with open(self.labels_dest.format(scene),"a") as label_csv:
-                label_writer = csv.writer(label_csv)
+                    for id_ in observations:
+                        if len(observations[id_]) < self.t_obs + self.t_pred:
+                            observations[id_].append(frame)
+                        else:
+                            samples = self.__samples(observations[id_])
+                            samples = np.array(samples)
 
-                with open(self.frames_temp) as frames:
-                    observations = {}
-                    sample_id = 0
-                    for frame in frames:
-                        delete_ids = []
-                        observations[sample_id] = []
-                        sample_id += 1
-
-                        for id_ in observations:
-                            if len(observations[id_]) < self.t_obs + self.t_pred:
-                                observations[id_].append(frame)
-                            else:
-                                features,labels,ids = self.__features_labels(observations[id_])
-                                self.__persist_data(ids,features,labels,data_writer,label_writer,id_)
-                                
-                                delete_ids.append(id_)
-                        for id_ in delete_ids:
-                            del observations[id_]
+                            nb_neighbors = len(samples)
+                            if nb_neighbors != 0:
+                                padding = np.zeros(shape = (max_neighbors-nb_neighbors,data_shape[1],data_shape[2]))
+                                samples = np.concatenate((samples,padding),axis = 0)
+                                dset.resize(dset.shape[0]+1,axis=0)
+                                dset[-1] = samples
+                            
+                            
+                            delete_ids.append(id_)
+                    for id_ in delete_ids:
+                        del observations[id_]
         helpers.remove_file(self.frames_temp)
     """
     in:
@@ -94,37 +106,16 @@ class PrepareTrainingFramesHdf5():
         
         labels: same idea but for prediction time
     """
-    def __features_labels(self,observations):
+    def __samples(self,observations):
         ids = self.__get_neighbors(observations)
-        features = []
-        labels = []
+        samples = []
         for id_ in sorted(ids):
             if self.__add_neighbor(ids,id_,0):
-                feature,label = self.__feature_label(ids,id_,0)
-                features.append(feature)
-                labels.append(label)
-        features = np.array(features).flatten().tolist()
-        labels = np.array(labels).flatten().tolist()
-        return features,labels,ids
+                sample = ids[id_][0:self.t_obs+self.t_pred]
+                samples.append(sample)
+        return samples
 
-    """
-    in:
-        ids: ids  filled with the coordinates of theirs objects for a given frame or [-1,-1] if its not in 
-        the given frame
-        id_: id of the neighbor to test
-        
-        t_obs: number of observed frames
-        t_pred: number of frames to predict
-        current_frame: the frame of the trajectory to be considered
-    out: 
-        feature: for the given id, steps between current_frame and current_frame + t_obs 2D COORDINATES ARE FLATTENED
-        label: for the given id, steps between current_frame+t_obs and current_frame+t_obs+t_pred
-
-    """
-    def __feature_label(self,ids,id_,current_frame):
-        feature = np.array(ids[id_][current_frame:current_frame+self.t_obs]).flatten().tolist()
-        label = np.array(ids[id_][current_frame+self.t_obs:current_frame+self.t_obs+self.t_pred]).flatten().tolist()
-        return feature,label
+   
 
 
     """
@@ -138,9 +129,7 @@ class PrepareTrainingFramesHdf5():
             the given frame
     """
     def __get_neighbors(self,frames):
-    # def get_neighbors_coordinates(start,stop,frames,ids):
         ids = {}
-        # with open(frames_path) as frames:
         for i,frame in enumerate(frames):
             frame = json.loads(frame)
             frame = frame["ids"]
@@ -148,13 +137,13 @@ class PrepareTrainingFramesHdf5():
             for id_ in frame:
                 if id_ != "frame":
                     if int(id_) not in ids:
-                        ids[int(id_)] = [[-1,-1] for j in range(i)]
+                        ids[int(id_)] = [[self.padding,self.padding] for j in range(i)]
             
             for id_ in ids:
                 if str(id_) in frame:
                     ids[id_].append(frame[str(id_)]["coordinates"])
                 else:
-                    ids[id_].append([-1,-1])
+                    ids[id_].append([self.padding,self.padding])
         return ids
 
 
@@ -173,52 +162,24 @@ class PrepareTrainingFramesHdf5():
     def __add_neighbor(self,ids,id_,current_frame):
         add = False
         for p in ids[id_][current_frame:current_frame+self.t_obs]:
-            if p != [-1,-1]:
+            if p != [self.padding,self.padding]:
                 return True
         return add
 
 
 
-    """
-        in:
-            ids: ids  filled with the coordinates of theirs objects for a given frame or [-1,-1] if its not in 
-            the given frame
-            features: see features_labels
-            labels: see features_labels
-            data_writer: csv writer for file containing features
-            label_writer: csv writer for file containing labels
-            sample_id: running id of the number of training sample
-        out:
-    """
-    def __persist_data(self,ids,features,labels,data_writer,label_writer,sample_id):
-        nb_objects = int((len(features)/2)/self.t_obs)
-        # ids_list = sorted([id_ for id_ in ids])
-        # nb_objects = len(ids_list)
-        features_header = [
-            sample_id,
-            nb_objects,
-            # ids_list,
-            self.t_obs,
-            self.t_pred,
-            # start,
-            # stop,
-            # parameters["scene"],
-            # parameters["framerate"]
+    def __nb_max_neighbors(self,scene):
+        helpers.extract_frames(self.original_file.format(scene),self.frames_temp,save = True)
+        nb_agents_scene = []
 
-        ]
-
-        labels_header = [
-            sample_id
-        ]
-        features = features_header + features
-        labels = labels_header + labels
-
-        sample_id += 1
-
-        data_writer.writerow(features)
-        label_writer.writerow(labels)
-
-        return sample_id
+        with open(self.frames_temp) as frames:
+            for i,frame in enumerate(frames):
+                # print(frame["ids"])
+                frame = json.loads(frame)
+                nb_agents = len(frame["ids"].keys())
+                nb_agents_scene.append(nb_agents)
+        os.remove(self.frames_temp)
+        return np.max(nb_agents_scene)
 
 
 # python prepare_training/prepare_training.py parameters/data.json parameters/prepare_training.json lankershim_inter2
@@ -227,7 +188,7 @@ class PrepareTrainingFramesHdf5():
 def main():
 
     args = sys.argv
-    prepare_training = PrepareTrainingFrames(args[1],args[2])
+    prepare_training = PrepareTrainingFramesHdf5(args[1],args[2])
     
     
     s = time.time()

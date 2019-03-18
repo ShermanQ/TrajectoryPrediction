@@ -229,11 +229,11 @@ def main():
 
     
 
-    # prepare_training = PrepareTraining(args[1],args[2])
+    prepare_training = PrepareTrainingHdf5(args[1],args[2])
     
-    # s = time.time()
-    # prepare_training.extract_data(args[3])       
-    # print(time.time()-s)
+    s = time.time()
+    prepare_training.extract_data(args[3])       
+    print(time.time()-s)
 
 
                     
