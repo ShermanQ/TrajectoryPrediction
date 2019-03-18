@@ -19,7 +19,13 @@ class ImgScaler():
         img = transform.rescale(img,ratio,anti_aliasing= True,mode='constant',multichannel=True)
         
         img = self.__pad(img)
-        img = img[:224][:224][:]
+        # print(img.shape)
+        # print(img)
+        # img = img[:224,:224,:]
+        img = img[:224,:224,:]
+
+
+        print(img.shape)
         helpers.remove_file(self.destination_image.format(scene))
         io.imsave(self.destination_image.format(scene),img)
         

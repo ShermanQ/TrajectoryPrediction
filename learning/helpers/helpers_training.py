@@ -38,7 +38,7 @@ def split_train_eval_test(ids,train_scenes,test_scenes, eval_prop = 0.8):
     THen averaged batch losses are averaged
     over the number of batches
 """
-def train(model, device, train_loader,criterion, optimizer, epoch,batch_size,print_every = 1):
+def train(model, device, train_loader,criterion, optimizer, epoch,batch_size,print_every = 100):
     model.train()
     epoch_loss = 0.
     batches_loss = []
@@ -46,27 +46,29 @@ def train(model, device, train_loader,criterion, optimizer, epoch,batch_size,pri
     start_time = time.time()
     for batch_idx, data in enumerate(train_loader):
         inputs, labels, ids = data
-        inputs, labels = inputs.to(device), labels.to(device)
+        # inputs, labels = inputs.to(device), labels.to(device)
         optimizer.zero_grad()
-        outputs = model(inputs)
-####################
-        mask = mask_loss(labels.detach().cpu().numpy())
-        outputs = outputs.contiguous().view([outputs.size()[0] * outputs.size()[1]] + list(outputs.size()[2:]))
+        # outputs = model(inputs)
+# ####################
+#         mask = mask_loss(labels.detach().cpu().numpy())
+#         outputs = outputs.contiguous().view([outputs.size()[0] * outputs.size()[1]] + list(outputs.size()[2:]))
 
-        labels = labels.contiguous().view([labels.size()[0] * labels.size()[1]] + list(labels.size()[2:]))
+#         labels = labels.contiguous().view([labels.size()[0] * labels.size()[1]] + list(labels.size()[2:]))
 
-        outputs = outputs[mask]
-        labels = labels[mask]
-###########################
-        loss = criterion(outputs, labels)
-        loss.backward()
-        optimizer.step()
+#         outputs = outputs[mask]
+#         labels = labels[mask]
+# ###########################
+#         loss = criterion(outputs, labels)
+#         loss.backward()
+#         optimizer.step()
 
-        epoch_loss += loss.item()
-        batches_loss.append(loss.item())
+#         epoch_loss += loss.item()
+#         batches_loss.append(loss.item())
 
         if batch_idx % print_every == 0:
-            print(batch_idx,loss.item(),time.time()-start_time)     
+            # print(batch_idx,loss.item(),time.time()-start_time)  
+            print(batch_idx,time.time()-start_time)  
+            
     epoch_loss /= float(len(train_loader))        
     print('Epoch n {} Loss: {}'.format(epoch,epoch_loss))
 
@@ -470,23 +472,23 @@ def sophie_training_loop(n_epochs,batch_size,generator,discriminator,optimizer_g
 
     s = time.time()
     
-    # try:
-    for epoch in range(start_epoch,n_epochs):
-        train_losses,_ = train_sophie(generator,discriminator,device,train_loader,criterion_gan,criterion_gen, 
-        optimizer_gen, optimizer_disc,epoch,batch_size,obs_length,pred_length,output_size)
+    try:
+        for epoch in range(start_epoch,n_epochs):
+            train_losses,_ = train_sophie(generator,discriminator,device,train_loader,criterion_gan,criterion_gen, 
+            optimizer_gen, optimizer_disc,epoch,batch_size,obs_length,pred_length,output_size)
 
-        for key in train_losses:
-            losses["train"][key].append(train_losses[key])
+            for key in train_losses:
+                losses["train"][key].append(train_losses[key])
 
-        test_losses = eval_sophie(generator,discriminator,device,eval_loader,criterion_gan,criterion_gen,epoch,batch_size,obs_length,pred_length,output_size,scalers_path,multiple_scalers)
-        for key in test_losses:
-            losses["eval"][key].append(test_losses[key])
+            test_losses = eval_sophie(generator,discriminator,device,eval_loader,criterion_gan,criterion_gen,epoch,batch_size,obs_length,pred_length,output_size,scalers_path,multiple_scalers)
+            for key in test_losses:
+                losses["eval"][key].append(test_losses[key])
 
+            
+            print(time.time()-s)
         
-        print(time.time()-s)
-        
-    # except :
-    #     pass
+    except :
+        pass
 
     save_sophie(epoch,generator,discriminator,optimizer_gen,optimizer_disc,losses)
     if plot:

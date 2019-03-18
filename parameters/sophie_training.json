@@ -1,5 +1,5 @@
 {
-    "n_epochs" : 2,
+    "n_epochs" : 200,
     "batch_size": 32,
     "obs_length": 8,
     "pred_length"  : 12,
@@ -24,7 +24,7 @@
     "load_path" : "",
     "decoder_hidden_size" : 32,
     "social_features_embedding_size" : 16,
-    "gaussian_dimension" : 8,
+    "gaussian_dimension" : 16,
     "decoder_num_layer" : 1,
     "plot": 1
 }

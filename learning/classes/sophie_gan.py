@@ -529,7 +529,7 @@ class sophie(nn.Module):
             x_lengths.append(unpadded_length)
         return x_lengths
 
-    def __get_number_agents(self,x,padding = -1):
+    def __get_number_agents(self,x,padding = 0.):
         agent_numbers = []
         for sample in x:
             nb_agent = 0

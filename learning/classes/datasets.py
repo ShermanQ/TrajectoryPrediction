@@ -1,7 +1,7 @@
 import torch
 from torch.utils import data
 import cv2
-
+import numpy as np 
 """
       Custom pytorch dataset
       self.list_IDs: ids of sample considered in this dataset
@@ -17,7 +17,7 @@ class CustomDataset(data.Dataset):
   'Characterizes a dataset for PyTorch'
   def __init__(self, list_IDs,data_path):
         'Initialization'
-        self.list_IDs = list_IDs
+        self.list_IDs = np.array(list_IDs)
         self.data_path = data_path
 
   def __len__(self):
@@ -61,7 +61,7 @@ class CustomDatasetSophie(data.Dataset):
       'Characterizes a dataset for PyTorch'
       def __init__(self, list_IDs,data_path):
             'Initialization'
-            self.list_IDs = list_IDs
+            self.list_IDs = np.array(list_IDs)
             self.data_path = data_path
 
       def __len__(self):
@@ -95,7 +95,7 @@ class CustomDatasetIATCNN(data.Dataset):
       'Characterizes a dataset for PyTorch'
       def __init__(self, list_IDs,data_path):
             'Initialization'
-            self.list_IDs = list_IDs
+            self.list_IDs = np.array(list_IDs)
             self.data_path = data_path
 
       def __len__(self):
