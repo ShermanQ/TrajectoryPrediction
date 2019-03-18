@@ -118,7 +118,7 @@ class SceneScalerMultiScene():
         self.scaler = None
 
     def __get_scaler(self):
-        mms = MinMaxScaler()
+        mms = MinMaxScaler(feature_range=(1e-10,1))
 
         min_ = 1e30
         max_ = -1e30

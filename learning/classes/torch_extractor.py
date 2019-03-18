@@ -108,8 +108,8 @@ class TorchExtractor():
                             kept_ids.append(sample_id)
 
 
-                            torch.save(features,self.samples_torch+"sample_"+sample_id+".pt")
-                            torch.save(labels,self.labels_torch+"label_"+sample_id+".pt")
+                            torch.save(features[0],self.samples_torch+"sample_"+sample_id+".pt")
+                            torch.save(labels[0],self.labels_torch+"label_"+sample_id+".pt")
 
                             with open(self.img_links_torch +"img_"+sample_id+".txt","w" ) as img_writer:
 
@@ -125,8 +125,8 @@ class TorchExtractor():
                         # elif sample_id.split("_")[0] in self.train_scenes:
                         #     kept_ids["train"].append(sample_id)
                         kept_ids.append(sample_id)
-                        torch.save(features,self.samples_torch+"sample_"+sample_id+".pt")
-                        torch.save(labels,self.labels_torch+"label_"+sample_id+".pt")
+                        torch.save(features[0],self.samples_torch+"sample_"+sample_id+".pt")
+                        torch.save(labels[0],self.labels_torch+"label_"+sample_id+".pt")
                         with open(self.img_links_torch +"img_"+sample_id+".txt","w" ) as img_writer:
 
                             sample_scene = "_".join(sample_id.split("_")[:-1])

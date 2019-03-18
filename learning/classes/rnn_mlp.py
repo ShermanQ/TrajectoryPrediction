@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as f 
 import random
 import numpy as np 
-import torchvision
+# import torchvision
 import imp
 from torch.nn.utils import weight_norm
 import collections

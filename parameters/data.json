@@ -16,7 +16,8 @@
     "prepared_labels_grouped": "./data/prepared_datasets/labels.csv",
     "prepared_ids": "./data/prepared_datasets/ids.json",
     "torch_data": "./learning/data/",
-    "sdd_pixel2meters":"./data/original_datasets/sdd/correspondences.json"
+    "sdd_pixel2meters":"./data/original_datasets/sdd/correspondences.json",
+    "hdf5_file":"./learning/data/data.hdf5"
     
 
 

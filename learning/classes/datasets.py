@@ -13,6 +13,7 @@ import numpy as np
 
       It'S done this way so multiprocessing can be used when loading batch with pytorch dataloader
 """
+import time
 class CustomDataset(data.Dataset):
   'Characterizes a dataset for PyTorch'
   def __init__(self, list_IDs,data_path):
@@ -36,8 +37,10 @@ class CustomDataset(data.Dataset):
       #   X = torch.load(self.data_path + "samples/sample" + str(ID) + '.pt')[0]
       #   y = torch.load(self.data_path + "labels/label" + str(ID) + '.pt')[0]
         X = torch.load(self.data_path + "samples/sample_" + str(ID) + '.pt')[0]
+      #   print(X.size())
         y = torch.load(self.data_path + "labels/label_" + str(ID) + '.pt')[0]
         y = y.unsqueeze(0)
+        
         
       #   print("x")
       #   print(X)
