@@ -19,17 +19,15 @@ class PrepareTrainingFramesHdf5():
 
         self.hdf5_dest = data["hdf5_file"]
 
-        if not os.path.isfile(self.hdf5_dest):
-            f = h5py.File(self.hdf5_dest,"w")
-            
-        with h5py.File(self.hdf5_dest,"w") as f: 
-            f.create_group("frames")
+        with h5py.File(self.hdf5_dest,"a") as f: 
+            if "frames" not in f:
+                print("in1")
+                f.create_group("frames")
 
         self.shift = int(param["shift"])
         self.t_obs = int(param["t_obs"])
         self.t_pred = int(param["t_pred"])
         self.padding = param["padding"]
-        #
 
 
 
@@ -57,6 +55,8 @@ class PrepareTrainingFramesHdf5():
         helpers.extract_frames(self.original_file.format(scene),self.frames_temp,save = True)
         
         with h5py.File(self.hdf5_dest,"r+") as f:
+            # for key in f:
+            #     print(key)
             group = f["frames"]
             dset = None
             data_shape = (max_neighbors,self.t_obs + self.t_pred,2)

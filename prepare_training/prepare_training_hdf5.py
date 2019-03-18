@@ -27,16 +27,10 @@ class PrepareTrainingHdf5():
         self.original_file = data["preprocessed_datasets"] + "{}.csv"
         self.hdf5_dest = data["hdf5_file"]
 
-        # if not os.path.isfile(self.hdf5_dest):
-        #     print("in")
-        #     with h5py.File(self.hdf5_dest,"w") as f: 
-        #         f.create_group("trajectories")
-
-        if not os.path.isfile(self.hdf5_dest):
-            f = h5py.File(self.hdf5_dest,"w")
-            
-        with h5py.File(self.hdf5_dest,"w") as f: 
-            f.create_group("trajectories")
+                 
+        with h5py.File(self.hdf5_dest,"a") as f: 
+            if "trajectories" not in f:
+                f.create_group("trajectories")
 
         self.shift = int(param["shift"])
         self.t_obs = int(param["t_obs"])
@@ -71,6 +65,8 @@ class PrepareTrainingHdf5():
 
       
         with h5py.File(self.hdf5_dest,"r+") as f:
+            # for key in f:
+            #     print(key)
             group = f["trajectories"]
             dset = None
             data_shape = (max_neighbors,self.t_obs + self.t_pred,2)

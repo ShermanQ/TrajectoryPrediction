@@ -17,7 +17,7 @@
     "prepared_ids": "./data/prepared_datasets/ids.json",
     "torch_data": "./learning/data/",
     "sdd_pixel2meters":"./data/original_datasets/sdd/correspondences.json",
-    "hdf5_file":"./learning/data/data.hdf5"
+    "hdf5_file":"./data/prepared_datasets/data.hdf5"
     
 
 

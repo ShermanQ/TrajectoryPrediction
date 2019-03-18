@@ -5,35 +5,40 @@ import random
 import shutil
 import os
 import json
+import h5py
+import numpy as np
 
 
 class TorchExtractor():
-    # def __init__(self,data,torch_params,prepare_params):
-    def __init__(self,data,torch_params):
+    def __init__(self,data,torch_params,prepare_params):
+    # def __init__(self,data,torch_params):
 
         data = json.load(open(data))
         torch_params = json.load(open(torch_params))
-        # prepare_params = json.load(open(prepare_params))
+        prepare_params = json.load(open(prepare_params))
 
 
-        self.prepared_samples = data["prepared_samples_grouped"]
-        self.prepared_labels = data["prepared_labels_grouped"]
-        self.ids_path = data["prepared_ids"]
-        self.samples_ids = json.load(open(self.ids_path))["ids"]
-        self.kept_ids = torch_params["ids_path"]
+        # self.prepared_samples = data["prepared_samples_grouped"]
+        # self.prepared_labels = data["prepared_labels_grouped"]
+        # self.ids_path = data["prepared_ids"]
+        # self.samples_ids = json.load(open(self.ids_path))["ids"]
+        # self.kept_ids = torch_params["ids_path"]
 
         self.prepared_images = data["prepared_images"]
         self.stopped_threshold = torch_params["stopped_threshold"]
         self.stopped_prop = torch_params["stopped_prop"]
 
-        self.samples_torch = torch_params["samples_torch"]
-        self.labels_torch = torch_params["labels_torch"]
-        self.img_links_torch = torch_params["img_links_torch"]
         self.new_padding = torch_params["new_padding"]
         self.old_padding = torch_params["old_padding"]
 
-        # self.test_scenes = list(prepare_params["test_scenes"])
-        # self.train_scenes = list(prepare_params["train_scenes"])
+        self.test_scenes = list(prepare_params["test_scenes"])
+        self.train_scenes = list(prepare_params["train_scenes"])
+
+        self.original_hdf5 = data["hdf5_file"]
+        self.split_hdf5 = torch_params["split_hdf5"]
+        self.seq_len = prepare_params["t_obs"] + prepare_params["t_pred"]
+        self.eval_prop = prepare_params["eval_prop"]
+
 
 
 
@@ -44,108 +49,95 @@ class TorchExtractor():
         self.input_size = 2
 
     def extract_tensors_sophie(self):
-        shutil.rmtree(self.samples_torch)
-        shutil.rmtree(self.labels_torch)
-        shutil.rmtree(self.img_links_torch)
 
-        try:  
-            os.mkdir(self.samples_torch)
-            os.mkdir(self.labels_torch)
-            os.mkdir(self.img_links_torch)
+        max_neighboors = self.__max_neighbors()
 
-        except OSError:  
-            print ("Creation of one of the directories failed")
         
-        total_samples = 0
-        stopped_samples = 0
-        stopped_samples_kept = 0
+        if os.path.exists(self.split_hdf5):
+            os.remove(self.split_hdf5)
+ 
+        self.split_dset("test_trajectories",max_neighboors,"trajectories",self.test_scenes,1.0)
+        self.split_dset("test_frames",max_neighboors,"frames",self.test_scenes,1.0)
 
-        moving_samples = 0
-        nb_max = self.__max_object()
-        print(nb_max)
-        id_ = 0
-        print(self.prepared_samples)
-        
+        self.split_dset("train_frames",max_neighboors,"frames",self.test_scenes,self.eval_prop)
+        self.split_dset("train_trajectories",max_neighboors,"trajectories",self.test_scenes,self.eval_prop)
 
-        # kept_ids = {"train":[], "test":[]}
-        kept_ids = []
-
-        with open(self.prepared_samples) as data_csv :
-            with open(self.prepared_labels) as label_csv:
-                data_reader = csv.reader(data_csv)
-                label_reader = csv.reader(label_csv)
+        self.split_dset("eval_trajectories",max_neighboors,"trajectories",self.test_scenes,self.eval_prop -1)
+        self.split_dset("eval_frames",max_neighboors,"frames",self.test_scenes,self.eval_prop -1)
 
 
-                for data,label,sample_id in zip(data_reader,label_reader,self.samples_ids):
-                    nb_objects,t_obs,t_pred = int(data[1]),int(data[2]),int(data[3])
 
-                    features = data[4:]
-                    labels = label[1:]
 
-                    features = torch.FloatTensor([float(f) if float(f) != self.old_padding else self.new_padding for f in features  ]+[float(self.new_padding) for _ in range( (nb_max-nb_objects) * t_obs * self.input_size)])
-                    features = features.view(nb_max,t_obs,self.input_size)
+        with h5py.File(self.split_hdf5,"r") as dest_file:
+            print("in")
+            for key in dest_file:
+                print(key)
+                print(dest_file[key].shape)
+
+                
+
+
+
+    def __max_neighbors(self):
+        max_n_1 = 0
+        # max_n_2 = 0
+
+
+        with h5py.File(self.original_hdf5,"r") as original_file:
+            for key in original_file["trajectories"]:
+                dset = original_file["trajectories"][key]
+                max_ = dset[0].shape[0]
+                if max_ > max_n_1:
+                    max_n_1 = max_ 
+        # with h5py.File(self.original_hdf5,"r") as original_file:
+        #     for key in original_file["frames"]:
+        #         dset = original_file["frames"][key]
+        #         max_ = dset[0].shape[0]
+        #         if max_ > max_n_2:
+        #             max_n_2 = max_ 
+        # return max_n_1,max_n_2
+        return max_n_1
+
+
+    # if prop > 0 then we take samples up to prop * nb_samples
+    # if prop < then we take samples from  prop * nb_samples to the end
+    def split_dset(self,name,max_neighboors,sample_type,scene_list,prop):
+        with h5py.File(self.original_hdf5,"r") as original_file:
+            with h5py.File(self.split_hdf5,"a") as dest_file:
+                        # test
+
+                samples = dest_file.create_dataset("samples_{}".format(name),shape=(0,max_neighboors,self.seq_len,2),maxshape = (None,max_neighboors,self.seq_len,2),dtype='float32')
+                images = dest_file.create_dataset("images_{}".format(name),shape=(0,),maxshape = (None,),dtype="S10")
+
+                for key in scene_list:
                     
-                    # features = torch.FloatTensor([float(f) for f in features]+[float(-1) for _ in range( (nb_max-nb_objects) * t_obs * self.input_size)])
-                    # features = features.view(nb_max,t_obs,self.input_size)
-
-
-                    labels = torch.FloatTensor([float(f) if float(f) != self.old_padding else self.new_padding for f in labels] + [float(self.new_padding) for _ in range( (nb_max-nb_objects) * t_pred * self.input_size)])
-                    labels = labels.view(nb_max,t_pred,self.input_size)
+                    dset = original_file[sample_type][key]
+                    nb_neighbors = dset[0].shape[0]
                     
-                    # is the groundtruth trajectory moving
-                    l_stopped = self.__is_stopped(labels[0].cpu().detach().numpy())
                     
-                    # if not we keep the sample with probability stopped_prop given by uniform distribution between 0 and 1
-                    if l_stopped:
-                        stopped_samples += 1
-                        keep = True if random.random() < self.stopped_prop else False
-                        if keep:
-                            # if sample_id.split("_")[0] in self.test_scenes:
-                            #     kept_ids["test"].append(sample_id)
-                            # elif sample_id.split("_")[0] in self.train_scenes:
-                            #     kept_ids["train"].append(sample_id)
+                    nb_samples = int(prop*dset.shape[0])
+                    scenes = np.array([np.string_(key) for _ in range(np.abs(nb_samples))])
+                    print(scenes)
 
-                            kept_ids.append(sample_id)
+                    padding = np.zeros(shape = (np.abs(nb_samples), max_neighboors-nb_neighbors,self.seq_len,2))
 
+                    
+                    samples.resize(samples.shape[0]+np.abs(nb_samples),axis=0)
+                    images.resize(images.shape[0]+np.abs(nb_samples),axis=0)
 
-                            torch.save(features[0],self.samples_torch+"sample_"+sample_id+".pt")
-                            torch.save(labels[0],self.labels_torch+"label_"+sample_id+".pt")
-
-                            with open(self.img_links_torch +"img_"+sample_id+".txt","w" ) as img_writer:
-
-                                sample_scene = "_".join(sample_id.split("_")[:-1])
-                                path_to_img = self.prepared_images + sample_scene + ".jpg"
-                                img_writer.write(path_to_img)
-                            stopped_samples_kept += 1
-                            id_+= 1
-                    # if trajectory is movin' add the sample
+                    if nb_samples > 0:
+                        samples[-nb_samples:] = np.concatenate((dset[:nb_samples],padding),axis = 1)
+                        images[-nb_samples:] = scenes
                     else:
-                        # if sample_id.split("_")[0] in self.test_scenes:
-                        #     kept_ids["test"].append(sample_id)
-                        # elif sample_id.split("_")[0] in self.train_scenes:
-                        #     kept_ids["train"].append(sample_id)
-                        kept_ids.append(sample_id)
-                        torch.save(features[0],self.samples_torch+"sample_"+sample_id+".pt")
-                        torch.save(labels[0],self.labels_torch+"label_"+sample_id+".pt")
-                        with open(self.img_links_torch +"img_"+sample_id+".txt","w" ) as img_writer:
-
-                            sample_scene = "_".join(sample_id.split("_")[:-1])
-                            path_to_img = self.prepared_images + sample_scene + ".jpg"
-                            img_writer.write(path_to_img)                        
-                        moving_samples += 1
-                        id_+= 1
-                        
-                    total_samples += 1
-
-        ids_json = json.load(open(self.ids_path))
-        ids_json["ids"] = kept_ids
-        json.dump(ids_json,open(self.kept_ids,"w"))
+                        samples[nb_samples:] = np.concatenate((dset[nb_samples:],padding),axis = 1)
+                        images[nb_samples:] = scenes
 
 
                     
-        print("total samples: {}, total moving samples: {}, total stopped samples: {}".format(total_samples,moving_samples,stopped_samples)) 
-        print("total samples kept: {}, total stopped samples kept: {}".format(moving_samples + stopped_samples_kept,stopped_samples_kept))           
+                    
 
+
+       
     """
     INPUT:
         trajectory: sequence of 2D coordinates
@@ -161,18 +153,3 @@ class TorchExtractor():
         if d < self.stopped_threshold:
             return True
         return False
-
-    """
-    """
-
-
-    def __max_object(self):
-        nb_max = 0
-        with open(self.prepared_samples) as data_csv :
-            data_reader = csv.reader(data_csv)
-            for data in data_reader:
-                nb_objects = int(data[1])
-                if nb_objects > nb_max:
-                    nb_max = nb_objects
-        return nb_max
-

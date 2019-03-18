@@ -8,76 +8,24 @@
     "number_digits":2,
     "center":1,
     "img_size":224,
+    "remove_hdf5":0,
     "selected_scenes": [
         
          
         "bookstore0",
-        "bookstore1"
-
-        
-
-        
+        "bookstore1",
+        "bookstore2",
+        "bookstore3"
+ 
     ],
     "train_scenes":[
         "bookstore0",
-        "bookstore1",
-        "bookstore2",
-        "bookstore3",
-        "bookstore5",
-        "bookstore6", 
-        "coupa0", 
-        "coupa2", 
-        "coupa3", 
-        "deathCircle2", 
-        "gates0", 
-        "gates1", 
-        "gates2", 
-        "gates3", 
-        "gates5", 
-        "gates6", 
-        "gates7", 
-        "gates8", 
-        "hyang0", 
-        "hyang1", 
-        "hyang10", 
-        "hyang11", 
-        "hyang12", 
-        "hyang13", 
-        "hyang14", 
-        "hyang2", 
-        "hyang3", 
-        "hyang5", 
-        "hyang6", 
-        "hyang7", 
-        "hyang8", 
-        "hyang9", 
-        "little1", 
-        "little2", 
-        "little3", 
-        "nexus0", 
-        "nexus10", 
-        "nexus11", 
-        "nexus2", 
-        "nexus3", 
-        "nexus4", 
-        "nexus5", 
-        "nexus6", 
-        "nexus7", 
-        "nexus8", 
-        "nexus9", 
-        "quad0", 
-        "quad1", 
-        "quad3"
+        "bookstore1"
+        
     ],
     "test_scenes":[
-        "bookstore4",
-        "coupa1", 
-        "deathCircle4", 
-        "gates4", 
-        "hyang4", 
-        "little0", 
-        "nexus1", 
-        "quad2"
+        "bookstore2",
+        "bookstore3"
 
     ],
     "eval_prop":0.8,
