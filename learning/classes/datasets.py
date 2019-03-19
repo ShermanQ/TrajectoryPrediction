@@ -27,6 +27,7 @@ class CustomDataLoader():
                   drop_last =self.drop_last))
             self.batch_idx = 0
             self.nb_batches = len(self.batches)
+            
 
       def __iter__(self):
             return self
@@ -75,7 +76,8 @@ class Hdf5Dataset():
       def get_ids(self,ids):
             with h5py.File(self.hdf5_file,"r") as hdf5_file: 
                   coord_dset = hdf5_file[self.dset_name]
-                  scenes_dset = hdf5_file[self.dset_img_name]                  
+                  scenes_dset = hdf5_file[self.dset_img_name]   
+             
 
 
                   X,y,scenes = [],[],[]
@@ -85,17 +87,21 @@ class Hdf5Dataset():
                         
 
                   else:
-                        X = np.expand_dims( coord_dset[ids,0,:self.t_obs], 1)
+                        X = coord_dset[ids,0,:self.t_obs]
                         y = np.expand_dims( coord_dset[ids,0,self.t_obs:self.seq_len], 1)
 
-                  scenes = scenes_dset[ids]
+                        # X = np.expand_dims( coord_dset[ids,0,:self.t_obs], 1)
+                        
+                        # y = coord_dset[ids,0,self.t_obs:self.seq_len]
+
+                  scenes = [img.decode('UTF-8') for img in scenes_dset[ids]] 
 
                   if not self.use_images:
-                        return zip([torch.FloatTensor(X),torch.FloatTensor(y),scenes])
+                        return (torch.FloatTensor(X),torch.FloatTensor(y),scenes)
                  
-                  imgs = torch.stack([self.images[img.decode('UTF-8')] for img in scenes_dset[ids]],dim = 0) 
+                  imgs = torch.stack([self.images[img] for img in scenes_dset[ids]],dim = 0) 
                   
-                  return zip([torch.FloatTensor(X),torch.FloatTensor(y),imgs,scenes])
+                  return (torch.FloatTensor(X),torch.FloatTensor(y),imgs,scenes)
 
       def __load_images(self):
             images = {}

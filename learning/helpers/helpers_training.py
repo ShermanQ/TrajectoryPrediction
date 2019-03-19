@@ -46,30 +46,32 @@ def train(model, device, train_loader,criterion, optimizer, epoch,batch_size,pri
     start_time = time.time()
     for batch_idx, data in enumerate(train_loader):
         inputs, labels, ids = data
-        # inputs, labels = inputs.to(device), labels.to(device)
+        inputs, labels = inputs.to(device), labels.to(device)
         optimizer.zero_grad()
-        # outputs = model(inputs)
+        outputs = model(inputs)
 # ####################
-#         mask = mask_loss(labels.detach().cpu().numpy())
-#         outputs = outputs.contiguous().view([outputs.size()[0] * outputs.size()[1]] + list(outputs.size()[2:]))
+        mask = mask_loss(labels.detach().cpu().numpy())
+        outputs = outputs.contiguous().view([outputs.size()[0] * outputs.size()[1]] + list(outputs.size()[2:]))
 
-#         labels = labels.contiguous().view([labels.size()[0] * labels.size()[1]] + list(labels.size()[2:]))
+        labels = labels.contiguous().view([labels.size()[0] * labels.size()[1]] + list(labels.size()[2:]))
 
-#         outputs = outputs[mask]
-#         labels = labels[mask]
+        outputs = outputs[mask]
+        labels = labels[mask]
 # ###########################
-#         loss = criterion(outputs, labels)
-#         loss.backward()
-#         optimizer.step()
+        loss = criterion(outputs, labels)
+        loss.backward()
+        optimizer.step()
 
-#         epoch_loss += loss.item()
-#         batches_loss.append(loss.item())
+        epoch_loss += loss.item()
+        batches_loss.append(loss.item())
 
         if batch_idx % print_every == 0:
             # print(batch_idx,loss.item(),time.time()-start_time)  
             print(batch_idx,time.time()-start_time)  
             
-    epoch_loss /= float(len(train_loader))        
+    # epoch_loss /= float(len(train_loader))   
+    epoch_loss /= float(train_loader.nb_batches)        
+
     print('Epoch n {} Loss: {}'.format(epoch,epoch_loss))
 
     return epoch_loss,batches_loss
@@ -94,8 +96,8 @@ def evaluate(model, device, eval_loader,criterion, epoch, batch_size,scalers_pat
     eval_loss = 0.
     fde = 0.
     ade = 0.
-
-    nb_sample = len(eval_loader)*batch_size
+    eval_loader_len =   float(eval_loader.nb_batches)
+    nb_sample = eval_loader_len*batch_size
     
     start_time = time.time()
     for data in eval_loader:
@@ -129,10 +131,10 @@ def evaluate(model, device, eval_loader,criterion, epoch, batch_size,scalers_pat
       
         eval_loss += loss.item()
 
-             
-    eval_loss /= float(len(eval_loader))  
-    ade /= float(len(eval_loader))        
-    fde /= float(len(eval_loader))        
+            
+    eval_loss /= eval_loader_len 
+    ade /= eval_loader_len      
+    fde /= eval_loader_len        
 
     print('Epoch n {} Evaluation Loss: {}, ADE: {}, FDE: {}'.format(epoch,eval_loss,ade,fde))
 

@@ -42,11 +42,6 @@ import matplotlib.pyplot as plt
         eval FDE
 """
 
-def iterate(loader):
-    for batch_idx,data in enumerate(loader):
-        s = time.time()
-        inputs, labels, ids = data
-        print(time.time()-s)
 #python learning/rnn_mlp_training.py parameters/data.json parameters/rnn_mlp_training.json parameters/torch_extractors.json parameters/prepare_training.json
 def main():
           
@@ -80,7 +75,7 @@ def main():
 
     #         )
 
-    dataset = Hdf5Dataset(
+    train_dataset = Hdf5Dataset(
         images_path = data["prepared_images"],
         hdf5_file= torch_param["split_hdf5"],
         scene_list= prepare_param["train_scenes"],
@@ -92,29 +87,23 @@ def main():
         use_neighbors = False
         )
 
+    eval_dataset = Hdf5Dataset(
+        images_path = data["prepared_images"],
+        hdf5_file= torch_param["split_hdf5"],
+        scene_list= prepare_param["train_scenes"],
+        t_obs=prepare_param["t_obs"],
+        t_pred=prepare_param["t_pred"],
+        set_type = "eval",
+        use_images = False,
+        data_type = "trajectories",
+        use_neighbors = False
+        )
 
-    data_loader = CustomDataLoader(            
-            batch_size = training_param["batch_size"],
-            shuffle = True,
-            drop_last = True,
-            dataset = dataset
-            
 
-            )
-    # for batch_idx,data in enumerate(data_loader):
-    #     s = time.time()
-    #     inputs, labels = data
-    #     # print(time.time()-s)
-
-    # for batch_idx,data in enumerate(data_loader):
-    #     s = time.time()
-    #     inputs, labels = data
-    #     print(time.time()-s)
-    for i in range(2):
-        iterate(data_loader)
-        print("----------")
-
-    iterate(data_loader)
+    train_loader = CustomDataLoader( batch_size = training_param["batch_size"],shuffle = True,drop_last = True,dataset = train_dataset)
+    eval_loader = CustomDataLoader( batch_size = training_param["batch_size"],shuffle = False,drop_last = True,dataset = eval_dataset)
+    
+    
 
     ###################################################################
 
@@ -136,46 +125,47 @@ def main():
     # train_loader = torch.utils.data.DataLoader( train_dataset, batch_size= training_param["batch_size"], shuffle=True,num_workers= training_param["num_workers"],drop_last = True)
     # eval_loader = torch.utils.data.DataLoader( eval_dataset, batch_size= training_param["batch_size"], shuffle=False,num_workers= training_param["num_workers"],drop_last = True)
 
+#############################################################################
 
-    # net = RNN_MLP(
-    #     device = device,
-    #     batch_size = training_param["batch_size"],
-    #     input_dim = training_param["input_dim"],
-    #     hidden_size = training_param["hidden_size"],
-    #     recurrent_layer = training_param["recurrent_layer"],
-    #     mlp_layers = training_param["mlp_layers"],
-    #     output_size = training_param["output_size"]
-    # )
+    net = RNN_MLP(
+        device = device,
+        batch_size = training_param["batch_size"],
+        input_dim = training_param["input_dim"],
+        hidden_size = training_param["hidden_size"],
+        recurrent_layer = training_param["recurrent_layer"],
+        mlp_layers = training_param["mlp_layers"],
+        output_size = training_param["output_size"]
+    )
 
-    # print(net)
-    # net = net.to(device)
-
-
-    # optimizer = optim.Adam(net.parameters(),lr = training_param["lr"])
-    # criterion = custom_mse
-
-    # training.training_loop(training_param["n_epochs"],training_param["batch_size"],
-    #     net,device,train_loader,eval_loader,criterion,criterion,optimizer, data["scalers"],
-    #     data["multiple_scalers"],training_param["model_type"],
-    #     plot = training_param["plot"],early_stopping = True,load_path = training_param["load_path"])
+    print(net)
+    net = net.to(device)
 
 
-    # load_path = "./learning/data/models/model_1552260631.156045.tar"
-    # checkpoint = torch.load(load_path)
-    # net.load_state_dict(checkpoint['state_dict'])
-    # net = net.to(device)
+    optimizer = optim.Adam(net.parameters(),lr = training_param["lr"])
+    criterion = custom_mse
+
+    training.training_loop(training_param["n_epochs"],training_param["batch_size"],
+        net,device,train_loader,eval_loader,criterion,criterion,optimizer, data["scalers"],
+        data["multiple_scalers"],training_param["model_type"],
+        plot = training_param["plot"],early_stopping = True,load_path = training_param["load_path"])
+
+
+    load_path = "./learning/data/models/model_1552260631.156045.tar"
+    checkpoint = torch.load(load_path)
+    net.load_state_dict(checkpoint['state_dict'])
+    net = net.to(device)
 
     
 
 
-    # # net.eval()
+    # net.eval()
 
-    # # batch_test_losses = []
-    # # for data in eval_loader:
-    # #     samples,targets = data
-    # #     samples = samples.to(device)
-    # #     targets = targets.to(device)
-    # #     outputs = net(samples)
+    # batch_test_losses = []
+    # for data in eval_loader:
+    #     samples,targets = data
+    #     samples = samples.to(device)
+    #     targets = targets.to(device)
+    #     outputs = net(samples)
 
 if __name__ == "__main__":
     main()
