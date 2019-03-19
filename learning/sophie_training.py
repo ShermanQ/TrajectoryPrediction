@@ -13,7 +13,7 @@ from sklearn.model_selection import train_test_split
 import numpy as np
 import time
 
-from classes.datasets import CustomDataset,CustomDatasetSophie
+from classes.datasets import Hdf5Dataset,CustomDataLoader
 from classes.sophie_gan import sophie,discriminatorLSTM,custom_mse
 import helpers.helpers_training as training
 import torchvision.models as models
@@ -57,14 +57,7 @@ def main():
     training_param = json.load(open("parameters/sophie_training.json"))
     prepare_param = json.load(open("parameters/prepare_training.json"))
 
-    ids = np.array(json.load(open(torch_param["ids_path"]))["ids"])
-
-    train_ids,eval_ids,test_ids = training.split_train_eval_test(ids,prepare_param["train_scenes"],prepare_param["test_scenes"], eval_prop = prepare_param["eval_prop"])
-
-
-    nb_neighbors_max = np.array(json.load(open(data["prepared_ids"]))["max_neighbors"])   
-
-    
+      
     # set pytorch
     # torch.manual_seed(10)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")    
@@ -72,27 +65,40 @@ def main():
     print(torch.cuda.is_available())
         
    
-    # train_indices,eval_indices = train_test_split(np.array([i for i in range(training_param["nb_samples"])]),test_size = 0.2,random_state = 42)
-
-    # train_indices = ids[train_indices]
-    # eval_indices = ids[eval_indices]
-
-    train_indices = train_ids
-    eval_indices = eval_ids
-
-    print(type(train_indices))
-
-
     
-    # load datasets
-    train_dataset = CustomDatasetSophie(train_indices,"./learning/data/")
-    eval_dataset = CustomDatasetSophie(eval_indices,"./learning/data/")
+    nb_neighbors_max = np.array(json.load(open(torch_param["nb_neighboors_path"]))["max_neighbors"]) - 1  
 
-    # create dataloaders
-    train_loader = torch.utils.data.DataLoader( train_dataset, batch_size= training_param["batch_size"], shuffle=True,num_workers= training_param["num_workers"],drop_last = True)
-    eval_loader = torch.utils.data.DataLoader( eval_dataset, batch_size= training_param["batch_size"], shuffle=False,num_workers= training_param["num_workers"],drop_last = True)
+    print(nb_neighbors_max)
+    train_dataset = Hdf5Dataset(
+        images_path = data["prepared_images"],
+        hdf5_file= torch_param["split_hdf5"],
+        scene_list= prepare_param["train_scenes"],
+        t_obs=prepare_param["t_obs"],
+        t_pred=prepare_param["t_pred"],
+        set_type = "train",
+        use_images = True,
+        data_type = "trajectories",
+        use_neighbors_label = True,
+        use_neighbors_sample = True
+        )
 
-   
+    eval_dataset = Hdf5Dataset(
+        images_path = data["prepared_images"],
+        hdf5_file= torch_param["split_hdf5"],
+        scene_list= prepare_param["train_scenes"],
+        t_obs=prepare_param["t_obs"],
+        t_pred=prepare_param["t_pred"],
+        set_type = "eval",
+        use_images = True,
+        data_type = "trajectories",
+        use_neighbors_label = True,
+        use_neighbors_sample = True
+        )
+
+
+    train_loader = CustomDataLoader( batch_size = training_param["batch_size"],shuffle = True,drop_last = True,dataset = train_dataset)
+    eval_loader = CustomDataLoader( batch_size = training_param["batch_size"],shuffle = False,drop_last = True,dataset = eval_dataset)
+    
 
     # init model and send it to gpu
     generator = sophie(device,

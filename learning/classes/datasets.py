@@ -50,7 +50,7 @@ class CustomDataLoader():
 """
 class Hdf5Dataset():
       'Characterizes a dataset for PyTorch'
-      def __init__(self,images_path,hdf5_file,scene_list,t_obs,t_pred,set_type,use_images,data_type,use_neighbors):
+      def __init__(self,images_path,hdf5_file,scene_list,t_obs,t_pred,set_type,use_images,data_type,use_neighbors_sample,use_neighbors_label):
 
             self.images_path = images_path + "{}.jpg"
             self.hdf5_file = hdf5_file
@@ -60,7 +60,9 @@ class Hdf5Dataset():
             self.images = self.__load_images()
             self.data_type = data_type
             self.use_images = use_images
-            self.use_neighbors = use_neighbors
+            self.use_neighbors_sample = use_neighbors_sample
+            self.use_neighbors_label = use_neighbors_label
+
 
             self.dset_name = "samples_{}_{}".format(set_type,data_type)
             self.dset_img_name = "images_{}_{}".format(set_type,data_type)
@@ -81,25 +83,23 @@ class Hdf5Dataset():
 
 
                   X,y,scenes = [],[],[]
-                  if self.use_neighbors:
+                  if self.use_neighbors_sample:
                         X = coord_dset[ids,:,:self.t_obs]
-                        y = coord_dset[ids,:,self.t_obs:self.seq_len]
+                  else: 
+                        X = coord_dset[ids,0,:self.t_obs] 
                         
-
-                  else:
-                        X = coord_dset[ids,0,:self.t_obs]
+                  if self.use_neighbors_label:     
+                        y = coord_dset[ids,:,self.t_obs:self.seq_len]
+                  else:                        
                         y = np.expand_dims( coord_dset[ids,0,self.t_obs:self.seq_len], 1)
 
-                        # X = np.expand_dims( coord_dset[ids,0,:self.t_obs], 1)
-                        
-                        # y = coord_dset[ids,0,self.t_obs:self.seq_len]
 
                   scenes = [img.decode('UTF-8') for img in scenes_dset[ids]] 
 
                   if not self.use_images:
                         return (torch.FloatTensor(X),torch.FloatTensor(y),scenes)
                  
-                  imgs = torch.stack([self.images[img] for img in scenes_dset[ids]],dim = 0) 
+                  imgs = torch.stack([self.images[img] for img in scenes],dim = 0) 
                   
                   return (torch.FloatTensor(X),torch.FloatTensor(y),imgs,scenes)
 

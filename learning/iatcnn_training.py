@@ -76,7 +76,8 @@ def main():
         set_type = "train",
         use_images = False,
         data_type = "frames",
-        use_neighbors = True
+        use_neighbors_label = True,
+        use_neighbors_sample = True
         )
 
     eval_dataset = Hdf5Dataset(
@@ -88,7 +89,8 @@ def main():
         set_type = "eval",
         use_images = False,
         data_type = "frames",
-        use_neighbors = True
+        use_neighbors_label = True,
+        use_neighbors_sample = True
         )
 
 

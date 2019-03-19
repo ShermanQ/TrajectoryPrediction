@@ -73,7 +73,8 @@ def main():
         set_type = "train",
         use_images = False,
         data_type = "trajectories",
-        use_neighbors = False
+        use_neighbors_label = False,
+        use_neighbors_sample = False
         )
 
     eval_dataset = Hdf5Dataset(
@@ -85,7 +86,8 @@ def main():
         set_type = "eval",
         use_images = False,
         data_type = "trajectories",
-        use_neighbors = False
+        use_neighbors_label = False,
+        use_neighbors_sample = False
         )
 
 
