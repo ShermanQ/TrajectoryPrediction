@@ -45,7 +45,7 @@ import matplotlib.pyplot as plt
 def iterate(loader):
     for batch_idx,data in enumerate(loader):
         s = time.time()
-        inputs, labels = data
+        inputs, labels, ids = data
         print(time.time()-s)
 #python learning/rnn_mlp_training.py parameters/data.json parameters/rnn_mlp_training.json parameters/torch_extractors.json parameters/prepare_training.json
 def main():
@@ -69,30 +69,35 @@ def main():
 
 
     ###################################################################
+    
+    # dset = Hdf5Dataset("parameters/data.json",
+    #         "parameters/torch_extractors.json",
+    #         "parameters/prepare_training.json",
+    #         "train",
+    #         use_images = False,
+    #         data_type = "trajectories",
+    #         use_neighbors = False
 
-    dset = Hdf5Dataset("parameters/data.json",
-            "parameters/torch_extractors.json",
-            "parameters/prepare_training.json",
-            "train",
-            use_images = False,
-            data_type = "trajectories",
-            use_neighbors = False
+    #         )
 
-            )
+    dataset = Hdf5Dataset(
+        images_path = data["prepared_images"],
+        hdf5_file= torch_param["split_hdf5"],
+        scene_list= prepare_param["train_scenes"],
+        t_obs=prepare_param["t_obs"],
+        t_pred=prepare_param["t_pred"],
+        set_type = "train",
+        use_images = False,
+        data_type = "trajectories",
+        use_neighbors = False
+        )
 
-    # images = dset.images 
-    # ids = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31]
-
-    # print(dset.get_len())
-    # samples = dset.get_ids(ids)
-
-    # print(samples.shape)
 
     data_loader = CustomDataLoader(            
             batch_size = training_param["batch_size"],
             shuffle = True,
             drop_last = True,
-            dataset = dset
+            dataset = dataset
             
 
             )

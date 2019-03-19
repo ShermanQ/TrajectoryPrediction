@@ -49,22 +49,13 @@ class CustomDataLoader():
 """
 class Hdf5Dataset():
       'Characterizes a dataset for PyTorch'
-      def __init__(self,data_params,torch_params,prepare_params,set_type,use_images,data_type,use_neighbors):
-            data_params = json.load(open(data_params))
-            torch_params = json.load(open(torch_params))
-            prepare_params = json.load(open(prepare_params))
+      def __init__(self,images_path,hdf5_file,scene_list,t_obs,t_pred,set_type,use_images,data_type,use_neighbors):
 
-
-            self.images_path = data_params["prepared_images"] + "{}.jpg"
-            self.hdf5_file = torch_params["split_hdf5"] 
+            self.images_path = images_path + "{}.jpg"
+            self.hdf5_file = hdf5_file
             self.set_type = set_type
+            self.scene_list = scene_list
 
-            if set_type == "train" or set_type == "eval":
-                  self.scene_list = prepare_params["train_scenes"]
-            elif set_type == "test":
-                  self.scene_list = prepare_params["test_scenes"]
-            else:
-                  self.scene_list = []
             self.images = self.__load_images()
             self.data_type = data_type
             self.use_images = use_images
@@ -72,9 +63,9 @@ class Hdf5Dataset():
 
             self.dset_name = "samples_{}_{}".format(set_type,data_type)
             self.dset_img_name = "images_{}_{}".format(set_type,data_type)
-            self.t_obs = prepare_params["t_obs"]
-            self.t_pred = prepare_params["t_pred"]
-            self.seq_len = prepare_params["t_obs"] + prepare_params["t_pred"]
+            self.t_obs = t_obs
+            self.t_pred = t_pred
+            self.seq_len = t_obs + t_pred
 
       def get_len(self):
             with h5py.File(self.hdf5_file,"r") as hdf5_file: 
@@ -83,26 +74,28 @@ class Hdf5Dataset():
 
       def get_ids(self,ids):
             with h5py.File(self.hdf5_file,"r") as hdf5_file: 
-                  s = time.time()
-                  dset = hdf5_file[self.dset_name]
+                  coord_dset = hdf5_file[self.dset_name]
+                  scenes_dset = hdf5_file[self.dset_img_name]                  
 
-                  X,y = [],[]
+
+                  X,y,scenes = [],[],[]
                   if self.use_neighbors:
-                        X = dset[ids,:,:self.t_obs]
-                        y = dset[ids,:,self.t_obs:self.seq_len]
+                        X = coord_dset[ids,:,:self.t_obs]
+                        y = coord_dset[ids,:,self.t_obs:self.seq_len]
+                        
 
                   else:
-                        X = np.expand_dims( dset[ids,0,:self.t_obs], 1)
-                        y = np.expand_dims( dset[ids,0,self.t_obs:self.seq_len], 1)
+                        X = np.expand_dims( coord_dset[ids,0,:self.t_obs], 1)
+                        y = np.expand_dims( coord_dset[ids,0,self.t_obs:self.seq_len], 1)
+
+                  scenes = scenes_dset[ids]
 
                   if not self.use_images:
-                        return zip([torch.FloatTensor(X),torch.FloatTensor(y)])
-
-                  dset = hdf5_file[self.dset_img_name]                  
-                  imgs = torch.stack([self.images[img.decode('UTF-8')] for img in dset[ids]],dim = 0) #224*224*3
-                  # imgs = imgs.permute(0,3,1,2)
+                        return zip([torch.FloatTensor(X),torch.FloatTensor(y),scenes])
+                 
+                  imgs = torch.stack([self.images[img.decode('UTF-8')] for img in scenes_dset[ids]],dim = 0) 
                   
-                  return zip([torch.FloatTensor(X),torch.FloatTensor(y),imgs])
+                  return zip([torch.FloatTensor(X),torch.FloatTensor(y),imgs,scenes])
 
       def __load_images(self):
             images = {}
