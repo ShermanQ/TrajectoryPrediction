@@ -13,7 +13,7 @@ from sklearn.model_selection import train_test_split
 import numpy as np
 import time
 
-from classes.datasets import CustomDataset,Hdf5Dataset
+from classes.datasets import CustomDataset,Hdf5Dataset,CustomDataLoader
 from classes.rnn_mlp import RNN_MLP,custom_mse
 import helpers.helpers_training as training
 import sys
@@ -41,6 +41,12 @@ import matplotlib.pyplot as plt
         eval ADE
         eval FDE
 """
+
+def iterate(loader):
+    for batch_idx,data in enumerate(loader):
+        s = time.time()
+        inputs, labels = data
+        print(time.time()-s)
 #python learning/rnn_mlp_training.py parameters/data.json parameters/rnn_mlp_training.json parameters/torch_extractors.json parameters/prepare_training.json
 def main():
           
@@ -68,21 +74,42 @@ def main():
             "parameters/torch_extractors.json",
             "parameters/prepare_training.json",
             "train",
-            use_images = True,
+            use_images = False,
             data_type = "trajectories",
-            use_neighbors = True
+            use_neighbors = False
 
             )
 
-    images = dset.images 
-    ids = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31]
+    # images = dset.images 
+    # ids = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31]
 
-    print(dset.get_len())
-    samples = dset.get_ids(ids)
+    # print(dset.get_len())
+    # samples = dset.get_ids(ids)
 
-    print(samples.shape)
+    # print(samples.shape)
 
+    data_loader = CustomDataLoader(            
+            batch_size = training_param["batch_size"],
+            shuffle = True,
+            drop_last = True,
+            dataset = dset
+            
 
+            )
+    # for batch_idx,data in enumerate(data_loader):
+    #     s = time.time()
+    #     inputs, labels = data
+    #     # print(time.time()-s)
+
+    # for batch_idx,data in enumerate(data_loader):
+    #     s = time.time()
+    #     inputs, labels = data
+    #     print(time.time()-s)
+    for i in range(2):
+        iterate(data_loader)
+        print("----------")
+
+    iterate(data_loader)
 
     ###################################################################
 

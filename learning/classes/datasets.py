@@ -7,6 +7,39 @@ import h5py
 import cv2
 import time
 
+
+class CustomDataLoader():
+      def __init__(self,batch_size,shuffle,drop_last,dataset):
+            self.shuffle = shuffle 
+            self.dataset = dataset
+            self.data_len = self.dataset.get_len()
+            self.batch_size = batch_size
+            self.drop_last = drop_last
+            # self.batches = self.__split_batches
+            # self.batch_idx = 0
+            self.__split_batches()
+
+            # print(self.batches[:3])
+      def __split_batches(self):
+            self.batches = list(torch.utils.data.BatchSampler(
+                  torch.utils.data.RandomSampler(range(self.data_len)),
+                  batch_size = self.batch_size,
+                  drop_last =self.drop_last))
+            self.batch_idx = 0
+            self.nb_batches = len(self.batches)
+
+      def __iter__(self):
+            return self
+      def __next__(self):
+
+            if self.batch_idx >= self.nb_batches:
+                  self.__split_batches()
+                  raise StopIteration
+            else:     
+                  ids = sorted(self.batches[self.batch_idx])
+                  self.batch_idx += 1 
+                  return self.dataset.get_ids(ids)
+
 """
       set_type:  train eval  test
       use_images: True False
@@ -16,13 +49,13 @@ import time
 """
 class Hdf5Dataset():
       'Characterizes a dataset for PyTorch'
-      def __init__(self,data,torch_params,prepare_params,set_type,use_images,data_type,use_neighbors):
-            data = json.load(open(data))
+      def __init__(self,data_params,torch_params,prepare_params,set_type,use_images,data_type,use_neighbors):
+            data_params = json.load(open(data_params))
             torch_params = json.load(open(torch_params))
             prepare_params = json.load(open(prepare_params))
 
 
-            self.images_path = data["prepared_images"] + "{}.jpg"
+            self.images_path = data_params["prepared_images"] + "{}.jpg"
             self.hdf5_file = torch_params["split_hdf5"] 
             self.set_type = set_type
 
@@ -63,19 +96,19 @@ class Hdf5Dataset():
                         y = np.expand_dims( dset[ids,0,self.t_obs:self.seq_len], 1)
 
                   if not self.use_images:
-                        print(time.time() - s)
-                        return [X,y]
+                        return zip([torch.FloatTensor(X),torch.FloatTensor(y)])
 
                   dset = hdf5_file[self.dset_img_name]                  
-                  imgs = np.array([self.images[img.decode('UTF-8')] for img in dset[ids]]) #224*224*3
-
-                  print(time.time() - s)
-                  return [X,y,imgs]
+                  imgs = torch.stack([self.images[img.decode('UTF-8')] for img in dset[ids]],dim = 0) #224*224*3
+                  # imgs = imgs.permute(0,3,1,2)
+                  
+                  return zip([torch.FloatTensor(X),torch.FloatTensor(y),imgs])
 
       def __load_images(self):
             images = {}
             for scene in self.scene_list:
-                  img = cv2.imread(self.images_path.format(scene))
+                  img = torch.FloatTensor(cv2.imread(self.images_path.format(scene)))
+                  img = img.permute(2,0,1)
                   images[scene] = img
             return images
 
