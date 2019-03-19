@@ -13,7 +13,7 @@ from sklearn.model_selection import train_test_split
 import numpy as np
 import time
 
-from classes.datasets import CustomDataset
+from classes.datasets import CustomDataset,Hdf5Dataset
 from classes.rnn_mlp import RNN_MLP,custom_mse
 import helpers.helpers_training as training
 import sys
@@ -61,64 +61,88 @@ def main():
     torch_param = json.load(open("parameters/torch_extractors.json"))
     prepare_param = json.load(open("parameters/prepare_training.json"))
 
-    # ids = np.array(json.load(open(torch_param["ids_path"]))["ids"])
-    ids = json.load(open(torch_param["ids_path"]))["ids"]
 
-    train_ids,eval_ids,test_ids = training.split_train_eval_test(ids,prepare_param["train_scenes"],prepare_param["test_scenes"], eval_prop = prepare_param["eval_prop"])
+    ###################################################################
+
+    dset = Hdf5Dataset("parameters/data.json",
+            "parameters/torch_extractors.json",
+            "parameters/prepare_training.json",
+            "train",
+            use_images = True,
+            data_type = "trajectories",
+            use_neighbors = True
+
+            )
+
+    images = dset.images 
+    ids = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31]
+
+    samples = dset.get_ids(ids)
+
+    print(samples.shape)
+
+
+
+    ###################################################################
+
+    # # ids = np.array(json.load(open(torch_param["ids_path"]))["ids"])
+    # ids = json.load(open(torch_param["ids_path"]))["ids"]
+
+    # train_ids,eval_ids,test_ids = training.split_train_eval_test(ids,prepare_param["train_scenes"],prepare_param["test_scenes"], eval_prop = prepare_param["eval_prop"])
     
 
-    train_indices = train_ids
-    eval_indices = test_ids
+    # train_indices = train_ids
+    # eval_indices = test_ids
 
     
-    # load datasets
-    train_dataset = CustomDataset(train_indices,data["torch_data"])
-    eval_dataset = CustomDataset(eval_indices,data["torch_data"])
+    # # load datasets
+    # train_dataset = CustomDataset(train_indices,data["torch_data"])
+    # eval_dataset = CustomDataset(eval_indices,data["torch_data"])
 
-    # create dataloaders
-    train_loader = torch.utils.data.DataLoader( train_dataset, batch_size= training_param["batch_size"], shuffle=True,num_workers= training_param["num_workers"],drop_last = True)
-    eval_loader = torch.utils.data.DataLoader( eval_dataset, batch_size= training_param["batch_size"], shuffle=False,num_workers= training_param["num_workers"],drop_last = True)
-
-
-    net = RNN_MLP(
-        device = device,
-        batch_size = training_param["batch_size"],
-        input_dim = training_param["input_dim"],
-        hidden_size = training_param["hidden_size"],
-        recurrent_layer = training_param["recurrent_layer"],
-        mlp_layers = training_param["mlp_layers"],
-        output_size = training_param["output_size"]
-    )
-
-    print(net)
-    net = net.to(device)
+    # # create dataloaders
+    # train_loader = torch.utils.data.DataLoader( train_dataset, batch_size= training_param["batch_size"], shuffle=True,num_workers= training_param["num_workers"],drop_last = True)
+    # eval_loader = torch.utils.data.DataLoader( eval_dataset, batch_size= training_param["batch_size"], shuffle=False,num_workers= training_param["num_workers"],drop_last = True)
 
 
-    optimizer = optim.Adam(net.parameters(),lr = training_param["lr"])
-    criterion = custom_mse
+    # net = RNN_MLP(
+    #     device = device,
+    #     batch_size = training_param["batch_size"],
+    #     input_dim = training_param["input_dim"],
+    #     hidden_size = training_param["hidden_size"],
+    #     recurrent_layer = training_param["recurrent_layer"],
+    #     mlp_layers = training_param["mlp_layers"],
+    #     output_size = training_param["output_size"]
+    # )
 
-    training.training_loop(training_param["n_epochs"],training_param["batch_size"],
-        net,device,train_loader,eval_loader,criterion,criterion,optimizer, data["scalers"],
-        data["multiple_scalers"],training_param["model_type"],
-        plot = training_param["plot"],early_stopping = True,load_path = training_param["load_path"])
+    # print(net)
+    # net = net.to(device)
 
 
-    load_path = "./learning/data/models/model_1552260631.156045.tar"
-    checkpoint = torch.load(load_path)
-    net.load_state_dict(checkpoint['state_dict'])
-    net = net.to(device)
+    # optimizer = optim.Adam(net.parameters(),lr = training_param["lr"])
+    # criterion = custom_mse
+
+    # training.training_loop(training_param["n_epochs"],training_param["batch_size"],
+    #     net,device,train_loader,eval_loader,criterion,criterion,optimizer, data["scalers"],
+    #     data["multiple_scalers"],training_param["model_type"],
+    #     plot = training_param["plot"],early_stopping = True,load_path = training_param["load_path"])
+
+
+    # load_path = "./learning/data/models/model_1552260631.156045.tar"
+    # checkpoint = torch.load(load_path)
+    # net.load_state_dict(checkpoint['state_dict'])
+    # net = net.to(device)
 
     
 
 
-    # net.eval()
+    # # net.eval()
 
-    # batch_test_losses = []
-    # for data in eval_loader:
-    #     samples,targets = data
-    #     samples = samples.to(device)
-    #     targets = targets.to(device)
-    #     outputs = net(samples)
+    # # batch_test_losses = []
+    # # for data in eval_loader:
+    # #     samples,targets = data
+    # #     samples = samples.to(device)
+    # #     targets = targets.to(device)
+    # #     outputs = net(samples)
 
 if __name__ == "__main__":
     main()

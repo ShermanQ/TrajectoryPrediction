@@ -59,11 +59,11 @@ class TorchExtractor():
         self.split_dset("test_trajectories",max_neighboors,"trajectories",self.test_scenes,1.0)
         self.split_dset("test_frames",max_neighboors,"frames",self.test_scenes,1.0)
 
-        self.split_dset("train_frames",max_neighboors,"frames",self.test_scenes,self.eval_prop)
-        self.split_dset("train_trajectories",max_neighboors,"trajectories",self.test_scenes,self.eval_prop)
+        self.split_dset("train_frames",max_neighboors,"frames",self.train_scenes,self.eval_prop)
+        self.split_dset("train_trajectories",max_neighboors,"trajectories",self.train_scenes,self.eval_prop)
 
-        self.split_dset("eval_trajectories",max_neighboors,"trajectories",self.test_scenes,self.eval_prop -1)
-        self.split_dset("eval_frames",max_neighboors,"frames",self.test_scenes,self.eval_prop -1)
+        self.split_dset("eval_trajectories",max_neighboors,"trajectories",self.train_scenes,self.eval_prop -1)
+        self.split_dset("eval_frames",max_neighboors,"frames",self.train_scenes,self.eval_prop -1)
 
 
 
