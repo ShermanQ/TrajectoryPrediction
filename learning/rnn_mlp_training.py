@@ -63,17 +63,6 @@ def main():
     prepare_param = json.load(open("parameters/prepare_training.json"))
 
 
-    ###################################################################
-    
-    # dset = Hdf5Dataset("parameters/data.json",
-    #         "parameters/torch_extractors.json",
-    #         "parameters/prepare_training.json",
-    #         "train",
-    #         use_images = False,
-    #         data_type = "trajectories",
-    #         use_neighbors = False
-
-    #         )
 
     train_dataset = Hdf5Dataset(
         images_path = data["prepared_images"],
@@ -103,29 +92,6 @@ def main():
     train_loader = CustomDataLoader( batch_size = training_param["batch_size"],shuffle = True,drop_last = True,dataset = train_dataset)
     eval_loader = CustomDataLoader( batch_size = training_param["batch_size"],shuffle = False,drop_last = True,dataset = eval_dataset)
     
-    
-
-    ###################################################################
-
-    # # ids = np.array(json.load(open(torch_param["ids_path"]))["ids"])
-    # ids = json.load(open(torch_param["ids_path"]))["ids"]
-
-    # train_ids,eval_ids,test_ids = training.split_train_eval_test(ids,prepare_param["train_scenes"],prepare_param["test_scenes"], eval_prop = prepare_param["eval_prop"])
-    
-
-    # train_indices = train_ids
-    # eval_indices = test_ids
-
-    
-    # # load datasets
-    # train_dataset = CustomDataset(train_indices,data["torch_data"])
-    # eval_dataset = CustomDataset(eval_indices,data["torch_data"])
-
-    # # create dataloaders
-    # train_loader = torch.utils.data.DataLoader( train_dataset, batch_size= training_param["batch_size"], shuffle=True,num_workers= training_param["num_workers"],drop_last = True)
-    # eval_loader = torch.utils.data.DataLoader( eval_dataset, batch_size= training_param["batch_size"], shuffle=False,num_workers= training_param["num_workers"],drop_last = True)
-
-#############################################################################
 
     net = RNN_MLP(
         device = device,

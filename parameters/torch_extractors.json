@@ -2,7 +2,7 @@
     "samples_torch" : "./learning/data/samples/",
     "labels_torch" : "./learning/data/labels/",
     "img_links_torch" : "./learning/data/img/",
-    "ids_path": "./learning/data/ids.json",
+    "nb_neighboors_path": "./learning/data/neighbors.json",
     "split_hdf5":"./learning/data/data.hdf5",
     "stopped_threshold" : 0.001,
     "stopped_prop" : 1.0,

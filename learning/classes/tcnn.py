@@ -168,6 +168,7 @@ class IATCNN(nn.Module):
 
     def forward(self,x):
         # torch.backends.cudnn.benchmark = True
+        x = x.permute(0,3,1,2)
         x = self.net(x)
         # torch.backends.cudnn.benchmark = False
         x = x[:,:,:,-1].permute(0,2,1)

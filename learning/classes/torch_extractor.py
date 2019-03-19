@@ -38,6 +38,7 @@ class TorchExtractor():
         self.split_hdf5 = torch_params["split_hdf5"]
         self.seq_len = prepare_params["t_obs"] + prepare_params["t_pred"]
         self.eval_prop = prepare_params["eval_prop"]
+        self.max_neighbor_path = torch_params["nb_neighboors_path"]
 
 
 
@@ -73,6 +74,7 @@ class TorchExtractor():
             for key in dest_file:
                 print(key)
                 print(dest_file[key].shape)
+        json.dump({"max_neighbors" : max_neighboors},open(self.max_neighbor_path,"w"))
 
                 
 
