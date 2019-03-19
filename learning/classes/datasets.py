@@ -43,7 +43,9 @@ class Hdf5Dataset():
             self.t_pred = prepare_params["t_pred"]
             self.seq_len = prepare_params["t_obs"] + prepare_params["t_pred"]
 
-
+      def get_len(self):
+            with h5py.File(self.hdf5_file,"r") as hdf5_file: 
+                  return len(hdf5_file[self.dset_name][:])
 
 
       def get_ids(self,ids):
