@@ -15,6 +15,7 @@ def main():
     scene_list = prepare["selected_scenes"]
     scene_path = data["preprocessed_datasets"] +"{}.csv"
     frames_temp = data["temp"] + "frames.txt"
+    reports_path = data["reports"] + "{}.csv"
    
     standard_split = [
         "coupa0", 
@@ -54,23 +55,26 @@ def main():
 
     
     table_types_nb = draw_table(indexes,columns,"nb",stats)
-    
-    print(table_types_nb)
-    print(table_types_nb.loc[standard_split])
+    save_table(table_types_nb,scene_list,reports_path.format("nb"))
+    save_table(table_types_nb,standard_split,reports_path.format("nb_standard_split"))
 
+    
 
     table_types_max_frame = draw_table(indexes,columns,"max",stats)
+    save_table(table_types_max_frame,scene_list,reports_path.format("max"))
+    save_table(table_types_max_frame,standard_split,reports_path.format("max_standard_split"))
     
-    print(table_types_max_frame)
-    print(table_types_max_frame.loc[standard_split])
+   
 
 
     table_types_prop = draw_table(indexes,columns,"prop",stats)
+    save_table(table_types_prop,scene_list,reports_path.format("prop"))
+    save_table(table_types_prop,standard_split,reports_path.format("prop_standard_split"))
     
-    print(table_types_prop)
-    print(table_types_prop.loc[standard_split])
 
-
+def save_table(table,ids,path):
+    table = table.loc[ids]
+    table.to_csv(path)
 
 def stats_scenes(scene_list,columns,scene_path,frames_temp):
     types = {}
