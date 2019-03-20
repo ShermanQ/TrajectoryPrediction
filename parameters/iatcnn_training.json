@@ -11,7 +11,7 @@
     "plot": 1,
     "input_dim":2,
     "output_channels":128,
-    "kernel_size":[102,10],
+    "kernel_size":[10,3],
     "stride":1,
     "padding":4,
     "output_size":5,

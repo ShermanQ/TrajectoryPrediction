@@ -8,7 +8,7 @@ import torch.optim as optim
 
 from torch.utils.data.dataset import Dataset
 from torch.utils.data import DataLoader
-from sklearn.model_selection import train_test_split
+# from sklearn.model_selection import train_test_split
 
 import numpy as np
 import time
@@ -18,7 +18,7 @@ from classes.tcnn import IATCNN,nlloss
 import helpers.helpers_training as training
 import sys
 import json
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 """
     This script trains a iatcnn model
     The data is loaded using custom dataset
@@ -80,6 +80,8 @@ def main():
         use_neighbors_sample = True
         )
 
+    
+
     eval_dataset = Hdf5Dataset(
         images_path = data["prepared_images"],
         hdf5_file= torch_param["split_hdf5"],
@@ -92,6 +94,9 @@ def main():
         use_neighbors_label = True,
         use_neighbors_sample = True
         )
+
+    print("n_train_samples: {}".format(train_dataset.get_len()))
+    print("n_eval_samples: {}".format(eval_dataset.get_len()))
 
 
     train_loader = CustomDataLoader( batch_size = training_param["batch_size"],shuffle = True,drop_last = True,dataset = train_dataset)

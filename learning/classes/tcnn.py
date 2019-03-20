@@ -15,28 +15,9 @@ import collections
 import math
 import numpy as np 
 
-# def mask_loss(targets):
-#     # targets = targets.detach().cpu().numpy()
-#     b,a,s,o = targets.shape
-#     mask = targets.reshape(b,a,-1)
-#     mask = np.sum(mask,axis = 2)
-#     mask = mask.reshape(-1)
-#     mask = np.argwhere(mask).reshape(-1)
-#     return mask
-
-
 
 def nlloss(outputs,targets,eps = 1e-15):
-    # mask = mask_loss(targets.detach().cpu().numpy())
-
-    # # outputs = outputs.contiguous().view(-1,outputs.size()[-2],outputs.size()[-1])
-    # outputs = outputs.contiguous().view([outputs.size()[0] * outputs.size()[1]] + list(outputs.size()[2:]))
-
-    # targets = targets.contiguous().view([targets.size()[0] * targets.size()[1]] + list(targets.size()[2:]))
-
-    # outputs = outputs[mask]
-    # targets = targets[mask]
-
+ 
     outputs = outputs.contiguous().view(-1,outputs.size()[-1])
     targets = targets.contiguous().view(-1,targets.size()[-1])
     
@@ -61,17 +42,21 @@ def nlloss(outputs,targets,eps = 1e-15):
     square_mahalanobis = torch.bmm(diff.permute(0,2,1),right_product)
     log_num = -0.5 * square_mahalanobis.squeeze()
     
-    # deter = s1_s2.sub((cov.squeeze(1)) ** 2)
-    # epsilons = torch.ones(s1_s2.size()) * eps
+    deter = s1_s2.sub((cov.squeeze(1)) ** 2)
+    epsilons = torch.ones(s1_s2.size()) * eps
     
-    # deter = torch.max( deter, epsilons.cuda() )
+    deter = torch.max( deter, epsilons.cuda() )
+    log_deter = -0.5*  torch.log(deter)
+
+    lloss = torch.add(log_num, log_deter)
+    lloss = torch.sum(lloss)
 
     # log_den= -0.5 * ( 2 * math.log(2 * math.pi) + torch.log(deter) )
 
     # lloss =  -1.0 * torch.sum( log_num + log_den ) 
-    lloss =  -1.0 * torch.sum( log_num  ) 
+    # lloss =  -1.0 * torch.sum( log_num  ) 
 
-    return lloss
+    return -1.0 * lloss
 
 
 # a = (targets[:,0] != 0. ).cuda()

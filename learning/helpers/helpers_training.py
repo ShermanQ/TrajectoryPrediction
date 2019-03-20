@@ -199,36 +199,42 @@ def training_loop(n_epochs,batch_size,net,device,train_loader,eval_loader,criter
 
     s = time.time()
     
-    # try:
-    for epoch in range(start_epoch,n_epochs):
-        train_loss,batches_loss = train(net, device, train_loader,criterion_train, optimizer, epoch,batch_size)
-        batch_losses += batches_loss
-        train_losses.append(train_loss)
+    try:
+        for epoch in range(start_epoch,n_epochs):
+            train_loss,batches_loss = train(net, device, train_loader,criterion_train, optimizer, epoch,batch_size)
+            batch_losses += batches_loss
+            train_losses.append(train_loss)
 
-        
-        eval_loss,fde,ade = evaluate(net, device, eval_loader,criterion_eval, epoch, batch_size,scalers_path,multiple_scalers,model_type)
-        
+            
+            eval_loss,fde,ade = evaluate(net, device, eval_loader,criterion_eval, epoch, batch_size,scalers_path,multiple_scalers,model_type)
+            
 
-        eval_losses.append(eval_loss)
-        fde_losses.append(fde)
-        ade_losses.append(ade)
+            eval_losses.append(eval_loss)
+            fde_losses.append(fde)
+            ade_losses.append(ade)
 
-        print(time.time()-s)
+            print(time.time()-s)
         
-    # except :
-    #     # logging.error(traceback.format_exc())
-    #     # save_model(epoch,net,optimizer,train_losses,eval_losses,batch_losses,save_path)
-    #     pass
+    except :
+        # logging.error(traceback.format_exc())
+        # save_model(epoch,net,optimizer,train_losses,eval_losses,batch_losses,save_path)
+        pass
 
     save_model(epoch,net,optimizer,train_losses,eval_losses,batch_losses,fde_losses)
     if plot:
         plt.plot(train_losses)
         plt.plot(eval_losses)
-        plt.show()
+        # plt.show()
+        plt.savefig("./data/reports/losses_{}.jpg".format(time.time()))
+        plt.close()
 
         plt.plot(ade_losses)
         plt.plot(fde_losses)
-        plt.show()
+        plt.savefig("./data/reports/ade_fde_{}.jpg".format(time.time()))
+        plt.close()
+
+
+        # plt.show()
 
     return train_losses,eval_losses,batch_losses
 
@@ -475,29 +481,49 @@ def sophie_training_loop(n_epochs,batch_size,generator,discriminator,optimizer_g
 
     s = time.time()
     
-    # try:
-    for epoch in range(start_epoch,n_epochs):
-        train_losses,_ = train_sophie(generator,discriminator,device,train_loader,criterion_gan,criterion_gen, 
-        optimizer_gen, optimizer_disc,epoch,batch_size,obs_length,pred_length,output_size)
+    try:
+        for epoch in range(start_epoch,n_epochs):
+            train_losses,_ = train_sophie(generator,discriminator,device,train_loader,criterion_gan,criterion_gen, 
+            optimizer_gen, optimizer_disc,epoch,batch_size,obs_length,pred_length,output_size)
 
-        for key in train_losses:
-            losses["train"][key].append(train_losses[key])
+            print(train_losses)
+            for key in train_losses:
 
-        test_losses = eval_sophie(generator,discriminator,device,eval_loader,criterion_gan,criterion_gen,epoch,batch_size,obs_length,pred_length,output_size,scalers_path,multiple_scalers)
-        for key in test_losses:
-            losses["eval"][key].append(test_losses[key])
+                losses["train"][key].append(train_losses[key])
 
+            test_losses = eval_sophie(generator,discriminator,device,eval_loader,criterion_gan,criterion_gen,epoch,batch_size,obs_length,pred_length,output_size,scalers_path,multiple_scalers)
+            for key in test_losses:
+                losses["eval"][key].append(test_losses[key])
+
+            
+            print(time.time()-s)
         
-        print(time.time()-s)
-        
-    # except :
-    #     pass
+    except :
+        pass
 
     save_sophie(epoch,generator,discriminator,optimizer_gen,optimizer_disc,losses)
     if plot:
         plt.plot(losses["train"]["mse"])
         plt.plot(losses["eval"]["mse"])
-        plt.show()
+        plt.savefig("./data/reports/mse_{}.jpg".format(time.time()))
+        plt.close()
+
+        plt.plot(losses["train"]["real"])
+        plt.plot(losses["train"]["fake"])
+        plt.plot(losses["train"]["gen"])
+
+        plt.savefig("./train_gan_{}.jpg".format(time.time()))
+        plt.close()
+
+        plt.plot(losses["eval"]["real"])
+        plt.plot(losses["eval"]["fake"])
+        plt.plot(losses["eval"]["gen"])
+
+        plt.savefig("./data/reports/eval_gan_{}.jpg".format(time.time()))
+        plt.close()
+
+        # plt.show()
+
 
     return losses
 
