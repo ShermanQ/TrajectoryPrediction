@@ -43,6 +43,11 @@ def main():
     
     print(table_types_max_frame)
 
+    table_types_max_frame = draw_table(indexes,columns,"prop",stats)
+    
+    print(table_types_max_frame)
+
+
 def stats_scenes(scene_list,columns,scene_path,frames_temp):
     types = {}
     for scene in scene_list:
@@ -68,10 +73,16 @@ def stats_scenes(scene_list,columns,scene_path,frames_temp):
                 for key in types[scene]:
                     types[scene][key].append(0)
 
-            report_types = {"max":{}, "nb":{}}
+            report_types = {"max":{}, "nb":{}, "prop":{}}
             for key in types[scene]:
                 report_types["max"][key] = np.max(types[scene][key])
                 report_types["nb"][key] = np.sum(types[scene][key])
+                report_types["prop"][key] = np.sum(types[scene][key])
+
+            for key in columns:
+                report_types["prop"][key] = int(100*report_types["prop"][key]/float(report_types["prop"]["total"]))
+
+
             types[scene] = report_types
     return types
 
