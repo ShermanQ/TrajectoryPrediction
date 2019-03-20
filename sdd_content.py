@@ -16,7 +16,25 @@ def main():
     scene_path = data["preprocessed_datasets"] +"{}.csv"
     frames_temp = data["temp"] + "frames.txt"
    
-
+    standard_split = [
+        "coupa0", 
+        "coupa1", 
+        "gates2", 
+        "hyang0", 
+        "hyang1", 
+        "hyang3", 
+        "hyang8", 
+        "little0", 
+        "little1", 
+        "little2", 
+        "little3", 
+        "nexus5", 
+        "nexus6", 
+        "quad0", 
+        "quad1", 
+        "quad2", 
+        "quad3"
+    ]
     
     
     columns = [
@@ -35,17 +53,23 @@ def main():
     stats = stats_scenes(scene_list,columns,scene_path,frames_temp)
 
     
-    table_types_prop = draw_table(indexes,columns,"nb",stats)
+    table_types_nb = draw_table(indexes,columns,"nb",stats)
     
-    print(table_types_prop)
+    print(table_types_nb)
+    print(table_types_nb.loc[standard_split])
+
 
     table_types_max_frame = draw_table(indexes,columns,"max",stats)
     
     print(table_types_max_frame)
+    print(table_types_max_frame.loc[standard_split])
 
-    table_types_max_frame = draw_table(indexes,columns,"prop",stats)
+
+    table_types_prop = draw_table(indexes,columns,"prop",stats)
     
-    print(table_types_max_frame)
+    print(table_types_prop)
+    print(table_types_prop.loc[standard_split])
+
 
 
 def stats_scenes(scene_list,columns,scene_path,frames_temp):
