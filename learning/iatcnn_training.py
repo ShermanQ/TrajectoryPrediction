@@ -130,7 +130,7 @@ def main():
     training.training_loop(training_param["n_epochs"],training_param["batch_size"],
         net,device,train_loader,eval_loader,criterion,criterion,optimizer,data["scalers"],
         data["multiple_scalers"],training_param["model_type"],
-        plot = training_param["plot"],early_stopping = True,load_path = training_param["load_path"])
+        plot = training_param["plot"],early_stopping = True,load_path = training_param["load_path"],plot_every = training_param["plot_every"])
 
 
 

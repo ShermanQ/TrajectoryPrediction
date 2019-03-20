@@ -148,7 +148,7 @@ def evaluate(model, device, eval_loader,criterion, epoch, batch_size,scalers_pat
     THe different losses at previous time_steps are loaded
 
 """
-def save_model(epoch,net,optimizer,train_losses,eval_losses,batch_losses,fde_losses,save_root = "./learning/data/models/" ):
+def save_model(epoch,net,optimizer,losses,save_root = "./learning/data/models/" ):
 
     save_path = save_root + "model_{}.tar".format(time.time())
 
@@ -157,10 +157,7 @@ def save_model(epoch,net,optimizer,train_losses,eval_losses,batch_losses,fde_los
         'epoch': epoch,
         'state_dict': net.state_dict(),
         'optimizer': optimizer.state_dict(),             
-        'train_losses': train_losses,  
-        'eval_losses': eval_losses,
-        'batch_losses': batch_losses,
-        'fde_losses': fde_losses
+        'losses': losses
         }
     torch.save(state, save_path)
     
@@ -174,13 +171,20 @@ def save_model(epoch,net,optimizer,train_losses,eval_losses,batch_losses,fde_los
     if plot, display the different losses
     If exception during training, model is stored
 """
-def training_loop(n_epochs,batch_size,net,device,train_loader,eval_loader,criterion_train,criterion_eval,optimizer,scalers_path,multiple_scalers,model_type,plot = True,early_stopping = True,load_path = None):
+def training_loop(n_epochs,batch_size,net,device,train_loader,eval_loader,criterion_train,criterion_eval,optimizer,scalers_path,multiple_scalers,model_type,plot = True,early_stopping = True,load_path = None,plot_every = 5):
 
-    train_losses = []
-    eval_losses = []
-    batch_losses = []
-    fde_losses = []
-    ade_losses = []
+    losses = {
+        "train":{
+            "loss": []
+
+        },
+        "eval":{
+            "loss": [],
+            "fde":[],
+            "ade":[]
+
+        }
+    }
 
     start_epoch = 0
 
@@ -190,10 +194,7 @@ def training_loop(n_epochs,batch_size,net,device,train_loader,eval_loader,criter
         checkpoint = torch.load(load_path)
         net.load_state_dict(checkpoint['state_dict'])
         optimizer.load_state_dict(checkpoint['optimizer'])
-        train_losses = checkpoint["train_losses"]
-        eval_losses = checkpoint["eval_losses"]
-        batch_losses = checkpoint["batch_losses"]
-        fde_losses = checkpoint["fde_losses"]
+        losses = checkpoint["losses"]
         start_epoch = checkpoint["epoch"]
 
 
@@ -201,17 +202,20 @@ def training_loop(n_epochs,batch_size,net,device,train_loader,eval_loader,criter
     
     try:
         for epoch in range(start_epoch,n_epochs):
-            train_loss,batches_loss = train(net, device, train_loader,criterion_train, optimizer, epoch,batch_size)
-            batch_losses += batches_loss
-            train_losses.append(train_loss)
-
+            train_loss,_ = train(net, device, train_loader,criterion_train, optimizer, epoch,batch_size)
+           
             
             eval_loss,fde,ade = evaluate(net, device, eval_loader,criterion_eval, epoch, batch_size,scalers_path,multiple_scalers,model_type)
             
 
-            eval_losses.append(eval_loss)
-            fde_losses.append(fde)
-            ade_losses.append(ade)
+            losses["train"]["loss"].append(train_loss)
+            losses["eval"]["loss"].append(eval_loss)
+            losses["eval"]["ade"].append(ade)
+            losses["eval"]["fde"].append(fde)
+
+
+            if plot and epoch % plot_every == 0:
+                plot_losses(losses,s,root = "./data/reports/")
 
             print(time.time()-s)
         
@@ -220,27 +224,33 @@ def training_loop(n_epochs,batch_size,net,device,train_loader,eval_loader,criter
         # save_model(epoch,net,optimizer,train_losses,eval_losses,batch_losses,save_path)
         pass
 
-    save_model(epoch,net,optimizer,train_losses,eval_losses,batch_losses,fde_losses)
+    save_model(epoch,net,optimizer,losses)
     if plot:
-        plt.plot(train_losses)
-        plt.plot(eval_losses)
-        # plt.show()
-        plt.savefig("./data/reports/losses_{}.jpg".format(time.time()))
-        plt.close()
-
-        plt.plot(ade_losses)
-        plt.plot(fde_losses)
-        plt.savefig("./data/reports/ade_fde_{}.jpg".format(time.time()))
-        plt.close()
+        plot_losses(losses,s,root = "./data/reports/")
+     
+    return losses
 
 
-        # plt.show()
+def plot_losses(losses,idx,root = "./data/reports/"):
+    plt.plot(losses["train"]["loss"],label = "train_loss")
+    plt.plot(losses["eval"]["loss"],label = "eval_loss")
+    plt.legend()
 
-    return train_losses,eval_losses,batch_losses
+    # plt.show()
+    plt.savefig("{}losses_{}.jpg".format(root,idx))
+    plt.close()
+
+    plt.plot(losses["eval"]["ade"],label = "ade")
+    plt.plot(losses["eval"]["fde"],label = "fde")
+    plt.legend()
+
+    plt.savefig("{}ade_fde_{}.jpg".format(root,idx))
+    plt.close()
 
 
 
 
+   
 def train_sophie(
         generator,
         discriminator, 
@@ -398,6 +408,8 @@ def eval_sophie(
             disc_class = discriminator(fake_traj.detach()).view(batch_size)
 
             fake_loss = criterion_gan(disc_class,fake_labels)
+            gen_loss = criterion_gan(disc_class,real_labels)
+
             
             mse_loss = criterion_gen(traj_pred_fake,traj_pred_real)
 
@@ -412,12 +424,14 @@ def eval_sophie(
             losses["mse"] += mse_loss.item()
             losses["real"] += real_loss.item()
             losses["fake"] += fake_loss.item()
+            losses["gen"] += gen_loss.item()
+
 
 
 
         for key in losses:
             losses[key] /= batch_idx    
-        print('Eval Epoch n {} Loss: {}, gan loss real: {},gan loss fake: {}'.format(epoch,losses["mse"],losses["real"],losses["fake"]))
+        print('Eval Epoch n {} Loss: {}, gan loss real: {},gan loss fake: {}'.format(epoch,losses["gen"],losses["real"],losses["fake"]))
         print('Eval Epoch n {}  ade: {},fde: {}'.format(epoch,losses["ade"],losses["fde"]))
     # generator.train()
     # discriminator.train()
@@ -443,7 +457,7 @@ def save_sophie(epoch,generator,discriminator,optimizer_gen,optimizer_disc,losse
 
 def sophie_training_loop(n_epochs,batch_size,generator,discriminator,optimizer_gen,optimizer_disc,device,
         train_loader,eval_loader,obs_length, criterion_gan,criterion_gen, 
-        pred_length, output_size,scalers_path,multiple_scalers,plot = True,load_path = None):
+        pred_length, output_size,scalers_path,multiple_scalers,plot = True,load_path = None,plot_every = 5):
 
     
     losses = {
@@ -495,7 +509,8 @@ def sophie_training_loop(n_epochs,batch_size,generator,discriminator,optimizer_g
             for key in test_losses:
                 losses["eval"][key].append(test_losses[key])
 
-            
+            if plot and epoch % plot_every == 0:
+                plot_sophie(losses,s,root = "./data/reports/")
             print(time.time()-s)
         
     except :
@@ -503,29 +518,44 @@ def sophie_training_loop(n_epochs,batch_size,generator,discriminator,optimizer_g
 
     save_sophie(epoch,generator,discriminator,optimizer_gen,optimizer_disc,losses)
     if plot:
-        plt.plot(losses["train"]["mse"])
-        plt.plot(losses["eval"]["mse"])
-        plt.savefig("./data/reports/mse_{}.jpg".format(time.time()))
-        plt.close()
-
-        plt.plot(losses["train"]["real"])
-        plt.plot(losses["train"]["fake"])
-        plt.plot(losses["train"]["gen"])
-
-        plt.savefig("./train_gan_{}.jpg".format(time.time()))
-        plt.close()
-
-        plt.plot(losses["eval"]["real"])
-        plt.plot(losses["eval"]["fake"])
-        plt.plot(losses["eval"]["gen"])
-
-        plt.savefig("./data/reports/eval_gan_{}.jpg".format(time.time()))
-        plt.close()
+        plot_sophie(losses,s,root = "./data/reports/")
 
         # plt.show()
 
 
     return losses
+
+def plot_sophie(losses,idx,root = "./data/reports/"):
+    plt.plot(losses["eval"]["ade"],label = "ade")
+    plt.plot(losses["eval"]["fde"],label = "fde")
+    plt.legend()
+    plt.savefig("{}ade_fde_{}.jpg".format(root,idx))
+    plt.close()
+
+    plt.plot(losses["train"]["real"],label = "discriminator_real")
+    plt.plot(losses["train"]["fake"],label = "discriminator_fake")
+    plt.plot(losses["train"]["gen"],label = "generator")
+    plt.legend()
+
+
+    plt.savefig("{}train_gan_{}.jpg".format(root,idx))
+    plt.close()
+
+    plt.plot(losses["eval"]["real"],label = "discriminator_real")
+    plt.plot(losses["eval"]["fake"],label = "discriminator_fake")
+    plt.plot(losses["eval"]["gen"],label = "generator")
+    plt.legend()
+
+
+    plt.savefig("{}eval_gan_{}.jpg".format(root,idx))
+    plt.close()
+
+    plt.plot(losses["train"]["mse"],label = "train_mse")
+    plt.plot(losses["eval"]["mse"],label = "eval_mse")
+    plt.legend()
+
+    plt.savefig("{}mse_{}.jpg".format(root,idx))
+    plt.close()
 
 
 

@@ -14,5 +14,6 @@
     "recurrent_layer":1,
     "mlp_layers":[100],
     "output_size":24,
-    "model_type": 0
+    "model_type": 0,
+    "plot_every": 5
 }

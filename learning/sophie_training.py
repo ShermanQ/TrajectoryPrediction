@@ -146,7 +146,7 @@ def main():
     training.sophie_training_loop(training_param["n_epochs"],training_param["batch_size"],generator,discriminator,optimizer_gen,optimizer_disc,device,
         train_loader,eval_loader,training_param["obs_length"], criterion_gan,criterion_gen, 
         training_param["pred_length"], training_param["output_size"],data["scalers"],data["multiple_scalers"],
-        training_param["plot"], training_param["load_path"])
+        training_param["plot"], training_param["load_path"],plot_every = training_param["plot_every"])
 
 
     
