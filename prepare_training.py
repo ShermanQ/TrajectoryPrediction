@@ -37,55 +37,55 @@ def main():
     test_list = prepare_training_params["test_scenes"]
 
 
-    # new_rate = float(prepare_training_params["framerate"])
+    new_rate = float(prepare_training_params["framerate"])
 
-    # print("Managing framerate")
-    # rate_manager = framerate_manager.FramerateManager(args[3],new_rate)
-    # for scene in scene_list:
-    #     print(scene)
-    #     rate_manager.change_rate(scene)
-    # print("DOne!")
+    print("Managing framerate")
+    rate_manager = framerate_manager.FramerateManager(args[3],new_rate)
+    for scene in scene_list:
+        print(scene)
+        rate_manager.change_rate(scene)
+    print("DOne!")
 
-    # print("sdd pixel to meter conversion")
+    print("sdd pixel to meter conversion")
 
-    # unit_manager = sdd_pixel2meter.Pixel2Meters(args[3],prepare_training_params["pixel2meters_sdd"])
-    # for scene in scene_list:
-    #     print(scene)
-    #     unit_manager.convert(scene)
-    # print("DOne!")
-
-
-    # print("Managing decimal number")
-    # nb_digits = int(prepare_training_params["number_digits"])
-    # digit_man = digit_manager.DigitManager(data_params_path,nb_digits)
-    # for scene in scene_list:
-    #     print(scene)
-    #     digit_man.change_digit_number(scene)
-    # print("DOne!")
+    unit_manager = sdd_pixel2meter.Pixel2Meters(args[3],prepare_training_params["pixel2meters_sdd"])
+    for scene in scene_list:
+        print(scene)
+        unit_manager.convert(scene)
+    print("DOne!")
 
 
-    # print("Normalizing scenes")
-    # center = int(prepare_training_params["center"])
-    # scaler = None
-    # if data["multiple_scalers"]:
-    #     print("-----------multiple scalers")
-    #     scaler = scene_scaler.SceneScaler(data_params_path,center)        
-    # else:
-    #     print("-----------unique scaler")
-    #     scaler = scene_scaler.SceneScalerMultiScene(data_params_path,center,scene_list)
+    print("Managing decimal number")
+    nb_digits = int(prepare_training_params["number_digits"])
+    digit_man = digit_manager.DigitManager(data_params_path,nb_digits)
+    for scene in scene_list:
+        print(scene)
+        digit_man.change_digit_number(scene)
+    print("DOne!")
+
+
+    print("Normalizing scenes")
+    center = int(prepare_training_params["center"])
+    scaler = None
+    if data["multiple_scalers"]:
+        print("-----------multiple scalers")
+        scaler = scene_scaler.SceneScaler(data_params_path,center)        
+    else:
+        print("-----------unique scaler")
+        scaler = scene_scaler.SceneScalerMultiScene(data_params_path,center,scene_list)
         
-    # for scene in scene_list:
-    #     print(scene)
-    #     scaler.min_max_scale(scene)
-    # print("DOne!")
+    for scene in scene_list:
+        print(scene)
+        scaler.min_max_scale(scene)
+    print("DOne!")
 
 
-    # img_size = int(prepare_training_params["img_size"])
-    # scaler = img_scaler.ImgScaler(data_params_path,img_size)  
+    img_size = int(prepare_training_params["img_size"])
+    scaler = img_scaler.ImgScaler(data_params_path,img_size)  
 
-    # for scene in scene_list:
-    #     print(scene)
-    #     scaler.scale(scene)
+    for scene in scene_list:
+        print(scene)
+        scaler.scale(scene)
 
     sampler = prepare_training_frames_hdf5.PrepareTrainingFramesHdf5(data_params_path,args[2])
     for scene in scene_list:
