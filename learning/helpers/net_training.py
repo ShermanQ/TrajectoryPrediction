@@ -6,6 +6,7 @@ import torch.nn as nn
 import numpy as np
 from joblib import load
 import helpers.helpers_training as helpers
+import os
 
 
 """
@@ -126,7 +127,8 @@ def evaluate(model, device, eval_loader,criterion, epoch, batch_size,scalers_pat
     if plot, display the different losses
     If exception during training, model is stored
 """
-def training_loop(n_epochs,batch_size,net,device,train_loader,eval_loader,criterion_train,criterion_eval,optimizer,scalers_path,multiple_scalers,model_type,plot = True,early_stopping = True,load_path = None,plot_every = 5):
+def training_loop(n_epochs,batch_size,net,device,train_loader,eval_loader,criterion_train,criterion_eval,optimizer,
+        scalers_path,multiple_scalers,model_type,plot = True,early_stopping = True,load_path = None,plot_every = 5,save_every = 1):
 
     losses = {
         "train":{
@@ -172,6 +174,9 @@ def training_loop(n_epochs,batch_size,net,device,train_loader,eval_loader,criter
             if plot and epoch % plot_every == 0:
                 plot_losses(losses,s,root = "./data/reports/")
 
+            if epoch % save_every == 0:
+                save_model(epoch,net,optimizer,losses)
+
             print(time.time()-s)
         
     except :
@@ -179,7 +184,7 @@ def training_loop(n_epochs,batch_size,net,device,train_loader,eval_loader,criter
         # save_model(epoch,net,optimizer,train_losses,eval_losses,batch_losses,save_path)
         pass
 
-    save_model(epoch,net,optimizer,losses)
+    save_model(epoch+1,net,optimizer,losses)
     if plot:
         plot_losses(losses,s,root = "./data/reports/")
      
@@ -213,7 +218,9 @@ def plot_losses(losses,idx,root = "./data/reports/"):
 """
 def save_model(epoch,net,optimizer,losses,save_root = "./learning/data/models/" ):
 
-    save_path = save_root + "model_{}.tar".format(time.time())
+    dirs = os.listdir(save_root)
+
+    save_path = save_root + "model_{}.tar".format(epoch)
 
 
     state = {
@@ -223,6 +230,9 @@ def save_model(epoch,net,optimizer,losses,save_root = "./learning/data/models/" 
         'losses': losses
         }
     torch.save(state, save_path)
+
+    for dir_ in dirs:
+        os.remove(save_root+dir_)
     
     print("model saved in {}".format(save_path))
 

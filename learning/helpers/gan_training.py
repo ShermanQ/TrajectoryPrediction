@@ -6,6 +6,7 @@ import torch.nn as nn
 import numpy as np
 from joblib import load
 import helpers.helpers_training as helpers
+import os 
 
 def train_sophie(
         generator,
@@ -196,7 +197,11 @@ def eval_sophie(
 
 def save_sophie(epoch,generator,discriminator,optimizer_gen,optimizer_disc,losses,save_root = "./learning/data/models/" ):
 
-    save_path = save_root + "sophie_{}.tar".format(time.time())
+    # save_path = save_root + "sophie_{}.tar".format(time.time())
+
+    dirs = os.listdir(save_root)
+
+    save_path = save_root + "sophie_{}.tar".format(epoch)
 
 
     state = {
@@ -208,12 +213,15 @@ def save_sophie(epoch,generator,discriminator,optimizer_gen,optimizer_disc,losse
         'losses': losses
         }
     torch.save(state, save_path)
+
+    for dir_ in dirs:
+        os.remove(save_root+dir_)
     
     print("model saved in {}".format(save_path))
 
 def sophie_training_loop(n_epochs,batch_size,generator,discriminator,optimizer_gen,optimizer_disc,device,
         train_loader,eval_loader,obs_length, criterion_gan,criterion_gen, 
-        pred_length, output_size,scalers_path,multiple_scalers,plot = True,load_path = None,plot_every = 5):
+        pred_length, output_size,scalers_path,multiple_scalers,plot = True,load_path = None,plot_every = 5,save_every = 5):
 
     
     losses = {
@@ -267,12 +275,14 @@ def sophie_training_loop(n_epochs,batch_size,generator,discriminator,optimizer_g
 
             if plot and epoch % plot_every == 0:
                 plot_sophie(losses,s,root = "./data/reports/")
+            if epoch % save_every == 0:
+                save_sophie(epoch,generator,discriminator,optimizer_gen,optimizer_disc,losses)
             print(time.time()-s)
         
     except :
         pass
 
-    save_sophie(epoch,generator,discriminator,optimizer_gen,optimizer_disc,losses)
+    save_sophie(epoch+1,generator,discriminator,optimizer_gen,optimizer_disc,losses)
     if plot:
         plot_sophie(losses,s,root = "./data/reports/")
 

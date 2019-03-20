@@ -119,13 +119,14 @@ def main():
     training.training_loop(training_param["n_epochs"],training_param["batch_size"],
         net,device,train_loader,eval_loader,criterion,criterion,optimizer, data["scalers"],
         data["multiple_scalers"],training_param["model_type"],
-        plot = training_param["plot"],early_stopping = True,load_path = training_param["load_path"],plot_every = training_param["plot_every"])
+        plot = training_param["plot"],early_stopping = True,load_path = training_param["load_path"],
+        plot_every = training_param["plot_every"], save_every = training_param["save_every"])
 
 
-    load_path = "./learning/data/models/model_1552260631.156045.tar"
-    checkpoint = torch.load(load_path)
-    net.load_state_dict(checkpoint['state_dict'])
-    net = net.to(device)
+    # load_path = "./learning/data/models/model_1552260631.156045.tar"
+    # checkpoint = torch.load(load_path)
+    # net.load_state_dict(checkpoint['state_dict'])
+    # net = net.to(device)
 
     
 
