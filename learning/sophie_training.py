@@ -15,7 +15,9 @@ import time
 
 from classes.datasets import Hdf5Dataset,CustomDataLoader
 from classes.sophie_gan import sophie,discriminatorLSTM,custom_mse
-import helpers.helpers_training as training
+# import helpers.helpers_training as training
+import helpers.gan_training as training
+
 import torchvision.models as models
 
 import json 

@@ -15,7 +15,9 @@ import time
 
 from classes.datasets import CustomDataset,Hdf5Dataset,CustomDataLoader
 from classes.rnn_mlp import RNN_MLP,custom_mse
-import helpers.helpers_training as training
+# import helpers.helpers_training as training
+import helpers.net_training as training
+
 import sys
 import json
 import matplotlib.pyplot as plt

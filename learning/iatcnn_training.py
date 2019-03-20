@@ -8,6 +8,7 @@ import torch.optim as optim
 
 from torch.utils.data.dataset import Dataset
 from torch.utils.data import DataLoader
+
 # from sklearn.model_selection import train_test_split
 
 import numpy as np
@@ -15,7 +16,9 @@ import time
 
 from classes.datasets import Hdf5Dataset,CustomDataLoader
 from classes.tcnn import IATCNN,nlloss
-import helpers.helpers_training as training
+# import helpers.helpers_training as training
+import helpers.net_training as training
+
 import sys
 import json
 # import matplotlib.pyplot as plt
