@@ -201,7 +201,7 @@ def save_sophie(epoch,generator,discriminator,optimizer_gen,optimizer_disc,losse
 
     dirs = os.listdir(save_root)
 
-    save_path = save_root + "sophie_{}.tar".format(epoch)
+    save_path = save_root + "sophie_{}_{}.tar".format(epoch,time.time())
 
 
     state = {
@@ -212,6 +212,13 @@ def save_sophie(epoch,generator,discriminator,optimizer_gen,optimizer_disc,losse
         'optimizer_d': optimizer_disc.state_dict(),  
         'losses': losses
         }
+
+
+    # state = {
+    #     'state_dict_d': discriminator.state_dict(),
+    #     'state_dict_g': generator.state_dict(), 
+        
+    #     }
     torch.save(state, save_path)
 
     for dir_ in dirs:

@@ -44,6 +44,9 @@ import json
         eval ADE
         eval FDE
 """
+# 1498287
+# 6 mo
+
 #python learning/iatcnn_training.py parameters/data.json parameters/iatcnn_training.json parameters/torch_extractors.json parameters/prepare_training.json
 def main():
           
@@ -117,7 +120,11 @@ def main():
         output_size = training_param["output_size"],
         max_neighbors = nb_neighbors_max + 1)
 
+    sum_ = 0
+    for parameter in net.parameters():
+        sum_ += torch.flatten(parameter).size()[0]
 
+    print(sum_)
 
     # load_path = "./learning/data/models/model_1552166089.4612148.tar"
     # checkpoint = torch.load(load_path)

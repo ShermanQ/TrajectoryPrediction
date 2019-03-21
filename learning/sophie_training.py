@@ -44,7 +44,10 @@ import sys
         eval ADE
         eval FDE
 """
-#
+# 14796980
+# 14716001
+# 80979
+# 59,2 Mo
 # python learning/sophie_training.py parameters/data.json parameters/sophie_training.json parameters/torch_extractors.json  parameters/prepare_training.json
 def main():
     args = sys.argv   
@@ -132,6 +135,17 @@ def main():
         seq_len = training_param["seq_length"]
     )
     
+    print(generator)
+    print(discriminator)
+
+    sum_ = 0
+    # for parameter in generator.parameters():
+    #     sum_ += torch.flatten(parameter).size()[0]
+
+    for parameter in generator.cnn.parameters():
+        sum_ += torch.flatten(parameter).size()[0]
+    print(sum_)
+
     generator.to(device)
     discriminator.to(device)
     

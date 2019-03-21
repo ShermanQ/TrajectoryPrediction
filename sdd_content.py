@@ -9,8 +9,11 @@ import pandas as pd
 # python sdd_content.py parameters/data.json parameters/prepare_training.json
 def main():
     args = sys.argv
-    data = json.load(open(args[1]))
-    prepare = json.load(open(args[2]))
+    # data = json.load(open(args[1]))
+    # prepare = json.load(open(args[2]))
+
+    data = json.load(open("parameters/data.json"))
+    prepare = json.load(open("parameters/prepare_training.json"))
 
     scene_list = prepare["selected_scenes"]
     scene_path = data["preprocessed_datasets"] +"{}.csv"
@@ -54,22 +57,16 @@ def main():
     stats = stats_scenes(scene_list,columns,scene_path,frames_temp)
 
     
-    table_types_nb = draw_table(indexes,columns,"nb",stats)
+    table_types_nb = draw_table(indexes,columns,"scene",stats)
+    
     save_table(table_types_nb,scene_list,reports_path.format("nb"))
     save_table(table_types_nb,standard_split,reports_path.format("nb_standard_split"))
 
     
 
-    table_types_max_frame = draw_table(indexes,columns,"max",stats)
+    table_types_max_frame = draw_table(indexes,columns,"frames",stats)
     save_table(table_types_max_frame,scene_list,reports_path.format("max"))
     save_table(table_types_max_frame,standard_split,reports_path.format("max_standard_split"))
-    
-   
-
-
-    table_types_prop = draw_table(indexes,columns,"prop",stats)
-    save_table(table_types_prop,scene_list,reports_path.format("prop"))
-    save_table(table_types_prop,standard_split,reports_path.format("prop_standard_split"))
     
 
 def save_table(table,ids,path):
@@ -78,12 +75,19 @@ def save_table(table,ids,path):
 
 def stats_scenes(scene_list,columns,scene_path,frames_temp):
     types = {}
+    
     for scene in scene_list:
 
-        types[scene] = {}
+        types[scene] = {"scene": {},"frames": {}}
+
+        seen_ids = []
+
+        
 
         for c in columns:
-            types[scene][c] = [0]
+            types[scene]["frames"][c] = [0]
+            types[scene]["scene"][c] = 0
+
         
 
         helpers.extract_frames(scene_path.format(scene),frames_temp,save = True)
@@ -95,23 +99,28 @@ def stats_scenes(scene_list,columns,scene_path,frames_temp):
 
                 for id_ in frame["ids"]:
                     type_ = frame["ids"][id_]["type"]
-                    types[scene][type_][-1] += 1
-                    types[scene]["total"][-1] += 1
+                    types[scene]["frames"][type_][-1] += 1
+                    types[scene]["frames"]["total"][-1] += 1
 
-                for key in types[scene]:
-                    types[scene][key].append(0)
-
-            report_types = {"max":{}, "nb":{}, "prop":{}}
-            for key in types[scene]:
-                report_types["max"][key] = np.max(types[scene][key])
-                report_types["nb"][key] = np.sum(types[scene][key])
-                report_types["prop"][key] = np.sum(types[scene][key])
-
-            for key in columns:
-                report_types["prop"][key] = int(100*report_types["prop"][key]/float(report_types["prop"]["total"]))
+                    if id_ not in seen_ids:
+                        types[scene]["scene"][type_] += 1
+                        types[scene]["scene"]["total"] += 1
+                        seen_ids.append(id_)
 
 
-            types[scene] = report_types
+                for key in types[scene]["frames"]:
+                    types[scene]["frames"][key].append(0)
+
+                    
+
+            report_types = {"max":{}}
+            for key in types[scene]["frames"]:
+                # report_types["max"][key] = np.max(types[scene]["frames"][key])
+                # report_types["max"][key] = np.max(types[scene]["frames"][key])
+
+                types[scene]["frames"][key ] = np.max(types[scene]["frames"][key])
+
+            # types[scene]["frames"] = report_types
     return types
 
 

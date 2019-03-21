@@ -43,7 +43,8 @@ import matplotlib.pyplot as plt
         eval ADE
         eval FDE
 """
-
+# 10332
+# 42.7 ko
 #python learning/rnn_mlp_training.py parameters/data.json parameters/rnn_mlp_training.json parameters/torch_extractors.json parameters/prepare_training.json
 def main():
           
@@ -108,6 +109,12 @@ def main():
         mlp_layers = training_param["mlp_layers"],
         output_size = training_param["output_size"]
     )
+
+    sum_ = 0
+    for parameter in net.parameters():
+        sum_ += torch.flatten(parameter).size()[0]
+
+    print(sum_)
 
     print(net)
     net = net.to(device)

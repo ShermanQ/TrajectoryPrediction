@@ -82,11 +82,16 @@ def evaluate(model, device, eval_loader,criterion, epoch, batch_size,scalers_pat
         inputs, labels, ids = data
         inputs, labels = inputs.to(device), labels.to(device)
         
+        s = time.time()
         outputs = model(inputs)
+        torch.cuda.synchronize()
+        print("a{}".format(time.time()-s))
         # output = output.view(labels.size())
 
 ####################
         mask = helpers.mask_loss(labels.detach().cpu().numpy())
+        print(labels.size())
+        print(labels.view(-1).size()[0])
         outputs = outputs.contiguous().view([outputs.size()[0] * outputs.size()[1]] + list(outputs.size()[2:]))
 
         labels = labels.contiguous().view([labels.size()[0] * labels.size()[1]] + list(labels.size()[2:]))
@@ -159,25 +164,25 @@ def training_loop(n_epochs,batch_size,net,device,train_loader,eval_loader,criter
     
     try:
         for epoch in range(start_epoch,n_epochs):
-            train_loss,_ = train(net, device, train_loader,criterion_train, optimizer, epoch,batch_size)
+            # train_loss,_ = train(net, device, train_loader,criterion_train, optimizer, epoch,batch_size)
            
             
             eval_loss,fde,ade = evaluate(net, device, eval_loader,criterion_eval, epoch, batch_size,scalers_path,multiple_scalers,model_type)
             
 
-            losses["train"]["loss"].append(train_loss)
-            losses["eval"]["loss"].append(eval_loss)
-            losses["eval"]["ade"].append(ade)
-            losses["eval"]["fde"].append(fde)
+            # losses["train"]["loss"].append(train_loss)
+            # losses["eval"]["loss"].append(eval_loss)
+            # losses["eval"]["ade"].append(ade)
+            # losses["eval"]["fde"].append(fde)
 
 
-            if plot and epoch % plot_every == 0:
-                plot_losses(losses,s,root = "./data/reports/")
+            # if plot and epoch % plot_every == 0:
+            #     plot_losses(losses,s,root = "./data/reports/")
 
-            if epoch % save_every == 0:
-                save_model(epoch,net,optimizer,losses)
+            # if epoch % save_every == 0:
+            #     save_model(epoch,net,optimizer,losses)
 
-            print(time.time()-s)
+            # print(time.time()-s)
         
     except :
         # logging.error(traceback.format_exc())
@@ -220,7 +225,7 @@ def save_model(epoch,net,optimizer,losses,save_root = "./learning/data/models/" 
 
     dirs = os.listdir(save_root)
 
-    save_path = save_root + "model_{}.tar".format(epoch)
+    save_path = save_root + "model_{}_{}.tar".format(epoch,time.time())
 
 
     state = {
@@ -229,6 +234,9 @@ def save_model(epoch,net,optimizer,losses,save_root = "./learning/data/models/" 
         'optimizer': optimizer.state_dict(),             
         'losses': losses
         }
+    # state = {
+    #     'state_dict': net.state_dict(),
+    #     }
     torch.save(state, save_path)
 
     for dir_ in dirs:
