@@ -109,7 +109,7 @@ class TorchExtractor():
                         # test
 
                 samples = dest_file.create_dataset("samples_{}".format(name),shape=(0,max_neighboors,self.seq_len,2),maxshape = (None,max_neighboors,self.seq_len,2),dtype='float32')
-                images = dest_file.create_dataset("images_{}".format(name),shape=(0,),maxshape = (None,),dtype="S10")
+                images = dest_file.create_dataset("images_{}".format(name),shape=(0,),maxshape = (None,),dtype="S20")
 
                 for key in scene_list:
                     

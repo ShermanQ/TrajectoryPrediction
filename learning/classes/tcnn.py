@@ -14,7 +14,7 @@ from torch.nn.utils import weight_norm
 import collections
 import math
 import numpy as np 
-
+import time 
 
 def nlloss(outputs,targets,eps = 1e-15):
  
@@ -90,13 +90,16 @@ class TemporalBlock(nn.Module):
         self.net = collections.OrderedDict()
         self.conv_idx = []
         for i in range(n_layers):
-            dilation = (2**i,2**i)
+            dilation = (2**i,2**0)
+            # dilation = (i+1,2**0)
+
             
             # padding = (i+1) * (kernel_size-1)
             padding_s = int(   (  (kernel_size[0]-1) * dilation[0]  )// 2  )#always divisible by 2 except for i = 0
             if i == 0:
                 padding_s = padding_s + 1
             padding_t = (kernel_size[1]-1) * dilation[1]  
+            
             padding = (padding_s,padding_t)
 
             if i == 0:
@@ -122,7 +125,9 @@ class TemporalBlock(nn.Module):
             self.net[index].weight.data.normal_(0, 0.01)
 
     def forward(self, x):
+        # print("a")
         x = self.net(x)
+        # print("b")
         return x
 
 class IATCNN(nn.Module):
@@ -154,21 +159,41 @@ class IATCNN(nn.Module):
     def forward(self,x):
         # torch.backends.cudnn.benchmark = True
         x = x.permute(0,3,1,2)
+        torch.cuda.synchronize()
+        s = time.time()
         x = self.net(x)
+
+        torch.cuda.synchronize()
+        print("dilated convs {}".format(time.time()-s))
+        s = time.time()
         # torch.backends.cudnn.benchmark = False
         x = x[:,:,:,-1].permute(0,2,1)
 
         x = self.fc_layer(x)
         x = f.relu(x)
+
+        torch.cuda.synchronize()
+        print("fc layer {}".format(time.time()-s))
+        s = time.time()
         b,a,_ = x.size()
         x = x.view(b,a,self.output_length,self.time_dist_input_size)
         x = self.time_distributed(x)
+
+        torch.cuda.synchronize()
+        print("time distributed {}".format(time.time()-s))
+        s = time.time()
 
         mux_muy = x[:,:,:,:2]
         sx_sy = torch.exp(x[:,:,:,2:4])
         corr = torch.tanh(x[:,:,:,4]).unsqueeze(3)
 
         x = torch.cat([mux_muy,sx_sy,corr], dim = 3)
+
+        torch.cuda.synchronize()
+        print("params separation {}".format(time.time()-s))
+        
+
+        
 
         
         return x

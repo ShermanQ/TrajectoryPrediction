@@ -93,8 +93,8 @@ def main():
         use_neighbors_sample = False
         )
 
-    print("n_train_samples: {}".format(train_dataset.get_len()))
-    print("n_eval_samples: {}".format(eval_dataset.get_len()))
+    # print("n_train_samples: {}".format(train_dataset.get_len()))
+    # print("n_eval_samples: {}".format(eval_dataset.get_len()))
 
     train_loader = CustomDataLoader( batch_size = training_param["batch_size"],shuffle = True,drop_last = True,dataset = train_dataset)
     eval_loader = CustomDataLoader( batch_size = training_param["batch_size"],shuffle = False,drop_last = True,dataset = eval_dataset)
@@ -110,11 +110,11 @@ def main():
         output_size = training_param["output_size"]
     )
 
-    sum_ = 0
-    for parameter in net.parameters():
-        sum_ += torch.flatten(parameter).size()[0]
+    # sum_ = 0
+    # for parameter in net.parameters():
+    #     sum_ += torch.flatten(parameter).size()[0]
 
-    print(sum_)
+    # print(sum_)
 
     print(net)
     net = net.to(device)

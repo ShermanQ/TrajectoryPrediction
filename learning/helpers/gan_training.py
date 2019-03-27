@@ -22,7 +22,7 @@ def train_sophie(
         obs_length,
         pred_length,
         output_size,
-        print_every = 100):
+        print_every = 10):
     # model.train()
    
     losses = {
@@ -120,7 +120,8 @@ def eval_sophie(
         output_size,
         scalers_path,
         multiple_scalers,
-        print_every = 100):
+        print_every = 100,
+        nb_plots = 16):
     # model.train()
    
     # generator.eval()
@@ -136,9 +137,18 @@ def eval_sophie(
         }
         # generator.to(device)
         # discriminator.to(device)
+        nb_batches = eval_loader.nb_batches
+        kept_batches_id = np.arange(nb_batches)
+        np.random.shuffle(kept_batches_id)
+
+        kept_batches_id = kept_batches_id[:nb_plots]
+
+        kept_samples = []
 
         batch_idx = 0
         for batch_idx, data in enumerate(eval_loader):
+            keep_batch = (batch_idx in kept_batches_id )
+
             inputs, labels,images,ids = data
             inputs,labels,images = inputs.to(device), labels.to(device),images.to(device)
 
@@ -170,6 +180,17 @@ def eval_sophie(
             
             mse_loss = criterion_gen(traj_pred_fake,traj_pred_real)
 
+            if keep_batch:
+                kept_sample_id = np.random.randint(0,32)
+
+
+
+                kept_samples.append((
+                    inputs[kept_sample_id].detach().cpu().numpy(),
+                    traj_pred_real[kept_sample_id].unsqueeze(0).detach().cpu().numpy(),
+                    traj_pred_fake[kept_sample_id].unsqueeze(0).detach().cpu().numpy()
+                    ))
+
             ###################################
             inv_labels,inv_outputs = helpers.revert_scaling(ids,traj_pred_real,traj_pred_fake,scalers_path,multiple_scalers)
             inv_outputs = inv_outputs.view(inv_labels.size())
@@ -182,6 +203,8 @@ def eval_sophie(
             losses["real"] += real_loss.item()
             losses["fake"] += fake_loss.item()
             losses["gen"] += gen_loss.item()
+    
+        helpers.plot_samples(kept_samples,epoch)
 
 
 
@@ -281,24 +304,24 @@ def sophie_training_loop(n_epochs,batch_size,generator,discriminator,optimizer_g
                 losses["eval"][key].append(test_losses[key])
 
             if plot and epoch % plot_every == 0:
-                plot_sophie(losses,s,root = "./data/reports/")
+                plot_sophie(losses,s,root = "./data/reports/losses/")
             if epoch % save_every == 0:
                 save_sophie(epoch,generator,discriminator,optimizer_gen,optimizer_disc,losses)
             print(time.time()-s)
         
-    except :
-        pass
+    except Exception as e: 
+        print(e)
 
     save_sophie(epoch+1,generator,discriminator,optimizer_gen,optimizer_disc,losses)
     if plot:
-        plot_sophie(losses,s,root = "./data/reports/")
+        plot_sophie(losses,s,root = "./data/reports/losses/")
 
         # plt.show()
 
 
     return losses
 
-def plot_sophie(losses,idx,root = "./data/reports/"):
+def plot_sophie(losses,idx,root = "./data/reports/samples/"):
     plt.plot(losses["eval"]["ade"],label = "ade")
     plt.plot(losses["eval"]["fde"],label = "fde")
     plt.legend()

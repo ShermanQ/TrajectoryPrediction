@@ -53,7 +53,8 @@ def main():
     # set pytorch
     # torch.manual_seed(10)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")    
-    torch.backends.cudnn.benchmark = True
+    # device = torch.device("cpu")
+    # torch.backends.cudnn.benchmark = True
     # device = "cpu"
     print(device)
     print(torch.cuda.is_available())
@@ -101,8 +102,8 @@ def main():
         use_neighbors_sample = True
         )
 
-    print("n_train_samples: {}".format(train_dataset.get_len()))
-    print("n_eval_samples: {}".format(eval_dataset.get_len()))
+    # print("n_train_samples: {}".format(train_dataset.get_len()))
+    # print("n_eval_samples: {}".format(eval_dataset.get_len()))
 
 
     train_loader = CustomDataLoader( batch_size = training_param["batch_size"],shuffle = True,drop_last = True,dataset = train_dataset)
@@ -118,13 +119,13 @@ def main():
         input_length = training_param["obs_length"],
         output_length = training_param["pred_length"],
         output_size = training_param["output_size"],
-        max_neighbors = nb_neighbors_max + 1)
+        max_neighbors = nb_neighbors_max)
 
-    sum_ = 0
-    for parameter in net.parameters():
-        sum_ += torch.flatten(parameter).size()[0]
+    # sum_ = 0
+    # for parameter in net.parameters():
+    #     sum_ += torch.flatten(parameter).size()[0]
 
-    print(sum_)
+    # print(sum_)
 
     # load_path = "./learning/data/models/model_1552166089.4612148.tar"
     # checkpoint = torch.load(load_path)

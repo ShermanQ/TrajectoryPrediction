@@ -16,17 +16,28 @@ import os
     THen averaged batch losses are averaged
     over the number of batches
 """
-def train(model, device, train_loader,criterion, optimizer, epoch,batch_size,print_every = 100):
+def train(model, device, train_loader,criterion, optimizer, epoch,batch_size,print_every = 10):
     model.train()
     epoch_loss = 0.
     batches_loss = []
 
     start_time = time.time()
     for batch_idx, data in enumerate(train_loader):
+        s = time.time()
         inputs, labels, ids = data
         inputs, labels = inputs.to(device), labels.to(device)
+
+        torch.cuda.synchronize()
+        print("data loading {}".format(time.time()-s))
+        s = time.time()
+
+        
         optimizer.zero_grad()
         outputs = model(inputs)
+
+        torch.cuda.synchronize()
+        print("overall model {}".format(time.time()-s))
+        s = time.time()
 # ####################
         mask = helpers.mask_loss(labels.detach().cpu().numpy())
         outputs = outputs.contiguous().view([outputs.size()[0] * outputs.size()[1]] + list(outputs.size()[2:]))
@@ -35,17 +46,32 @@ def train(model, device, train_loader,criterion, optimizer, epoch,batch_size,pri
 
         outputs = outputs[mask]
         labels = labels[mask]
+
+        torch.cuda.synchronize()
+        print("masking {}".format(time.time()-s))
+        s = time.time()
 # ###########################
         loss = criterion(outputs, labels)
+
+        torch.cuda.synchronize()
+        print("loss {}".format(time.time()-s))
+        s = time.time()
+
         loss.backward()
+
+        torch.cuda.synchronize()
+        print("backward {}".format(time.time()-s))
+        
+        s = time.time()
         optimizer.step()
 
         epoch_loss += loss.item()
         batches_loss.append(loss.item())
 
         if batch_idx % print_every == 0:
-            # print(batch_idx,loss.item(),time.time()-start_time)  
-            print(batch_idx,time.time()-start_time)  
+            print(batch_idx,loss.item(),time.time()-start_time)  
+            # print(batch_idx,time.time()-start_time)  
+            # print(time.time()-start_time)
             
     # epoch_loss /= float(len(train_loader))   
     epoch_loss /= float(train_loader.nb_batches)        
@@ -69,7 +95,7 @@ def train(model, device, train_loader,criterion, optimizer, epoch,batch_size,pri
     model: 0 rnn_mlp
            1 iatcnn
 """
-def evaluate(model, device, eval_loader,criterion, epoch, batch_size,scalers_path,multiple_scalers,model_type ):
+def evaluate(model, device, eval_loader,criterion, epoch, batch_size,scalers_path,multiple_scalers,model_type,nb_plots = 16 ):
     model.eval()
     eval_loss = 0.
     fde = 0.
@@ -78,26 +104,60 @@ def evaluate(model, device, eval_loader,criterion, epoch, batch_size,scalers_pat
     nb_sample = eval_loader_len*batch_size
     
     start_time = time.time()
-    for data in eval_loader:
+
+
+    nb_batches = eval_loader.nb_batches
+    kept_batches_id = np.arange(nb_batches)
+    np.random.shuffle(kept_batches_id)
+
+    kept_batches_id = kept_batches_id[:nb_plots]
+
+    kept_samples = []
+    for i,data in enumerate(eval_loader):
+        keep_batch = (i in kept_batches_id )
+
+
         inputs, labels, ids = data
         inputs, labels = inputs.to(device), labels.to(device)
         
         s = time.time()
         outputs = model(inputs)
-        torch.cuda.synchronize()
-        print("a{}".format(time.time()-s))
-        # output = output.view(labels.size())
+        
+        if keep_batch:
+            kept_sample_id = np.random.randint(0,labels.size()[0])
+
+            l = labels[kept_sample_id]
+            o = outputs[kept_sample_id,:,:,:2]
+            ins = inputs[kept_sample_id]
+            if model_type == 0:
+                ins = inputs[kept_sample_id].unsqueeze(0)
+            elif model_type == 1:
+                kept_mask = helpers.mask_loss(l.unsqueeze(0).detach().cpu().numpy())
+
+                l = l[kept_mask]
+                o = o[kept_mask]
+
+
+
+            kept_samples.append((
+                ins.detach().cpu().numpy(),
+                l.detach().cpu().numpy(),
+                o.detach().cpu().numpy()
+                ))
+        
 
 ####################
         mask = helpers.mask_loss(labels.detach().cpu().numpy())
-        print(labels.size())
-        print(labels.view(-1).size()[0])
         outputs = outputs.contiguous().view([outputs.size()[0] * outputs.size()[1]] + list(outputs.size()[2:]))
 
         labels = labels.contiguous().view([labels.size()[0] * labels.size()[1]] + list(labels.size()[2:]))
 
         outputs = outputs[mask]
         labels = labels[mask]
+###########################
+        
+
+
 ###########################
         loss = criterion(outputs, labels)
         inv_labels,inv_outputs = None,None
@@ -114,6 +174,9 @@ def evaluate(model, device, eval_loader,criterion, epoch, batch_size,scalers_pat
       
         eval_loss += loss.item()
 
+    # print(len(kept_samples))
+    helpers.plot_samples(kept_samples,epoch)
+
             
     eval_loss /= eval_loader_len 
     ade /= eval_loader_len      
@@ -123,6 +186,10 @@ def evaluate(model, device, eval_loader,criterion, epoch, batch_size,scalers_pat
 
 
     return eval_loss,fde,ade
+
+
+
+
 
 """
     Training loop
@@ -162,41 +229,40 @@ def training_loop(n_epochs,batch_size,net,device,train_loader,eval_loader,criter
 
     s = time.time()
     
-    try:
-        for epoch in range(start_epoch,n_epochs):
-            # train_loss,_ = train(net, device, train_loader,criterion_train, optimizer, epoch,batch_size)
-           
-            
-            eval_loss,fde,ade = evaluate(net, device, eval_loader,criterion_eval, epoch, batch_size,scalers_path,multiple_scalers,model_type)
-            
-
-            # losses["train"]["loss"].append(train_loss)
-            # losses["eval"]["loss"].append(eval_loss)
-            # losses["eval"]["ade"].append(ade)
-            # losses["eval"]["fde"].append(fde)
-
-
-            # if plot and epoch % plot_every == 0:
-            #     plot_losses(losses,s,root = "./data/reports/")
-
-            # if epoch % save_every == 0:
-            #     save_model(epoch,net,optimizer,losses)
-
-            # print(time.time()-s)
+    # try:
+    for epoch in range(start_epoch,n_epochs):
+        train_loss,_ = train(net, device, train_loader,criterion_train, optimizer, epoch,batch_size)
         
-    except :
-        # logging.error(traceback.format_exc())
-        # save_model(epoch,net,optimizer,train_losses,eval_losses,batch_losses,save_path)
-        pass
+        
+        eval_loss,fde,ade = evaluate(net, device, eval_loader,criterion_eval, epoch, batch_size,scalers_path,multiple_scalers,model_type)
+            
+
+        losses["train"]["loss"].append(train_loss)
+        losses["eval"]["loss"].append(eval_loss)
+        losses["eval"]["ade"].append(ade)
+        losses["eval"]["fde"].append(fde)
+
+
+        if plot and epoch % plot_every == 0:
+            plot_losses(losses,s,root = "./data/reports/losses/")
+
+        if epoch % save_every == 0:
+            save_model(epoch,net,optimizer,losses)
+
+        print(time.time()-s)
+        
+    
+    # except Exception as e: 
+    #     print(e)
 
     save_model(epoch+1,net,optimizer,losses)
     if plot:
-        plot_losses(losses,s,root = "./data/reports/")
+        plot_losses(losses,s,root = "./data/reports/losses/")
      
     return losses
 
 
-def plot_losses(losses,idx,root = "./data/reports/"):
+def plot_losses(losses,idx,root = "./data/reports/losses/"):
     plt.plot(losses["train"]["loss"],label = "train_loss")
     plt.plot(losses["eval"]["loss"],label = "eval_loss")
     plt.legend()

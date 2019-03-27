@@ -100,8 +100,8 @@ def main():
         use_neighbors_sample = True
         )
 
-    print("n_train_samples: {}".format(train_dataset.get_len()))
-    print("n_eval_samples: {}".format(eval_dataset.get_len()))
+    # print("n_train_samples: {}".format(train_dataset.get_len()))
+    # print("n_eval_samples: {}".format(eval_dataset.get_len()))
 
     train_loader = CustomDataLoader( batch_size = training_param["batch_size"],shuffle = True,drop_last = True,dataset = train_dataset)
     eval_loader = CustomDataLoader( batch_size = training_param["batch_size"],shuffle = False,drop_last = True,dataset = eval_dataset)
