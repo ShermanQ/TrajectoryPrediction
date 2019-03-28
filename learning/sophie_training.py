@@ -138,13 +138,13 @@ def main():
     print(generator)
     print(discriminator)
 
-    sum_ = 0
-    # for parameter in generator.parameters():
-    #     sum_ += torch.flatten(parameter).size()[0]
+    # sum_ = 0
+    # # for parameter in generator.parameters():
+    # #     sum_ += torch.flatten(parameter).size()[0]
 
-    for parameter in generator.cnn.parameters():
-        sum_ += torch.flatten(parameter).size()[0]
-    print(sum_)
+    # for parameter in generator.cnn.parameters():
+    #     sum_ += torch.flatten(parameter).size()[0]
+    # print(sum_)
 
     generator.to(device)
     discriminator.to(device)
