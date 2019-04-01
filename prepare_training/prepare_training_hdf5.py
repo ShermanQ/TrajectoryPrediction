@@ -17,7 +17,7 @@ import h5py
     Do that for every trajectory
 """
 class PrepareTrainingHdf5():
-    def __init__(self,data,param):
+    def __init__(self,data,param,toy):
         data = json.load(open(data))
         param = json.load(open(param))
         self.frames_temp = data["temp"] + "frames.txt"
@@ -25,7 +25,11 @@ class PrepareTrainingHdf5():
 
 
         self.original_file = data["preprocessed_datasets"] + "{}.csv"
-        self.hdf5_dest = data["hdf5_file"]
+        
+        if toy:
+            self.hdf5_dest = data["hdf5_toy"]
+        else:
+            self.hdf5_dest = data["hdf5_file"]
 
                  
         with h5py.File(self.hdf5_dest,"a") as f: 

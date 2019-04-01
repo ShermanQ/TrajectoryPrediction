@@ -28,7 +28,7 @@ def train(model, device, train_loader,criterion, optimizer, epoch,batch_size,pri
         inputs, labels = inputs.to(device), labels.to(device)
 
         torch.cuda.synchronize()
-        print("data loading {}".format(time.time()-s))
+        # print("data loading {}".format(time.time()-s))
         s = time.time()
 
         
@@ -36,7 +36,7 @@ def train(model, device, train_loader,criterion, optimizer, epoch,batch_size,pri
         outputs = model(inputs)
 
         torch.cuda.synchronize()
-        print("overall model {}".format(time.time()-s))
+        # print("overall model {}".format(time.time()-s))
         s = time.time()
 # ####################
         mask = helpers.mask_loss(labels.detach().cpu().numpy())
@@ -48,19 +48,19 @@ def train(model, device, train_loader,criterion, optimizer, epoch,batch_size,pri
         labels = labels[mask]
 
         torch.cuda.synchronize()
-        print("masking {}".format(time.time()-s))
+        # print("masking {}".format(time.time()-s))
         s = time.time()
 # ###########################
         loss = criterion(outputs, labels)
 
         torch.cuda.synchronize()
-        print("loss {}".format(time.time()-s))
+        # print("loss {}".format(time.time()-s))
         s = time.time()
 
         loss.backward()
 
         torch.cuda.synchronize()
-        print("backward {}".format(time.time()-s))
+        # print("backward {}".format(time.time()-s))
         
         s = time.time()
         optimizer.step()

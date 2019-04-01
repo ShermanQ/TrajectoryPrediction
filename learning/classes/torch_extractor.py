@@ -31,14 +31,27 @@ class TorchExtractor():
         self.new_padding = torch_params["new_padding"]
         self.old_padding = torch_params["old_padding"]
 
-        self.test_scenes = list(prepare_params["test_scenes"])
-        self.train_scenes = list(prepare_params["train_scenes"])
+        
 
-        self.original_hdf5 = data["hdf5_file"]
-        self.split_hdf5 = torch_params["split_hdf5"]
+
+        prep_toy = prepare_params["toy"]
+
+        if prep_toy:
+            self.original_hdf5 = data["hdf5_toy"]
+            self.split_hdf5 = torch_params["toy_hdf5"]
+            self.max_neighbor_path = torch_params["toy_nb_neighboors_path"]
+            self.test_scenes = list(prepare_params["toy_test_scenes"])
+            self.train_scenes = list(prepare_params["toy_train_scenes"])
+        else:
+            self.original_hdf5 = data["hdf5_file"]
+            self.split_hdf5 = torch_params["split_hdf5"]
+            self.max_neighbor_path = torch_params["nb_neighboors_path"]
+            self.test_scenes = list(prepare_params["test_scenes"])
+            self.train_scenes = list(prepare_params["train_scenes"])
+
         self.seq_len = prepare_params["t_obs"] + prepare_params["t_pred"]
         self.eval_prop = prepare_params["eval_prop"]
-        self.max_neighbor_path = torch_params["nb_neighboors_path"]
+        
 
 
 

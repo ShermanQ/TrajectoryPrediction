@@ -1,6 +1,10 @@
 {
     "nb_neighboors_path": "./learning/data/neighbors.json",
     "split_hdf5":"./learning/data/data.hdf5",
+    "toy_hdf5":"./learning/data/toy.hdf5",
+    "toy_nb_neighboors_path": "./learning/data/toy_neighbors.json",
+
+
     "stopped_threshold" : 0.001,
     "stopped_prop" : 1.0,
     "new_padding":0.0,

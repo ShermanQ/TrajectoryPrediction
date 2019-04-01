@@ -44,7 +44,7 @@ import matplotlib.pyplot as plt
         eval FDE
 """
 # 10332
-# 42.7 ko
+# 42.7 k
 #python learning/rnn_mlp_training.py parameters/data.json parameters/rnn_mlp_training.json parameters/torch_extractors.json parameters/prepare_training.json
 def main():
           
@@ -66,11 +66,24 @@ def main():
     prepare_param = json.load(open("parameters/prepare_training.json"))
 
 
+    toy = prepare_param["toy"]
+
+    data_file = torch_param["split_hdf5"]
+    train_scenes = prepare_param["train_scenes"]
+    test_scenes = prepare_param["test_scenes"]
+
+
+    if toy:
+        print("toy dataset")
+        data_file = torch_param["toy_hdf5"]
+        train_scenes = prepare_param["toy_train_scenes"]
+        test_scenes = prepare_param["toy_test_scenes"] 
+
 
     train_dataset = Hdf5Dataset(
         images_path = data["prepared_images"],
-        hdf5_file= torch_param["split_hdf5"],
-        scene_list= prepare_param["train_scenes"],
+        hdf5_file= data_file,
+        scene_list= train_scenes,
         t_obs=prepare_param["t_obs"],
         t_pred=prepare_param["t_pred"],
         set_type = "train",
@@ -82,8 +95,8 @@ def main():
 
     eval_dataset = Hdf5Dataset(
         images_path = data["prepared_images"],
-        hdf5_file= torch_param["split_hdf5"],
-        scene_list= prepare_param["train_scenes"],
+        hdf5_file= data_file,
+        scene_list= train_scenes,
         t_obs=prepare_param["t_obs"],
         t_pred=prepare_param["t_pred"],
         set_type = "eval",

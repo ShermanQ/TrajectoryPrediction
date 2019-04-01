@@ -39,10 +39,18 @@ def train_sophie(
     }
 
     batch_idx = 0
+    # torch.cuda.synchronize
     start_time = time.time()
     for batch_idx, data in enumerate(train_loader):
+
+        # torch.cuda.synchronize
+        s = time.time()
         inputs, labels,images,ids = data
         inputs,labels,images = inputs.to(device), labels.to(device),images.to(device)
+
+        # torch.cuda.synchronize
+        print("data_loading {}".format(time.time()-s))
+        s = time.time()
 
         # train discriminator
         optimizer_disc.zero_grad()
@@ -58,9 +66,17 @@ def train_sophie(
         real_loss = criterion_gan(disc_class,real_labels)
         real_loss.backward()
 
+        # torch.cuda.synchronize
+        print("disc real {}".format(time.time()-s))
+        s = time.time()
+
         #### generated batch
         z = generator.gaussian.sample((batch_size,1,)).to(device)
         traj_pred_fake = generator(inputs,images,z)
+
+        print("gen {}".format(time.time()-s))
+        s = time.time()
+
 
         fake_traj = torch.cat([traj_obs,traj_pred_fake], dim = 1)
         fake_labels = torch.zeros(batch_size).to(device)
@@ -69,6 +85,10 @@ def train_sophie(
         fake_loss = criterion_gan(disc_class,fake_labels)
         fake_loss.backward()
         optimizer_disc.step()
+
+        # torch.cuda.synchronize
+        print("disc fake {}".format(time.time()-s))
+        s = time.time()
 
         #################
         # train generator        
@@ -93,7 +113,9 @@ def train_sophie(
         batch_losses["fake"].append(fake_loss.item())
         batch_losses["gen"].append(gen_loss_gan.item())
 
-
+        # torch.cuda.synchronize
+        print("disc gen {}".format(time.time()-s))
+        s = time.time()
 
         if batch_idx % print_every == 0:
             print(batch_idx,time.time()-start_time)   
@@ -204,7 +226,7 @@ def eval_sophie(
             losses["fake"] += fake_loss.item()
             losses["gen"] += gen_loss.item()
     
-        helpers.plot_samples(kept_samples,epoch)
+        helpers.plot_samples(kept_samples,epoch,n_columns = 1,n_rows = 1)
 
 
 
@@ -289,28 +311,28 @@ def sophie_training_loop(n_epochs,batch_size,generator,discriminator,optimizer_g
 
     s = time.time()
     
-    try:
-        for epoch in range(start_epoch,n_epochs):
-            train_losses,_ = train_sophie(generator,discriminator,device,train_loader,criterion_gan,criterion_gen, 
-            optimizer_gen, optimizer_disc,epoch,batch_size,obs_length,pred_length,output_size)
+    # try:
+    for epoch in range(start_epoch,n_epochs):
+        train_losses,_ = train_sophie(generator,discriminator,device,train_loader,criterion_gan,criterion_gen, 
+        optimizer_gen, optimizer_disc,epoch,batch_size,obs_length,pred_length,output_size)
 
-            print(train_losses)
-            for key in train_losses:
+        print(train_losses)
+        for key in train_losses:
 
-                losses["train"][key].append(train_losses[key])
+            losses["train"][key].append(train_losses[key])
 
-            test_losses = eval_sophie(generator,discriminator,device,eval_loader,criterion_gan,criterion_gen,epoch,batch_size,obs_length,pred_length,output_size,scalers_path,multiple_scalers)
-            for key in test_losses:
-                losses["eval"][key].append(test_losses[key])
+        test_losses = eval_sophie(generator,discriminator,device,eval_loader,criterion_gan,criterion_gen,epoch,batch_size,obs_length,pred_length,output_size,scalers_path,multiple_scalers)
+        for key in test_losses:
+            losses["eval"][key].append(test_losses[key])
 
-            if plot and epoch % plot_every == 0:
-                plot_sophie(losses,s,root = "./data/reports/losses/")
-            if epoch % save_every == 0:
-                save_sophie(epoch,generator,discriminator,optimizer_gen,optimizer_disc,losses)
-            print(time.time()-s)
+        if plot and epoch % plot_every == 0:
+            plot_sophie(losses,s,root = "./data/reports/losses/")
+        if epoch % save_every == 0:
+            save_sophie(epoch,generator,discriminator,optimizer_gen,optimizer_disc,losses)
+        print(time.time()-s)
         
-    except Exception as e: 
-        print(e)
+    # except Exception as e: 
+    #     print(e)
 
     save_sophie(epoch+1,generator,discriminator,optimizer_gen,optimizer_disc,losses)
     if plot:

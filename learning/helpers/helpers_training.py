@@ -142,7 +142,7 @@ def plot_samples(kept_samples,epoch,n_columns = 2,n_rows = 2,root = "./data/repo
     ctr = 0
 
     for plot in range(n_plots):
-        fig,axs = plt.subplots(n_rows,n_columns,sharex=False,sharey=False)
+        fig,axs = plt.subplots(n_rows,n_columns,sharex=False,sharey=False,squeeze = False)
 
         labels = ["gt","pred"]
 
@@ -167,7 +167,8 @@ def plot_samples(kept_samples,epoch,n_columns = 2,n_rows = 2,root = "./data/repo
                         axs[r][c].scatter(x[0],y[0],marker = ",",color = color)
                         axs[r][c].scatter(x[-1],y[-1],marker = "o",color = color)
 
-                        axs[r][c].legend()
+                        if j == 0:
+                            axs[r][c].legend()
 
                         colors.append(color)
                         last_points.append([x[-1],y[-1]])
@@ -197,7 +198,8 @@ def plot_samples(kept_samples,epoch,n_columns = 2,n_rows = 2,root = "./data/repo
                         # axs[r][c].set_ylim(0,1)
                         
                         axs[r][c].scatter(x,y,label = labels[1]+str(j),marker = "x",color = color)
-                        axs[r][c].legend()
+                        if j == 0:
+                            axs[r][c].legend()
                 ctr += 1
         plt.savefig("{}samples_{}_epoch_{}.jpg".format(root,plot,epoch))
         plt.close()

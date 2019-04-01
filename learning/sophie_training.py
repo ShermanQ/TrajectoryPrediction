@@ -65,7 +65,8 @@ def main():
       
     # set pytorch
     # torch.manual_seed(10)
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")    
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")  
+    device = torch.device("cpu")  
     print(device)
     print(torch.cuda.is_available())
         
@@ -73,11 +74,30 @@ def main():
     
     nb_neighbors_max = np.array(json.load(open(torch_param["nb_neighboors_path"]))["max_neighbors"]) - 1  
 
+
+    toy = prepare_param["toy"]
+ 
+
+    data_file = torch_param["split_hdf5"]
+    train_scenes = prepare_param["train_scenes"]
+    test_scenes = prepare_param["test_scenes"]
+
+
+    if toy:
+        print("toy dataset")
+        data_file = torch_param["toy_hdf5"]
+        nb_neighbors_max = np.array(json.load(open(torch_param["toy_nb_neighboors_path"]))["max_neighbors"])  - 1
+        train_scenes = prepare_param["toy_train_scenes"]
+        test_scenes = prepare_param["toy_test_scenes"]
+
+
+    
+
     print(nb_neighbors_max)
     train_dataset = Hdf5Dataset(
         images_path = data["prepared_images"],
-        hdf5_file= torch_param["split_hdf5"],
-        scene_list= prepare_param["train_scenes"],
+        hdf5_file= data_file,
+        scene_list= train_scenes,
         t_obs=prepare_param["t_obs"],
         t_pred=prepare_param["t_pred"],
         set_type = "train",
@@ -89,8 +109,8 @@ def main():
 
     eval_dataset = Hdf5Dataset(
         images_path = data["prepared_images"],
-        hdf5_file= torch_param["split_hdf5"],
-        scene_list= prepare_param["train_scenes"],
+        hdf5_file= data_file,
+        scene_list= train_scenes,
         t_obs=prepare_param["t_obs"],
         t_pred=prepare_param["t_pred"],
         set_type = "eval",
@@ -147,7 +167,10 @@ def main():
     # print(sum_)
 
     generator.to(device)
+    torch.cuda.synchronize()
     discriminator.to(device)
+    torch.cuda.synchronize()
+
     
     #losses
     criterion_gan = nn.BCELoss()

@@ -31,10 +31,18 @@ def main():
     # for extractor in extractor_list:
     #     extractor.extract()
 
-    
-    scene_list = prepare_training_params["selected_scenes"]
-    train_list = prepare_training_params["train_scenes"]
-    test_list = prepare_training_params["test_scenes"]
+    scene_list,train_list,test_list = None, None, None
+
+    prep_toy = prepare_training_params["toy"]
+
+    if prep_toy:
+        scene_list = prepare_training_params["toy_scenes"]
+        train_list = prepare_training_params["toy_train_scenes"]
+        test_list = prepare_training_params["toy_test_scenes"]
+    else:
+        scene_list = prepare_training_params["selected_scenes"]
+        train_list = prepare_training_params["train_scenes"]
+        test_list = prepare_training_params["test_scenes"]
 
 
     # new_rate = float(prepare_training_params["framerate"])
@@ -87,11 +95,11 @@ def main():
     #     print(scene)
     #     scaler.scale(scene)
 
-    sampler = prepare_training_frames_hdf5.PrepareTrainingFramesHdf5(data_params_path,args[2])
+    sampler = prepare_training_frames_hdf5.PrepareTrainingFramesHdf5(data_params_path,args[2],prep_toy)
     for scene in scene_list:
         sampler.extract_data(scene)
 
-    sampler = prepare_training_hdf5.PrepareTrainingHdf5(data_params_path,args[2])
+    sampler = prepare_training_hdf5.PrepareTrainingHdf5(data_params_path,args[2],prep_toy)
     for scene in scene_list:
         sampler.extract_data(scene)
 

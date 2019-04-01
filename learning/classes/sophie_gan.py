@@ -5,6 +5,7 @@ import random
 import numpy as np 
 import torchvision
 import imp
+import time
 
 def custom_mse(pred_seq,gt_seq):
     mse = nn.MSELoss(reduction= "none")
@@ -43,7 +44,14 @@ class customCNN(nn.Module):
 
         # out number of features is 25088 = 512 * 7 * 7 
         # self.cnn = torchvision.models.vgg19(pretrained=True).features
-        self.__init_cnn()
+        # self.__init_cnn()
+
+        self.cnn = torchvision.models.vgg16(pretrained=False).features
+        # print(self.cnn)
+        
+        self.cnn.load_state_dict(torch.load(self.weights_path)["state_dict"])
+        for param in self.cnn.parameters():
+            param.requires_grad = False
         # main_model = imp.load_source('MainModel', "./learning/data/pretrained_models/vgg16_voc.py")
         # self.cnn = torch.load("./learning/data/pretrained_models/vgg16_voc.pth").to(device)
         # print(self.cnn)
@@ -55,23 +63,27 @@ class customCNN(nn.Module):
         # self.embedding = nn.Linear(output_size**2, embedding_size)
 
         
-    def __init_cnn(self):
-        # print(torchvision.models.vgg16(pretrained=False))
-        self.cnn = torchvision.models.vgg16(pretrained=False).features
-        # print(self.cnn)
+    # def __init_cnn(self):
+    #     # print(torchvision.models.vgg16(pretrained=False))
+    #     self.cnn = torchvision.models.vgg16(pretrained=False).features
+    #     # print(self.cnn)
         
-        self.cnn.load_state_dict(torch.load(self.weights_path)["state_dict"])
-        for param in self.cnn.parameters():
-            param.requires_grad = False
-        self.cnn = self.cnn.to(self.device)
+    #     self.cnn.load_state_dict(torch.load(self.weights_path)["state_dict"])
+    #     for param in self.cnn.parameters():
+    #         param.requires_grad = False
+    #     # self.cnn = self.cnn.to(self.device)
 
         
 
     def forward(self,x):
         x = x.view(self.batch_size,self.nb_channels_in,self.input_size,self.input_size)
-        # print("test")
+        # torch.cuda.synchronize()
         cnn_features = self.cnn(x)
+        
+
         projected_features = self.projection(cnn_features)
+        
+
         # print("test {}".format(cnn_features.size()))
 
         # cnn_features = cnn_features.view(self.batch_size,-1)
@@ -340,7 +352,11 @@ class sophie(nn.Module):
 
         # get embedded spatial features
         # images = torch.randn(self.batch_size,3,224,224).to(self.device)
+
+        s = time.time()
         Vsps = self.cnn(images)
+
+        print("cnn {}".format(time.time()-s))
         del images
 
         
@@ -385,15 +401,20 @@ class sophie(nn.Module):
         pad_length = len(sorted_x_lengths) - len(sorted_x_lengths_nopad)
         pad_dims = [pad_length] + list(output_nopad.size()[1:])
         output_pad = torch.zeros(pad_dims)
-        if torch.cuda.is_available():
-            output_pad = output_pad.cuda()
+        # if torch.cuda.is_available():
+            # output_pad = output_pad.cuda()
+
+        output_pad = output_pad.to(self.device)
+        
 
         output = torch.cat([output_nopad,output_pad], dim = 0)
 
         pad_dims = [pad_length] + list(h.size()[1:])
         output_pad = torch.zeros(pad_dims)
-        if torch.cuda.is_available():
-            output_pad = output_pad.cuda()
+        # if torch.cuda.is_available():
+        #     output_pad = output_pad.cuda()
+        output_pad = output_pad.to(self.device)
+
         h = torch.cat([h,output_pad], dim = 0)
         c = torch.cat([c,output_pad], dim = 0)
 
@@ -481,8 +502,10 @@ class sophie(nn.Module):
 
             # padding agent dummy value back to 0
             padding_agents = torch.zeros(self.enc_hidden_size)
-            if torch.cuda.is_available():
-                padding_agents = padding_agents.cuda()
+            # if torch.cuda.is_available():
+            #     padding_agents = padding_agents.cuda()
+            padding_agents = padding_agents.to(self.device)
+
 
             Vso[np.argwhere(d == pad_dist)] = padding_agents
             Vso = Vso[1:]
