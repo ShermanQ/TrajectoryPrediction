@@ -26,7 +26,7 @@ import time
     the 0 on non full 0 rows correspond to real agent/real agent  dot products
 """
 class ScaledDotProduct(nn.Module):
-    def __init__(self):
+    def __init__(self,dropout = 0.1):
         super(ScaledDotProduct, self).__init__()
 
     def forward(self,q,k,v,mask = None):
@@ -66,4 +66,20 @@ class ScaledDotProduct(nn.Module):
         return mask
 
         
+
+class AttentionHead(nn.Module):
+    # dk = dv = dmodel/h
+    def __init__(self,dmodel,dk,dv,dropout = 0.1):
+        super(AttentionHead,self).__init__()
+        self.q_projection = nn.Linear(dmodel,dk)
+        self.k_projection = nn.Linear(dmodel,dk)
+        self.v_projection = nn.Linear(dmodel,dv)
+        self.dot_attention = ScaledDotProduct(dropout)
+
+    def forward(self,q,k,v):
+        Q = self.q_projection(q)
+        K = self.k_projection(k)
+        V = self.v_projection(v)
+        att = self.dot_attention(Q,K,V,self.dot_attention.get_mask(Q,K))
+        return att
 

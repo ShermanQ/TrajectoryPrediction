@@ -8,7 +8,7 @@ import time
 
 from classes.datasets import Hdf5Dataset,CustomDataLoader
 from classes.tcnn import IATCNN,nlloss
-from classes.transformer import ScaledDotProduct
+from classes.transformer import ScaledDotProduct,AttentionHead
 from classes.tcn import TemporalConvNet
 import helpers.net_training as training
 import sys
@@ -40,15 +40,16 @@ def main():
     test_tensor,lengths_ids = get_test_tensor((B,Nmax,Tobs,Nfeat))
 
     num_inputs = Nfeat
-    num_outputs = 32
+    dmodel = 32
     kernel_size = 2
     dropout = 0.2
+    h = 2
 
 
 ############# TCN #########################################
     # compute nb temporal blocks
     nb_blocks = get_nb_blocks(Tobs,kernel_size)
-    num_channels = [num_outputs for _ in range(nb_blocks)]
+    num_channels = [dmodel for _ in range(nb_blocks)]
     
     # init network
     tcn = TemporalConvNet( num_inputs, num_channels, kernel_size, dropout)
@@ -63,11 +64,11 @@ def main():
     # send only in the net the active agents
     # set the output values of the active agents to zeros tensor
     active_agents = torch.cat([ i*Nmax + e for i,e in enumerate(lengths_ids)],dim = 0)
-    y = torch.zeros(B*Nmax,num_outputs,Tobs) # [B*Nmax],Nfeat,Tobs
+    y = torch.zeros(B*Nmax,dmodel,Tobs) # [B*Nmax],Nfeat,Tobs
     y[active_agents] = tcn(x[active_agents]) # [B*Nmax],Nfeat,Tobs
  
     y = y.permute(0,2,1) # [B*Nmax],Tobs,Nfeat
-    y = y.view(B,Nmax,Tobs,num_outputs) # B,Nmax,Tobs,Nfeat
+    y = y.view(B,Nmax,Tobs,dmodel) # B,Nmax,Tobs,Nfeat
     conv_features = y[:,:,-1] # B,Nmax,Nfeat
 
 ############# TCN #########################################
@@ -75,8 +76,13 @@ def main():
 
     x = conv_features
     
-    sdp = ScaledDotProduct()
-    att = sdp(x,x,x,sdp.get_mask(x,x))
+    # sdp = ScaledDotProduct()
+    # att = sdp(x,x,x,sdp.get_mask(x,x))
+
+    dk = dv = int(dmodel/h)
+    print(dk,dv)
+    att_head = AttentionHead(dmodel,dk,dv)
+    att = att_head(x,x,x)
     print(att.size())
 
 ############# TRANSFORMER #########################################
