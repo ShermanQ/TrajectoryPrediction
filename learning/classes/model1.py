@@ -21,6 +21,8 @@ class Model1(nn.Module):
         d_ff_hidden,
         dk,
         dv,
+        predictor_layers,
+        pred_dim,
         dropout_tcn = 0.2,
         dropout_tfr = 0.1):
         super(Model1,self).__init__()
@@ -34,6 +36,8 @@ class Model1(nn.Module):
         self.d_ff_hidden = d_ff_hidden
         self.dk = dk
         self.dv = dv
+        self.predictor_layers = predictor_layers
+        self.pred_dim = pred_dim
         self.dropout_tcn = dropout_tcn
         self.dropout_tfr = dropout_tfr
 
@@ -47,6 +51,25 @@ class Model1(nn.Module):
 ############# TRANSFORMER #########################################
 
         self.encoder = Encoder(nb_blocks_transformer,h,dmodel,d_ff_hidden,dk,dv,dropout_tfr)
+
+############# Predictor #########################################
+
+        self.predictor = []
+        self.predictor.append(nn.Linear(dmodel,predictor_layers[0]))
+        self.predictor.append(nn.ReLU())
+
+        for i in range(1,len(predictor_layers)):
+            self.predictor.append(nn.Linear(predictor_layers[i-1], predictor_layers[i]))
+            self.predictor.append(nn.ReLU())
+
+        self.predictor.append(nn.Linear(predictor_layers[-1], pred_dim))
+
+        self.predictor = nn.Sequential(*self.predictor)
+
+        print(self.predictor)
+
+
+
 
 
     def forward(self,x):
@@ -71,6 +94,10 @@ class Model1(nn.Module):
 
         x = conv_features
         y = self.encoder(x)
+
+        y = self.predictor(x)
+        t_pred = int(self.pred_dim/float(Nfeat))
+        y = y.view(B,Nmax,t_pred,Nfeat) #B,Nmax,Tpred,Nfeat
         return y
 
 

@@ -40,7 +40,7 @@ def main():
     x = get_test_tensor((B,Nmax,Tobs,Nfeat))
 
   
-
+    Tpred = 12
     num_inputs = Nfeat
     dmodel = 32
     kernel_size = 2
@@ -50,11 +50,16 @@ def main():
     dk = dv = int(dmodel/h)
     d_ff_hidden = 4 * dmodel
     nb_blocks_transformer = 3
+
+    predictor_layers = [dmodel*4]
+
+    pred_dim = Tpred * num_inputs
+    print(pred_dim)
     print(dk,dv)
 
 
     model = Model1(num_inputs,Tobs,kernel_size,nb_blocks_transformer,h,
-            dmodel,d_ff_hidden,dk,dv,dropout_tcn,dropout_tfr
+            dmodel,d_ff_hidden,dk,dv,predictor_layers,pred_dim,dropout_tcn,dropout_tfr
     )
 
     y = model(x)
