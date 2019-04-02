@@ -8,6 +8,7 @@ import time
 
 from classes.datasets import Hdf5Dataset,CustomDataLoader
 from classes.tcnn import IATCNN,nlloss
+from classes.transformer import ScaledDotProduct
 from classes.tcn import TemporalConvNet
 import helpers.net_training as training
 import sys
@@ -17,10 +18,11 @@ def get_test_tensor(test_size):
     test_tensor = torch.rand(test_size)
     lengths = torch.randint(low = 0,high = test_size[1], size = (test_size[0],1)).squeeze(1)
     lengths_ids = [torch.arange(start = n, end = test_size[1]) for n in lengths]
+    active_agents = [torch.arange(start = 0, end = n) for n in lengths]
 
     for i,e in enumerate(lengths_ids):
         test_tensor[i,e] *= 0
-    return test_tensor,lengths_ids
+    return test_tensor,active_agents
 
 def get_nb_blocks(receptieve_field,kernel_size):
     nb_blocks = receptieve_field -1
@@ -32,7 +34,7 @@ def get_nb_blocks(receptieve_field,kernel_size):
     return int(nb_blocks)
 
 def main():
-    B,Nmax,Tobs,Nfeat = 32,48,8,2
+    B,Nmax,Tobs,Nfeat = 12,15,8,2
     # B,Nmax,Tobs,Nfeat = 3,5,8,2
 
     test_tensor,lengths_ids = get_test_tensor((B,Nmax,Tobs,Nfeat))
@@ -42,6 +44,8 @@ def main():
     kernel_size = 2
     dropout = 0.2
 
+
+############# TCN #########################################
     # compute nb temporal blocks
     nb_blocks = get_nb_blocks(Tobs,kernel_size)
     num_channels = [num_outputs for _ in range(nb_blocks)]
@@ -65,6 +69,18 @@ def main():
     y = y.permute(0,2,1) # [B*Nmax],Tobs,Nfeat
     y = y.view(B,Nmax,Tobs,num_outputs) # B,Nmax,Tobs,Nfeat
     conv_features = y[:,:,-1] # B,Nmax,Nfeat
+
+############# TCN #########################################
+############# TRANSFORMER #########################################
+
+    x = conv_features
+    
+    sdp = ScaledDotProduct()
+    att = sdp(x,x,x,sdp.get_mask(x,x))
+    print(att.size())
+
+############# TRANSFORMER #########################################
+
 
 
     
