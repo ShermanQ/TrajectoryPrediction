@@ -81,5 +81,34 @@ class AttentionHead(nn.Module):
         K = self.k_projection(k)
         V = self.v_projection(v)
         att = self.dot_attention(Q,K,V,self.dot_attention.get_mask(Q,K))
-        return att
+        return att #B,Nmax,dv
+
+class MultiHeadAttention(nn.Module):
+    def __init__(self,h,dmodel,dk,dv,dropout = 0.1):
+        super(MultiHeadAttention,self).__init__()
+        assert dmodel == h*dv
+        assert dk == dv
+
+        self.heads  = []
+        for i in range(h):
+            self.heads.append(AttentionHead(dmodel,dk,dv,dropout))  # inefficient#############################
+        
+
+        self.multihead_projection = nn.Linear(h*dv,dmodel)
+
+    def forward(self,q,k,v):
+        atts = [] #H,Nmax,dv
+        for head in self.heads:
+            atts.append(head(q,k,v))#B,Nmax,dv
+
+        atts = torch.cat(atts,dim = 2) #B,Nmax,dv * h
+        out = self.multihead_projection(atts) #B,Nmax,dmodel
+
+        return out
+
+        
+        
+
+
+
 

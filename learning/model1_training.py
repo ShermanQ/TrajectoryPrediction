@@ -8,7 +8,7 @@ import time
 
 from classes.datasets import Hdf5Dataset,CustomDataLoader
 from classes.tcnn import IATCNN,nlloss
-from classes.transformer import ScaledDotProduct,AttentionHead
+from classes.transformer import ScaledDotProduct,AttentionHead,MultiHeadAttention
 from classes.tcn import TemporalConvNet
 import helpers.net_training as training
 import sys
@@ -43,7 +43,7 @@ def main():
     dmodel = 32
     kernel_size = 2
     dropout = 0.2
-    h = 2
+    h = 4
 
 
 ############# TCN #########################################
@@ -81,8 +81,12 @@ def main():
 
     dk = dv = int(dmodel/h)
     print(dk,dv)
-    att_head = AttentionHead(dmodel,dk,dv)
-    att = att_head(x,x,x)
+    # att_head = AttentionHead(dmodel,dk,dv)
+    # att = att_head(x,x,x)
+    # print(att.size())
+
+    mha = MultiHeadAttention(h,dmodel,dk,dv,dropout= 0.1)
+    att = mha(x,x,x)
     print(att.size())
 
 ############# TRANSFORMER #########################################
