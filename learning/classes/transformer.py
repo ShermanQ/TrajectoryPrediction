@@ -128,7 +128,6 @@ class EncoderBlock(nn.Module):
         x = self.norm_layer1( x + self.dropout(self.multihead_att(x,x,x)) ) #B,Nmax,dmodel
 
         x = self.norm_layer2( x + self.dropout( self.feed_forward(x) ) )
-        print(x.size())
 
         return x #B,Nmax,dmodel
 

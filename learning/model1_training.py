@@ -8,6 +8,7 @@ import time
 
 from classes.datasets import Hdf5Dataset,CustomDataLoader
 from classes.transformer import Encoder
+from classes.model1 import Model1
 from classes.tcn import TemporalConvNet
 import helpers.net_training as training
 import sys
@@ -21,79 +22,45 @@ def get_test_tensor(test_size):
 
     for i,e in enumerate(lengths_ids):
         test_tensor[i,e] *= 0
-    return test_tensor,active_agents
+    return test_tensor
 
-def get_nb_blocks(receptieve_field,kernel_size):
-    nb_blocks = receptieve_field -1
-    nb_blocks /= 2.0*(kernel_size - 1.0)
-    nb_blocks += 1.0
-    nb_blocks = np.log2(nb_blocks)
-    nb_blocks = np.ceil(nb_blocks)
+# def get_nb_blocks(receptieve_field,kernel_size):
+#     nb_blocks = receptieve_field -1
+#     nb_blocks /= 2.0*(kernel_size - 1.0)
+#     nb_blocks += 1.0
+#     nb_blocks = np.log2(nb_blocks)
+#     nb_blocks = np.ceil(nb_blocks)
 
-    return int(nb_blocks)
+#     return int(nb_blocks)
 
 def main():
     B,Nmax,Tobs,Nfeat = 32,48,8,2
     # B,Nmax,Tobs,Nfeat = 3,5,8,2
 
-    test_tensor,lengths_ids = get_test_tensor((B,Nmax,Tobs,Nfeat))
+    x = get_test_tensor((B,Nmax,Tobs,Nfeat))
+
+  
 
     num_inputs = Nfeat
     dmodel = 32
     kernel_size = 2
-    dropout = 0.2
+    dropout_tcn = 0.2
+    dropout_tfr = 0.1
     h = 4
-
     dk = dv = int(dmodel/h)
     d_ff_hidden = 4 * dmodel
     nb_blocks_transformer = 3
     print(dk,dv)
 
-############# TCN #########################################
-    # compute nb temporal blocks
-    nb_blocks = get_nb_blocks(Tobs,kernel_size)
-    num_channels = [dmodel for _ in range(nb_blocks)]
-    
-    # init network
-    tcn = TemporalConvNet( num_inputs, num_channels, kernel_size, dropout)
 
-    # permute channels and sequence length
-    x = test_tensor.permute(0,1,3,2)  # B,Nmax,Nfeat,Tobs
-    x = x.view(-1,x.size()[2],x.size()[3]) # [B*Nmax],Nfeat,Tobs
+    model = Model1(num_inputs,Tobs,kernel_size,nb_blocks_transformer,h,
+            dmodel,d_ff_hidden,dk,dv,dropout_tcn,dropout_tfr
+    )
 
-    s = time.time()
+    y = model(x)
 
-    # get ids for real agents
-    # generate vector of zeros which size is the same as net output size
-    # send only in the net the active agents
-    # set the output values of the active agents to zeros tensor
-    active_agents = torch.cat([ i*Nmax + e for i,e in enumerate(lengths_ids)],dim = 0)
-    y = torch.zeros(B*Nmax,dmodel,Tobs) # [B*Nmax],Nfeat,Tobs
-    y[active_agents] = tcn(x[active_agents]) # [B*Nmax],Nfeat,Tobs
+    print(y.size())
  
-    y = y.permute(0,2,1) # [B*Nmax],Tobs,Nfeat
-    y = y.view(B,Nmax,Tobs,dmodel) # B,Nmax,Tobs,Nfeat
-    conv_features = y[:,:,-1] # B,Nmax,Nfeat
-
-    total_time = time.time() - s
-
-############# TCN #########################################
-############# TRANSFORMER #########################################
-
-    x = conv_features
-  
-
-    endr = Encoder(nb_blocks_transformer,h,dmodel,d_ff_hidden,dk,dv,dropout= 0.1)
-    s = time.time()
-    out = endr(x)
-
-    total_time += time.time() - s
-
-
-
-
-
-############# TRANSFORMER #########################################
 
 
 
