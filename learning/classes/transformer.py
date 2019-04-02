@@ -109,6 +109,46 @@ class MultiHeadAttention(nn.Module):
         
         
 
+class EncoderBlock(nn.Module):
+    def __init__(self,h,dmodel,d_ff_hidden,dk,dv,dropout = 0.1):
+        super(EncoderBlock,self).__init__()
+        self.multihead_att = MultiHeadAttention(h,dmodel,dk,dv,dropout )
+        
+        self.feed_forward = nn.Sequential(
+            nn.Linear(dmodel,d_ff_hidden),
+            nn.ReLU(),
+            nn.Linear(d_ff_hidden,dmodel)
+        )
+        self.dropout = nn.Dropout(dropout)
+        self.norm_layer1 = nn.LayerNorm(dmodel)
+        self.norm_layer2 = nn.LayerNorm(dmodel)
+
+
+    def forward(self,x):
+        x = self.norm_layer1( x + self.dropout(self.multihead_att(x,x,x)) ) #B,Nmax,dmodel
+
+        x = self.norm_layer2( x + self.dropout( self.feed_forward(x) ) )
+        print(x.size())
+
+        return x #B,Nmax,dmodel
+
+
+class Encoder(nn.Module):
+    def __init__(self,nb_blocks,h,dmodel,d_ff_hidden,dk,dv,dropout = 0.1):
+        super(Encoder,self).__init__()
+
+        blocks = []
+
+        for b in range(nb_blocks):
+            blocks.append( EncoderBlock(h,dmodel,d_ff_hidden,dk,dv,dropout) )
+        self.encoder = nn.Sequential(*blocks)
+
+
+
+    def forward(self,x):
+        x = self.encoder(x)
+        return x
+
 
 
 

@@ -7,8 +7,7 @@ import numpy as np
 import time
 
 from classes.datasets import Hdf5Dataset,CustomDataLoader
-from classes.tcnn import IATCNN,nlloss
-from classes.transformer import ScaledDotProduct,AttentionHead,MultiHeadAttention
+from classes.transformer import Encoder
 from classes.tcn import TemporalConvNet
 import helpers.net_training as training
 import sys
@@ -34,7 +33,7 @@ def get_nb_blocks(receptieve_field,kernel_size):
     return int(nb_blocks)
 
 def main():
-    B,Nmax,Tobs,Nfeat = 12,15,8,2
+    B,Nmax,Tobs,Nfeat = 32,48,8,2
     # B,Nmax,Tobs,Nfeat = 3,5,8,2
 
     test_tensor,lengths_ids = get_test_tensor((B,Nmax,Tobs,Nfeat))
@@ -45,6 +44,10 @@ def main():
     dropout = 0.2
     h = 4
 
+    dk = dv = int(dmodel/h)
+    d_ff_hidden = 4 * dmodel
+    nb_blocks_transformer = 3
+    print(dk,dv)
 
 ############# TCN #########################################
     # compute nb temporal blocks
@@ -58,6 +61,7 @@ def main():
     x = test_tensor.permute(0,1,3,2)  # B,Nmax,Nfeat,Tobs
     x = x.view(-1,x.size()[2],x.size()[3]) # [B*Nmax],Nfeat,Tobs
 
+    s = time.time()
 
     # get ids for real agents
     # generate vector of zeros which size is the same as net output size
@@ -71,23 +75,23 @@ def main():
     y = y.view(B,Nmax,Tobs,dmodel) # B,Nmax,Tobs,Nfeat
     conv_features = y[:,:,-1] # B,Nmax,Nfeat
 
+    total_time = time.time() - s
+
 ############# TCN #########################################
 ############# TRANSFORMER #########################################
 
     x = conv_features
-    
-    # sdp = ScaledDotProduct()
-    # att = sdp(x,x,x,sdp.get_mask(x,x))
+  
 
-    dk = dv = int(dmodel/h)
-    print(dk,dv)
-    # att_head = AttentionHead(dmodel,dk,dv)
-    # att = att_head(x,x,x)
-    # print(att.size())
+    endr = Encoder(nb_blocks_transformer,h,dmodel,d_ff_hidden,dk,dv,dropout= 0.1)
+    s = time.time()
+    out = endr(x)
 
-    mha = MultiHeadAttention(h,dmodel,dk,dv,dropout= 0.1)
-    att = mha(x,x,x)
-    print(att.size())
+    total_time += time.time() - s
+
+
+
+
 
 ############# TRANSFORMER #########################################
 
