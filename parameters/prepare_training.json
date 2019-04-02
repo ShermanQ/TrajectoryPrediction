@@ -11,16 +11,11 @@
     "remove_hdf5":0,
     "toy": 1,
     "toy_scenes":[
-        "little0",
-        "little1",
-        "little2",
         "little3"
 
     ],
     "toy_train_scenes":[
-        "little0",
-        "little1",
-        "little2"
+        "little0"
 
     ],
     "toy_test_scenes":[
@@ -32,22 +27,27 @@
         "bookstore1",
         "bookstore2",
         "bookstore3",
-        
+        "deathCircle0", 
+        "deathCircle1",         
         "deathCircle2", 
+        "deathCircle3", 
         "deathCircle4", 
         "gates0", 
         "gates1", 
-        
+        "gates2",         
         "gates3", 
         "gates4", 
         "gates5", 
         "gates6", 
-         
+        "gates7", 
+        "gates8",          
         "hyang0", 
         "hyang1", 
         "hyang10", 
         "hyang11", 
-        
+        "hyang12", 
+        "hyang13", 
+        "hyang14",         
         "hyang2", 
         "hyang3", 
         "hyang4", 
@@ -55,6 +55,7 @@
         "hyang6", 
         "hyang7", 
         "hyang8", 
+        "hyang9", 
         "little0", 
         "little1", 
         "little2", 
@@ -66,8 +67,11 @@
         "bookstore0",
         "bookstore1",
         "bookstore3",   
+        "deathCircle0", 
+        "deathCircle1",         
         "deathCircle2", 
-        "deathCircle4", 
+        "deathCircle3", 
+        "deathCircle4",  
         "gates0", 
         "gates1",        
         "gates3", 
@@ -89,7 +93,8 @@
         
         "bookstore2",
         "gates6",
-        
+        "hyang9",
+        "hyang10",
         "little0", 
         "little1", 
         "little2", 

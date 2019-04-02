@@ -25,6 +25,7 @@ def train(model, device, train_loader,criterion, optimizer, epoch,batch_size,pri
     for batch_idx, data in enumerate(train_loader):
         s = time.time()
         inputs, labels, ids = data
+        print(inputs.size())
         inputs, labels = inputs.to(device), labels.to(device)
 
         torch.cuda.synchronize()
