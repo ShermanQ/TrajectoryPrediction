@@ -25,16 +25,26 @@ def train_sophie(
         print_every = 10):
     # model.train()
    
+    # losses = {
+    #     "mse": 0.,
+    #     "real": 0.,
+    #     "fake": 0.,
+    #     "gen": 0.
+    # }
+    # batch_losses = {
+    #     "mse": [],
+    #     "real": [],
+    #     "fake": [],
+    #     "gen": []
+    # }
     losses = {
         "mse": 0.,
-        "real": 0.,
-        "fake": 0.,
+        "disc": 0.,
         "gen": 0.
     }
     batch_losses = {
         "mse": [],
-        "real": [],
-        "fake": [],
+        "disc": [],
         "gen": []
     }
 
@@ -55,62 +65,65 @@ def train_sophie(
         # train discriminator
         optimizer_disc.zero_grad()
         #### groundtruth batch
-        traj_obs = inputs[:,0].view(batch_size,obs_length,output_size)
-
-        traj_pred_real = labels[:,0].view(batch_size,pred_length,output_size)
-
-        real_traj = torch.cat([traj_obs,traj_pred_real], dim = 1)
-        real_labels = torch.ones(batch_size).to(device)
-        disc_class = discriminator(real_traj).view(batch_size)
-
-        real_loss = criterion_gan(disc_class,real_labels)
-        real_loss.backward()
-
-        # torch.cuda.synchronize
-        print("disc real {}".format(time.time()-s))
-        s = time.time()
+        traj_obs = inputs[:,0].view(batch_size,obs_length,output_size) # gt tobs
+        traj_pred_real = labels[:,0].view(batch_size,pred_length,output_size) # gt tpred
+        real_traj = torch.cat([traj_obs,traj_pred_real], dim = 1) # gt tobs + tpred
+        real_labels = torch.ones(batch_size).to(device) # labels == 1
 
         #### generated batch
         z = generator.gaussian.sample((batch_size,1,)).to(device)
-        traj_pred_fake = generator(inputs,images,z)
+        traj_pred_fake = generator(inputs,images,z) # predicted tpred
+        # traj_pred_fake = torch.rand((batch_size,pred_length,output_size)).to(device)
+        fake_traj = torch.cat([traj_obs,traj_pred_fake], dim = 1) # predicted tobs + tpred
+        fake_labels = torch.zeros(batch_size).to(device) # labels == 0
 
-        print("gen {}".format(time.time()-s))
-        s = time.time()
+        traj = torch.cat([real_traj,fake_traj],dim = 0)
+        labels = torch.cat([real_labels,fake_labels],dim = 0 )
 
+        ids = torch.randint(2*batch_size,(batch_size,))
+        
 
-        fake_traj = torch.cat([traj_obs,traj_pred_fake], dim = 1)
-        fake_labels = torch.zeros(batch_size).to(device)
-        disc_class = discriminator(fake_traj.detach()).view(batch_size)
+        disc_class = discriminator(traj[ids].detach()).view(batch_size)
+        disc_loss = criterion_gan(disc_class,labels[ids])
 
-        fake_loss = criterion_gan(disc_class,fake_labels)
-        fake_loss.backward()
+        disc_loss.backward()
+        helpers.plot_grad_flow(discriminator.named_parameters(),"disc_{}".format(epoch))
+
         optimizer_disc.step()
 
-        # torch.cuda.synchronize
-        print("disc fake {}".format(time.time()-s))
-        s = time.time()
-
         #################
-        # train generator        
+        # train generator    
+
+        # fake_traj = torch.cat([traj_obs,traj_pred_fake], dim = 1)
+        # gen_labels = torch.ones(batch_size).to(device) # labels == 1
+
+    
         gen_labels = real_labels # we aim for the discriminator to predict 1
        
         optimizer_gen.zero_grad()
-        disc_class = discriminator(fake_traj).view(batch_size)
-        gen_loss_gan = criterion_gan(disc_class,gen_labels)
+        disc_label = discriminator(fake_traj).view(batch_size)
+        gen_loss_gan = criterion_gan(disc_label,gen_labels)
         mse_loss = criterion_gen(traj_pred_fake,traj_pred_real)
         loss = gen_loss_gan + mse_loss
+        loss = gen_loss_gan
+
         loss.backward()
+
+        helpers.plot_grad_flow(generator.named_parameters(),"gen_{}".format(epoch))
         optimizer_gen.step()
+   
 
 
         losses["mse"] += mse_loss.item()
-        losses["real"] += real_loss.item()
-        losses["fake"] += fake_loss.item()
+        # losses["real"] += real_loss.item()
+        # losses["fake"] += fake_loss.item()
+        losses["disc"] += disc_loss.item()
         losses["gen"] += gen_loss_gan.item()
 
         batch_losses["mse"].append(mse_loss.item())
-        batch_losses["real"].append(real_loss.item())
-        batch_losses["fake"].append(fake_loss.item())
+        # batch_losses["real"].append(real_loss.item())
+        # batch_losses["fake"].append(fake_loss.item())
+        batch_losses["disc"].append(disc_loss.item())
         batch_losses["gen"].append(gen_loss_gan.item())
 
         # torch.cuda.synchronize
@@ -119,10 +132,13 @@ def train_sophie(
 
         if batch_idx % print_every == 0:
             print(batch_idx,time.time()-start_time)   
-            print("average mse loss summed over trajectory: {}, gan loss real: {},gan loss fake: {}, gen loss: {}".format(batch_losses["mse"][-1],batch_losses["real"][-1],batch_losses["fake"][-1],batch_losses["gen"][-1]))
+            # print("average mse loss summed over trajectory: {}, gan loss real: {},gan loss fake: {}, gen loss: {}".format(batch_losses["mse"][-1],batch_losses["real"][-1],batch_losses["fake"][-1],batch_losses["gen"][-1]))
+            print("average mse loss summed over trajectory: {}, disc: {}, gen loss: {}".format(batch_losses["mse"][-1],batch_losses["disc"][-1],batch_losses["gen"][-1]))
+
     for key in losses:
         losses[key] /= batch_idx    
-    print('Epoch n {} Loss: {}, gan loss real: {},gan loss fake: {}, gen loss: {}'.format(epoch,losses["mse"],losses["real"],losses["fake"],losses["gen"]))
+    # print('Epoch n {} Loss: {}, gan loss real: {},gan loss fake: {}, gen loss: {}'.format(epoch,losses["mse"],losses["real"],losses["fake"],losses["gen"]))
+    print('Epoch n {} Loss: {}, disc loss: {}, gen loss: {}'.format(epoch,losses["mse"],losses["disc"],losses["gen"]))
 
 
     return losses,batch_losses
