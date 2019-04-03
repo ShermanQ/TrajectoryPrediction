@@ -58,6 +58,7 @@ def train(model, device, train_loader,criterion, optimizer, epoch,batch_size,pri
         s = time.time()
 
         loss.backward()
+        helpers.plot_grad_flow(model.named_parameters(),epoch)
 
         torch.cuda.synchronize()
         # print("backward {}".format(time.time()-s))

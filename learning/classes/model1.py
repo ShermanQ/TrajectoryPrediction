@@ -7,7 +7,7 @@ import torchvision
 import imp
 import time
 
-from classes.transformer import Encoder
+from classes.transformer import Transformer
 from classes.tcn import TemporalConvNet
 
 def mse_loss(outputs,targets):
@@ -64,7 +64,7 @@ class Model1(nn.Module):
         self.tcn = TemporalConvNet(device, input_dim, self.num_channels, kernel_size, dropout_tcn)
 ############# TRANSFORMER #########################################
 
-        self.encoder = Encoder(device,nb_blocks_transformer,h,dmodel,d_ff_hidden,dk,dv,dropout_tfr)
+        self.encoder = Transformer(device,nb_blocks_transformer,h,dmodel,d_ff_hidden,dk,dv,dropout_tfr)
 
 ############# Predictor #########################################
 

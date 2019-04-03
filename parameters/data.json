@@ -6,6 +6,8 @@
     "preprocessed_datasets": "./data/preprocessed_datasets/",
     "prepared_datasets": "./data/prepared_datasets/",
     "reports": "./data/reports/",
+    "gradients": "./data/gradients/",
+
     "temp": "./data/temp/",
     "framerates_json": "./parameters/framerates.json",
     "scalers":"./data/scalers/scaler.joblib",

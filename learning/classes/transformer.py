@@ -91,9 +91,9 @@ class MultiHeadAttention(nn.Module):
         assert dmodel == h*dv
         assert dk == dv
         self.device = device
-        self.heads  = []
+        self.heads  = nn.ModuleList()
         for i in range(h):
-            self.heads.append(AttentionHead(device,dmodel,dk,dv,dropout).to(self.device))  # inefficient#############################
+            self.heads.append(AttentionHead(device,dmodel,dk,dv,dropout))  # inefficient#############################
         
 
         self.multihead_projection = nn.Linear(h*dv,dmodel)
@@ -137,9 +137,9 @@ class EncoderBlock(nn.Module):
         return x #B,Nmax,dmodel
 
 
-class Encoder(nn.Module):
+class Transformer(nn.Module):
     def __init__(self,device,nb_blocks,h,dmodel,d_ff_hidden,dk,dv,dropout = 0.1):
-        super(Encoder,self).__init__()
+        super(Transformer,self).__init__()
         self.device = device
         blocks = []
 
