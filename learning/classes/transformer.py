@@ -26,9 +26,9 @@ import time
     the 0 on non full 0 rows correspond to real agent/real agent  dot products
 """
 class ScaledDotProduct(nn.Module):
-    def __init__(self,dropout = 0.1):
+    def __init__(self,device,dropout = 0.1):
         super(ScaledDotProduct, self).__init__()
-
+        self.device = device
     def forward(self,q,k,v,mask = None):
         # q: B*Sq*e
         # k: B*Sk*e
@@ -63,18 +63,20 @@ class ScaledDotProduct(nn.Module):
         Nmax = q.size()[1]
         dot = torch.bmm(q, torch.transpose(k,2,1))
         mask = (dot == 0) & (torch.sum(dot,dim = 1) > 0.).unsqueeze(2).repeat(1,1,Nmax)
+        mask = mask.to(self.device)
         return mask
 
         
 
 class AttentionHead(nn.Module):
     # dk = dv = dmodel/h
-    def __init__(self,dmodel,dk,dv,dropout = 0.1):
+    def __init__(self,device,dmodel,dk,dv,dropout = 0.1):
         super(AttentionHead,self).__init__()
+        self.device = device
         self.q_projection = nn.Linear(dmodel,dk)
         self.k_projection = nn.Linear(dmodel,dk)
         self.v_projection = nn.Linear(dmodel,dv)
-        self.dot_attention = ScaledDotProduct(dropout)
+        self.dot_attention = ScaledDotProduct(device,dropout)
 
     def forward(self,q,k,v):
         Q = self.q_projection(q)
@@ -84,19 +86,20 @@ class AttentionHead(nn.Module):
         return att #B,Nmax,dv
 
 class MultiHeadAttention(nn.Module):
-    def __init__(self,h,dmodel,dk,dv,dropout = 0.1):
+    def __init__(self,device,h,dmodel,dk,dv,dropout = 0.1):
         super(MultiHeadAttention,self).__init__()
         assert dmodel == h*dv
         assert dk == dv
-
+        self.device = device
         self.heads  = []
         for i in range(h):
-            self.heads.append(AttentionHead(dmodel,dk,dv,dropout))  # inefficient#############################
+            self.heads.append(AttentionHead(device,dmodel,dk,dv,dropout).to(self.device))  # inefficient#############################
         
 
         self.multihead_projection = nn.Linear(h*dv,dmodel)
 
     def forward(self,q,k,v):
+
         atts = [] #H,Nmax,dv
         for head in self.heads:
             atts.append(head(q,k,v))#B,Nmax,dv
@@ -110,10 +113,12 @@ class MultiHeadAttention(nn.Module):
         
 
 class EncoderBlock(nn.Module):
-    def __init__(self,h,dmodel,d_ff_hidden,dk,dv,dropout = 0.1):
+    def __init__(self,device,h,dmodel,d_ff_hidden,dk,dv,dropout = 0.1):
         super(EncoderBlock,self).__init__()
-        self.multihead_att = MultiHeadAttention(h,dmodel,dk,dv,dropout )
-        
+        self.multihead_att = MultiHeadAttention(device,h,dmodel,dk,dv,dropout )
+
+
+        self.device = device
         self.feed_forward = nn.Sequential(
             nn.Linear(dmodel,d_ff_hidden),
             nn.ReLU(),
@@ -126,25 +131,26 @@ class EncoderBlock(nn.Module):
 
     def forward(self,x):
         x = self.norm_layer1( x + self.dropout(self.multihead_att(x,x,x)) ) #B,Nmax,dmodel
-
+        
         x = self.norm_layer2( x + self.dropout( self.feed_forward(x) ) )
-
+        
         return x #B,Nmax,dmodel
 
 
 class Encoder(nn.Module):
-    def __init__(self,nb_blocks,h,dmodel,d_ff_hidden,dk,dv,dropout = 0.1):
+    def __init__(self,device,nb_blocks,h,dmodel,d_ff_hidden,dk,dv,dropout = 0.1):
         super(Encoder,self).__init__()
-
+        self.device = device
         blocks = []
 
         for b in range(nb_blocks):
-            blocks.append( EncoderBlock(h,dmodel,d_ff_hidden,dk,dv,dropout) )
+            blocks.append( EncoderBlock(device,h,dmodel,d_ff_hidden,dk,dv,dropout) )
         self.encoder = nn.Sequential(*blocks)
 
 
 
     def forward(self,x):
+        
         x = self.encoder(x)
         return x
 

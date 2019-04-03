@@ -7,41 +7,84 @@ import numpy as np
 import time
 
 from classes.datasets import Hdf5Dataset,CustomDataLoader
-from classes.transformer import Encoder
-from classes.model1 import Model1
-from classes.tcn import TemporalConvNet
+from classes.model1 import Model1,mse_loss
 import helpers.net_training as training
 import sys
 import json
 
-def get_test_tensor(test_size):
-    test_tensor = torch.rand(test_size)
-    lengths = torch.randint(low = 0,high = test_size[1], size = (test_size[0],1)).squeeze(1)
-    lengths_ids = [torch.arange(start = n, end = test_size[1]) for n in lengths]
-    active_agents = [torch.arange(start = 0, end = n) for n in lengths]
 
-    for i,e in enumerate(lengths_ids):
-        test_tensor[i,e] *= 0
-    return test_tensor
-
-# def get_nb_blocks(receptieve_field,kernel_size):
-#     nb_blocks = receptieve_field -1
-#     nb_blocks /= 2.0*(kernel_size - 1.0)
-#     nb_blocks += 1.0
-#     nb_blocks = np.log2(nb_blocks)
-#     nb_blocks = np.ceil(nb_blocks)
-
-#     return int(nb_blocks)
+#python learning/model1_training.py parameters/data.json parameters/model1_training.json parameters/torch_extractors.json parameters/prepare_training.json
 
 def main():
-    B,Nmax,Tobs,Nfeat = 32,48,8,2
-    # B,Nmax,Tobs,Nfeat = 3,5,8,2
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")    
+    # device = torch.device("cpu")
+    print(device)
+    print(torch.cuda.is_available())
+        
+    args = sys.argv    
 
-    x = get_test_tensor((B,Nmax,Tobs,Nfeat))
+    # data = json.load(open(args[1]))
+    # training_param = json.load(open(args[2]))
+    # torch_param = json.load(open(args[3]))
+    # prepare_param = json.load(open(args[4]))
 
+    data = json.load(open("parameters/data.json"))
+    torch_param = json.load(open("parameters/torch_extractors.json"))
+    prepare_param = json.load(open("parameters/prepare_training.json"))
+    training_param = json.load(open("parameters/model1_training.json"))
+
+
+    toy = prepare_param["toy"]
+    nb_neighbors_max = np.array(json.load(open(torch_param["nb_neighboors_path"]))["max_neighbors"])   
+
+
+    data_file = torch_param["split_hdf5"]
+    train_scenes = prepare_param["train_scenes"]
+    test_scenes = prepare_param["test_scenes"]
+
+    if toy:
+        print("toy dataset")
+        data_file = torch_param["toy_hdf5"]
+        train_scenes = prepare_param["toy_train_scenes"]
+        test_scenes = prepare_param["toy_test_scenes"] 
+        nb_neighbors_max = np.array(json.load(open(torch_param["toy_nb_neighboors_path"]))["max_neighbors"])
+
+
+    print(nb_neighbors_max)
+    train_dataset = Hdf5Dataset(
+        images_path = data["prepared_images"],
+        hdf5_file= data_file,
+        scene_list= train_scenes,
+        t_obs=prepare_param["t_obs"],
+        t_pred=prepare_param["t_pred"],
+        set_type = "train",
+        use_images = False,
+        data_type = "frames",
+        use_neighbors_label = True,
+        use_neighbors_sample = True
+        )
+
+    
+
+    eval_dataset = Hdf5Dataset(
+        images_path = data["prepared_images"],
+        hdf5_file= data_file,
+        scene_list= train_scenes,
+        t_obs=prepare_param["t_obs"],
+        t_pred=prepare_param["t_pred"],
+        set_type = "eval",
+        use_images = False,
+        data_type = "frames",
+        use_neighbors_label = True,
+        use_neighbors_sample = True
+        )
+
+    train_loader = CustomDataLoader( batch_size = training_param["batch_size"],shuffle = True,drop_last = True,dataset = train_dataset)
+    eval_loader = CustomDataLoader( batch_size = training_param["batch_size"],shuffle = False,drop_last = True,dataset = eval_dataset)
+    
   
     Tpred = 12
-    num_inputs = Nfeat
+    input_dim = 2
     dmodel = 32
     kernel_size = 2
     dropout_tcn = 0.2
@@ -53,23 +96,63 @@ def main():
 
     predictor_layers = [dmodel*4]
 
-    pred_dim = Tpred * num_inputs
-    print(pred_dim)
-    print(dk,dv)
+    pred_dim = Tpred * input_dim
 
 
-    model = Model1(num_inputs,Tobs,kernel_size,nb_blocks_transformer,h,
-            dmodel,d_ff_hidden,dk,dv,predictor_layers,pred_dim,dropout_tcn,dropout_tfr
+    net = Model1(
+        device = device,
+        input_dim = training_param["input_dim"],
+        input_length = training_param["obs_length"],
+        kernel_size = training_param["kernel_size"],
+        nb_blocks_transformer = training_param["nb_blocks"],
+        h = training_param["h"],
+        dmodel = training_param["dmodel"],
+        d_ff_hidden = 4 * training_param["dmodel"],
+        dk = int(training_param["dmodel"]/h),
+        dv = int(training_param["dmodel"]/h),
+        predictor_layers = training_param["predictor_layers"],
+        pred_dim = training_param["pred_length"] * training_param["input_dim"] ,
+        dropout_tcn = training_param["dropout_tcn"],
+        dropout_tfr = training_param["dropout_tfr"]
     )
 
-    y = model(x)
+    net = net.to(device)
+    # print(net)
 
-    print(y.size())
- 
-
-
-
+    optimizer = optim.Adam(net.parameters(),lr = training_param["lr"])
+    criterion = mse_loss
     
+
+    training.training_loop(training_param["n_epochs"],training_param["batch_size"],
+        net,device,train_loader,eval_loader,criterion,criterion,optimizer,data["scalers"],
+        data["multiple_scalers"],training_param["model_type"],
+        plot = training_param["plot"],early_stopping = True,load_path = training_param["load_path"],
+        plot_every = training_param["plot_every"], save_every = training_param["save_every"])
 
 if __name__ == "__main__":
     main()
+
+
+
+
+
+
+
+# def get_test_tensor(test_size):
+#     test_tensor = torch.rand(test_size)
+#     lengths = torch.randint(low = 0,high = test_size[1], size = (test_size[0],1)).squeeze(1)
+#     lengths_ids = [torch.arange(start = n, end = test_size[1]) for n in lengths]
+#     active_agents = [torch.arange(start = 0, end = n) for n in lengths]
+
+#     for i,e in enumerate(lengths_ids):
+#         test_tensor[i,e] *= 0
+#     return test_tensor
+# x = get_test_tensor((B,Nmax,Tobs,Nfeat))
+# def get_nb_blocks(receptieve_field,kernel_size):
+#     nb_blocks = receptieve_field -1
+#     nb_blocks /= 2.0*(kernel_size - 1.0)
+#     nb_blocks += 1.0
+#     nb_blocks = np.log2(nb_blocks)
+#     nb_blocks = np.ceil(nb_blocks)
+
+#     return int(nb_blocks)

@@ -10,9 +10,22 @@ import time
 from classes.transformer import Encoder
 from classes.tcn import TemporalConvNet
 
+def mse_loss(outputs,targets):
+    # mse = nn.MSELoss(reduction= "none")
+    mse = nn.MSELoss(reduction= "mean")
+
+
+    # sum over a trajectory, average over batch size
+    # mse_loss = torch.mean(torch.sum(torch.sum(mse(outputs,targets),dim = 2),dim = 1))
+    # mse_loss = torch.mean(torch.mean(torch.sum(mse(outputs,targets),dim = 2),dim = 1))
+    mse_loss = mse(outputs,targets)
+
+    return mse_loss
+
 class Model1(nn.Module):
     def __init__(self,
-        num_inputs,
+        device,
+        input_dim,
         input_length,
         kernel_size, 
         nb_blocks_transformer,
@@ -27,7 +40,8 @@ class Model1(nn.Module):
         dropout_tfr = 0.1):
         super(Model1,self).__init__()
 
-        self.num_inputs = num_inputs
+        self.device = device
+        self.input_dim = input_dim
         self.input_length = input_length
         self.kernel_size = kernel_size
         self.nb_blocks_transformer = nb_blocks_transformer
@@ -47,10 +61,10 @@ class Model1(nn.Module):
         self.num_channels = [dmodel for _ in range(self.nb_temporal_blocks)]
 
         # init network
-        self.tcn = TemporalConvNet( num_inputs, self.num_channels, kernel_size, dropout_tcn)
+        self.tcn = TemporalConvNet(device, input_dim, self.num_channels, kernel_size, dropout_tcn)
 ############# TRANSFORMER #########################################
 
-        self.encoder = Encoder(nb_blocks_transformer,h,dmodel,d_ff_hidden,dk,dv,dropout_tfr)
+        self.encoder = Encoder(device,nb_blocks_transformer,h,dmodel,d_ff_hidden,dk,dv,dropout_tfr)
 
 ############# Predictor #########################################
 
@@ -66,8 +80,6 @@ class Model1(nn.Module):
 
         self.predictor = nn.Sequential(*self.predictor)
 
-        print(self.predictor)
-
 
 
 
@@ -76,7 +88,7 @@ class Model1(nn.Module):
         active_x = self.__get_active_ids(x)
         # permute channels and sequence length
         B,Nmax,Tobs,Nfeat = x.size()
-        x = x.permute(0,1,3,2)  # B,Nmax,Nfeat,Tobs
+        x = x.permute(0,1,3,2)  # B,Nmax,Nfeat,Tobs # à vérifier
         x = x.view(-1,x.size()[2],x.size()[3]) # [B*Nmax],Nfeat,Tobs
 
         # get ids for real agents
@@ -85,7 +97,7 @@ class Model1(nn.Module):
         # set the output values of the active agents to zeros tensor
         
         active_agents = torch.cat([ i*Nmax + e for i,e in enumerate(active_x)],dim = 0)
-        y = torch.zeros(B*Nmax,self.dmodel,Tobs) # [B*Nmax],Nfeat,Tobs
+        y = torch.zeros(B*Nmax,self.dmodel,Tobs).to(self.device) # [B*Nmax],Nfeat,Tobs
         y[active_agents] = self.tcn(x[active_agents]) # [B*Nmax],Nfeat,Tobs
 
         y = y.permute(0,2,1) # [B*Nmax],Tobs,Nfeat
@@ -93,11 +105,16 @@ class Model1(nn.Module):
         conv_features = y[:,:,-1] # B,Nmax,Nfeat
 
         x = conv_features
+        
+
         y = self.encoder(x)
 
-        y = self.predictor(x)
+
+        y = self.predictor(y)
+
         t_pred = int(self.pred_dim/float(Nfeat))
         y = y.view(B,Nmax,t_pred,Nfeat) #B,Nmax,Tpred,Nfeat
+
         return y
 
 
@@ -111,7 +128,7 @@ class Model1(nn.Module):
         return int(nb_blocks)
 
     def __get_active_ids(self,x):
-        nb_active = torch.sum( (torch.sum(torch.sum(x,dim = 3),dim = 2) > 0.), dim = 1)
+        nb_active = torch.sum( (torch.sum(torch.sum(x,dim = 3),dim = 2) > 0.), dim = 1).to(self.device)
         active_agents = [torch.arange(start = 0, end = n) for n in nb_active]
 
         return active_agents

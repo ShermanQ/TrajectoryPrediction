@@ -1,5 +1,5 @@
 {
-    "shift": 4,
+    "shift": 2,
     "t_obs": 8,
     "t_pred": 12,
     "framerate" : "2.5",
@@ -11,7 +11,8 @@
     "remove_hdf5":0,
     "toy": 1,
     "toy_scenes":[
-        "little3"
+        "little3",
+        "little0"
 
     ],
     "toy_train_scenes":[

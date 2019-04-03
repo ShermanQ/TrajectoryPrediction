@@ -88,20 +88,31 @@ def main():
     # print("DOne!")
 
 
-    img_size = int(prepare_training_params["img_size"])
-    scaler = img_scaler.ImgScaler(data_params_path,img_size)  
+    # img_size = int(prepare_training_params["img_size"])
+    # scaler = img_scaler.ImgScaler(data_params_path,img_size)  
 
-    for scene in scene_list:
-        print(scene)
-        scaler.scale(scene)
+    # for scene in scene_list:
+    #     print(scene)
+    #     scaler.scale(scene)
 
     sampler = prepare_training_frames_hdf5.PrepareTrainingFramesHdf5(data_params_path,args[2],prep_toy)
+    
+    print("sampling frames")
+    
     for scene in scene_list:
+        print(scene)
         sampler.extract_data(scene)
+    print("DOne!")
 
     sampler = prepare_training_hdf5.PrepareTrainingHdf5(data_params_path,args[2],prep_toy)
+    
+    print("sampling trajectories")
     for scene in scene_list:
+        print(scene)
+
         sampler.extract_data(scene)
+        print("DOne!")
+
 
     
 

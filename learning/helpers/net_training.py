@@ -25,7 +25,6 @@ def train(model, device, train_loader,criterion, optimizer, epoch,batch_size,pri
     for batch_idx, data in enumerate(train_loader):
         s = time.time()
         inputs, labels, ids = data
-        print(inputs.size())
         inputs, labels = inputs.to(device), labels.to(device)
 
         torch.cuda.synchronize()
@@ -137,6 +136,8 @@ def evaluate(model, device, eval_loader,criterion, epoch, batch_size,scalers_pat
 
                 l = l[kept_mask]
                 o = o[kept_mask]
+                ins = ins[kept_mask]
+
 
 
 
@@ -176,7 +177,7 @@ def evaluate(model, device, eval_loader,criterion, epoch, batch_size,scalers_pat
         eval_loss += loss.item()
 
     # print(len(kept_samples))
-    helpers.plot_samples(kept_samples,epoch)
+    helpers.plot_samples(kept_samples,epoch,1,1)
 
             
     eval_loss /= eval_loader_len 
