@@ -129,7 +129,8 @@ def fde_loss(outputs,targets):
 
 def get_colors(nb_colors,nb_colors_per_map = 20,maps = [cm.tab20,cm.tab20b,cm.tab20c,cm.gist_rainbow,cm.gist_ncar] ):
     max_colors = len(maps) * nb_colors_per_map
-    assert nb_colors < max_colors
+    if nb_colors >= max_colors:
+        return None
     x = np.arange(nb_colors)
     colors =  np.concatenate([ maps[int(i/nb_colors_per_map)]( np.linspace(0, 1, nb_colors_per_map)) for i in range( int(nb_colors/nb_colors_per_map) + 1 ) ], axis = 0)
     return colors
@@ -145,90 +146,91 @@ def plot_samples(kept_samples,epoch,n_columns = 2,n_rows = 2,root = "./data/repo
         fig,axs = plt.subplots(n_rows,n_columns,sharex=True,sharey=True,squeeze = False)
 
         colors = np.array(get_colors(len(kept_samples[plot][0])))
-        
-        last_points = []
-        r = 0
-        c = 0
-        for j,agent in enumerate(kept_samples[plot][0]):
-            color = colors[j]
-            agent = agent.reshape(-1,2)
-        
-            x = [e[0] for e in agent]
-            y = [e[1] for e in agent]
-            
-            axs[r][c].plot(x,y,color = color)
 
-            if j == 0:
-                axs[r][c].scatter(x,y,marker = "+",color = color,label = "obs")
-                axs[r][c].scatter(x[0],y[0],marker = ",",color = color,label = "obs_start")
-                axs[r][c].scatter(x[-1],y[-1],marker = "o",color = color,label = "obs_end")
-            else :
-                axs[r][c].scatter(x,y,marker = "+",color = color)
-                axs[r][c].scatter(x[0],y[0],marker = ",",color = color)
-                axs[r][c].scatter(x[-1],y[-1],marker = "o",color = color)
-
-                     
-            last_points.append([x[-1],y[-1]])
-
-        for j,agent in enumerate(kept_samples[plot][1]):
-            color = colors[j]                    
+        if colors is not None:          
+            last_points = []
+            r = 0
+            c = 0
+            for j,agent in enumerate(kept_samples[plot][0]):
+                color = colors[j]
+                agent = agent.reshape(-1,2)
             
-            agent = agent.reshape(-1,2)
-            
-            x = [last_points[j][0]] + [e[0] for e in agent]
-            y = [last_points[j][1]]+[e[1] for e in agent]
-            
-            
-            axs[r][c].plot(x,y,color = color)
-            axs[r][c].scatter(x,y,marker = "+",color = color)
-            
-            if j == 0:
-                axs[r][c].scatter(x[-1],y[-1],marker = "v",color = color,label = "gt_end")
-            else:
+                x = [e[0] for e in agent]
+                y = [e[1] for e in agent]
                 
-                axs[r][c].scatter(x[-1],y[-1],marker = "v",color = color)
+                axs[r][c].plot(x,y,color = color)
 
-        axs[r][c].legend(loc='upper center', bbox_to_anchor=(1.45, 1))
+                if j == 0:
+                    axs[r][c].scatter(x,y,marker = "+",color = color,label = "obs")
+                    axs[r][c].scatter(x[0],y[0],marker = ",",color = color,label = "obs_start")
+                    axs[r][c].scatter(x[-1],y[-1],marker = "o",color = color,label = "obs_end")
+                else :
+                    axs[r][c].scatter(x,y,marker = "+",color = color)
+                    axs[r][c].scatter(x[0],y[0],marker = ",",color = color)
+                    axs[r][c].scatter(x[-1],y[-1],marker = "o",color = color)
 
-        r = 1
-        c = 0
+                        
+                last_points.append([x[-1],y[-1]])
 
-
-        for j,agent in enumerate(kept_samples[plot][0]):
-            color = colors[j]
-            agent = agent.reshape(-1,2)
-        
-            x = [e[0] for e in agent]
-            y = [e[1] for e in agent]
-            axs[r][c].plot(x,y,color = color)
-
-            if j == 0:
-                axs[r][c].scatter(x,y,marker = "+",color = color,label = "obs")
-                axs[r][c].scatter(x[0],y[0],marker = ",",color = color,label = "obs_start")
-                axs[r][c].scatter(x[-1],y[-1],marker = "o",color = color,label = "obs_end")
-            else :
+            for j,agent in enumerate(kept_samples[plot][1]):
+                color = colors[j]                    
+                
+                agent = agent.reshape(-1,2)
+                
+                x = [last_points[j][0]] + [e[0] for e in agent]
+                y = [last_points[j][1]]+[e[1] for e in agent]
+                
+                
+                axs[r][c].plot(x,y,color = color)
                 axs[r][c].scatter(x,y,marker = "+",color = color)
-                axs[r][c].scatter(x[0],y[0],marker = ",",color = color)
-                axs[r][c].scatter(x[-1],y[-1],marker = "o",color = color)
+                
+                if j == 0:
+                    axs[r][c].scatter(x[-1],y[-1],marker = "v",color = color,label = "gt_end")
+                else:
+                    
+                    axs[r][c].scatter(x[-1],y[-1],marker = "v",color = color)
 
-        for j,agent in enumerate(kept_samples[plot][2]):
-            color = colors[j]
-            agent = agent.reshape(-1,2)
+            axs[r][c].legend(loc='upper center', bbox_to_anchor=(1.45, 1))
+
+            r = 1
+            c = 0
+
+
+            for j,agent in enumerate(kept_samples[plot][0]):
+                color = colors[j]
+                agent = agent.reshape(-1,2)
             
-            x = [e[0] for e in agent]
-            y = [e[1] for e in agent]
-            if j == 0:
-                axs[r][c].scatter(x,y,label = "pred",marker = "x",color = color)
-                axs[r][c].scatter(x[0],y[0],marker = "o",color = color,label = "pred_start")
-                axs[r][c].scatter(x[-1],y[-1],marker = "v",color = color,label = "pred_end")
-            else:
-                axs[r][c].scatter(x,y,marker = "x",color = color)
-                axs[r][c].scatter(x[0],y[0],marker = "o",color = color)
-                axs[r][c].scatter(x[-1],y[-1],marker = "v",color = color)
-       
-        # axs[r][c].legend()
-        plt.savefig("{}samples_{}_epoch_{}.jpg".format(root,plot,epoch))
-        plt.close()
+                x = [e[0] for e in agent]
+                y = [e[1] for e in agent]
+                axs[r][c].plot(x,y,color = color)
+
+                if j == 0:
+                    axs[r][c].scatter(x,y,marker = "+",color = color,label = "obs")
+                    axs[r][c].scatter(x[0],y[0],marker = ",",color = color,label = "obs_start")
+                    axs[r][c].scatter(x[-1],y[-1],marker = "o",color = color,label = "obs_end")
+                else :
+                    axs[r][c].scatter(x,y,marker = "+",color = color)
+                    axs[r][c].scatter(x[0],y[0],marker = ",",color = color)
+                    axs[r][c].scatter(x[-1],y[-1],marker = "o",color = color)
+
+            for j,agent in enumerate(kept_samples[plot][2]):
+                color = colors[j]
+                agent = agent.reshape(-1,2)
+                
+                x = [e[0] for e in agent]
+                y = [e[1] for e in agent]
+                if j == 0:
+                    axs[r][c].scatter(x,y,label = "pred",marker = "x",color = color)
+                    axs[r][c].scatter(x[0],y[0],marker = "o",color = color,label = "pred_start")
+                    axs[r][c].scatter(x[-1],y[-1],marker = "v",color = color,label = "pred_end")
+                else:
+                    axs[r][c].scatter(x,y,marker = "x",color = color)
+                    axs[r][c].scatter(x[0],y[0],marker = "o",color = color)
+                    axs[r][c].scatter(x[-1],y[-1],marker = "v",color = color)
+        
+            # axs[r][c].legend()
+            plt.savefig("{}samples_{}_epoch_{}.jpg".format(root,plot,epoch))
+            plt.close()
 
 
 

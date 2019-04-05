@@ -25,18 +25,7 @@ def train_sophie(
         print_every = 10):
     # model.train()
    
-    # losses = {
-    #     "mse": 0.,
-    #     "real": 0.,
-    #     "fake": 0.,
-    #     "gen": 0.
-    # }
-    # batch_losses = {
-    #     "mse": [],
-    #     "real": [],
-    #     "fake": [],
-    #     "gen": []
-    # }
+
     losses = {
         "mse": 0.,
         "disc": 0.,
@@ -93,10 +82,6 @@ def train_sophie(
 
         #################
         # train generator    
-
-        # fake_traj = torch.cat([traj_obs,traj_pred_fake], dim = 1)
-        # gen_labels = torch.ones(batch_size).to(device) # labels == 1
-
     
         gen_labels = real_labels # we aim for the discriminator to predict 1
        
@@ -115,14 +100,10 @@ def train_sophie(
 
 
         losses["mse"] += mse_loss.item()
-        # losses["real"] += real_loss.item()
-        # losses["fake"] += fake_loss.item()
         losses["disc"] += disc_loss.item()
         losses["gen"] += gen_loss_gan.item()
 
         batch_losses["mse"].append(mse_loss.item())
-        # batch_losses["real"].append(real_loss.item())
-        # batch_losses["fake"].append(fake_loss.item())
         batch_losses["disc"].append(disc_loss.item())
         batch_losses["gen"].append(gen_loss_gan.item())
 
@@ -136,7 +117,7 @@ def train_sophie(
             print("average mse loss summed over trajectory: {}, disc: {}, gen loss: {}".format(batch_losses["mse"][-1],batch_losses["disc"][-1],batch_losses["gen"][-1]))
 
     for key in losses:
-        losses[key] /= batch_idx    
+        losses[key] /= (batch_idx    + 1)
     # print('Epoch n {} Loss: {}, gan loss real: {},gan loss fake: {}, gen loss: {}'.format(epoch,losses["mse"],losses["real"],losses["fake"],losses["gen"]))
     print('Epoch n {} Loss: {}, disc loss: {}, gen loss: {}'.format(epoch,losses["mse"],losses["disc"],losses["gen"]))
 
@@ -248,7 +229,7 @@ def eval_sophie(
 
 
         for key in losses:
-            losses[key] /= batch_idx    
+            losses[key] /= (batch_idx    +1)
         print('Eval Epoch n {} Loss: {}, gan loss real: {},gan loss fake: {}'.format(epoch,losses["gen"],losses["real"],losses["fake"]))
         print('Eval Epoch n {}  ade: {},fde: {}'.format(epoch,losses["ade"],losses["fde"]))
     # generator.train()
@@ -295,9 +276,8 @@ def sophie_training_loop(n_epochs,batch_size,generator,discriminator,optimizer_g
     losses = {
         "train": {
             "mse": [],
-            "real": [],
-            "fake": [],
-            "gen": []
+            "gen": [],
+            "disc": []
         },
         "eval": {
             "mse": [],
@@ -366,8 +346,9 @@ def plot_sophie(losses,idx,root = "./data/reports/samples/"):
     plt.savefig("{}ade_fde_{}.jpg".format(root,idx))
     plt.close()
 
-    plt.plot(losses["train"]["real"],label = "discriminator_real")
-    plt.plot(losses["train"]["fake"],label = "discriminator_fake")
+    # plt.plot(losses["train"]["real"],label = "discriminator_real")
+    # plt.plot(losses["train"]["fake"],label = "discriminator_fake")
+    plt.plot(losses["train"]["disc"],label = "disc")
     plt.plot(losses["train"]["gen"],label = "generator")
     plt.legend()
 

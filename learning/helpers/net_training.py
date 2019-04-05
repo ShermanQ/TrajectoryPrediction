@@ -96,7 +96,7 @@ def train(model, device, train_loader,criterion, optimizer, epoch,batch_size,pri
     model: 0 rnn_mlp
            1 iatcnn
 """
-def evaluate(model, device, eval_loader,criterion, epoch, batch_size,scalers_path,multiple_scalers,model_type,nb_plots = 16 ):
+def evaluate(model, device, eval_loader,criterion, epoch, batch_size,scalers_path,multiple_scalers,model_type,nb_plots = 8 ):
     model.eval()
     eval_loss = 0.
     fde = 0.

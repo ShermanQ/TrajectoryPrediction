@@ -20,6 +20,7 @@ def main():
     # device = torch.device("cpu")
     print(device)
     print(torch.cuda.is_available())
+    
         
     args = sys.argv    
 
@@ -72,44 +73,31 @@ def main():
         scene_list= train_scenes,
         t_obs=prepare_param["t_obs"],
         t_pred=prepare_param["t_pred"],
-        set_type = "eval",
+        set_type = "eval", ##############
         use_images = False,
         data_type = "frames",
         use_neighbors_label = True,
         use_neighbors_sample = True
         )
 
-    train_loader = CustomDataLoader( batch_size = training_param["batch_size"],shuffle = True,drop_last = True,dataset = train_dataset)
-    eval_loader = CustomDataLoader( batch_size = training_param["batch_size"],shuffle = False,drop_last = True,dataset = eval_dataset)
+    train_loader = CustomDataLoader( batch_size = training_param["batch_size"],shuffle = True,drop_last = True,dataset = train_dataset,test= training_param["test"])
+    eval_loader = CustomDataLoader( batch_size = training_param["batch_size"],shuffle = False,drop_last = True,dataset = eval_dataset,test= training_param["test"])
     
   
-    Tpred = 12
-    input_dim = 2
-    dmodel = 32
-    kernel_size = 2
-    dropout_tcn = 0.2
-    dropout_tfr = 0.1
-    h = 4
-    dk = dv = int(dmodel/h)
-    d_ff_hidden = 4 * dmodel
-    nb_blocks_transformer = 3
-
-    predictor_layers = [dmodel*4]
-
-    pred_dim = Tpred * input_dim
 
 
     net = Model1(
         device = device,
         input_dim = training_param["input_dim"],
         input_length = training_param["obs_length"],
+        output_length = training_param["pred_length"],
         kernel_size = training_param["kernel_size"],
         nb_blocks_transformer = training_param["nb_blocks"],
         h = training_param["h"],
         dmodel = training_param["dmodel"],
         d_ff_hidden = 4 * training_param["dmodel"],
-        dk = int(training_param["dmodel"]/h),
-        dv = int(training_param["dmodel"]/h),
+        dk = int(training_param["dmodel"]/training_param["h"]),
+        dv = int(training_param["dmodel"]/training_param["h"]),
         predictor_layers = training_param["predictor_layers"],
         pred_dim = training_param["pred_length"] * training_param["input_dim"] ,
         dropout_tcn = training_param["dropout_tcn"],

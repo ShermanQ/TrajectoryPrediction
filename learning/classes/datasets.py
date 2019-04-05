@@ -9,7 +9,7 @@ import time
 
 
 class CustomDataLoader():
-      def __init__(self,batch_size,shuffle,drop_last,dataset):
+      def __init__(self,batch_size,shuffle,drop_last,dataset,test = 0):
             self.shuffle = shuffle 
             self.dataset = dataset
             self.data_len = self.dataset.get_len()
@@ -17,7 +17,9 @@ class CustomDataLoader():
             self.drop_last = drop_last
             # self.batches = self.__split_batches
             # self.batch_idx = 0
+            self.test = test
             self.__split_batches()
+            
 
             # print(self.batches[:3])
       def __split_batches(self):
@@ -27,6 +29,10 @@ class CustomDataLoader():
                   drop_last =self.drop_last))
             self.batch_idx = 0
             self.nb_batches = len(self.batches)
+            print(self.nb_batches)
+            if self.test :
+                  self.nb_batches = 1
+
             
 
       def __iter__(self):
@@ -50,7 +56,7 @@ class CustomDataLoader():
 """
 class Hdf5Dataset():
       'Characterizes a dataset for PyTorch'
-      def __init__(self,images_path,hdf5_file,scene_list,t_obs,t_pred,set_type,use_images,data_type,use_neighbors_sample,use_neighbors_label):
+      def __init__(self,images_path,hdf5_file,scene_list,t_obs,t_pred,set_type,use_images,data_type,use_neighbors_sample,use_neighbors_label,reduce_batches = True):
 
             self.images_path = images_path + "{}.jpg"
             self.hdf5_file = hdf5_file
@@ -62,6 +68,7 @@ class Hdf5Dataset():
             self.use_images = use_images
             self.use_neighbors_sample = use_neighbors_sample
             self.use_neighbors_label = use_neighbors_label
+            self.reduce_batches = reduce_batches
 
 
             self.dset_name = "samples_{}_{}".format(set_type,data_type)
@@ -83,13 +90,28 @@ class Hdf5Dataset():
 
 
                   X,y,scenes = [],[],[]
+                  max_batch = 0
                   if self.use_neighbors_sample:
                         X = coord_dset[ids,:,:self.t_obs]
+
+
+                        if self.reduce_batches:
+                              b,n,s,i = X.shape
+                              nb_agents = np.sum( np.sum(X.reshape(b,n,-1),axis = 2) > 0, axis = 1 )
+                              
+                              max_batch = np.max(nb_agents)
+                              
+                              X = X[:,:max_batch,:,:]
+
+
                   else: 
                         X = coord_dset[ids,0,:self.t_obs] 
                         
                   if self.use_neighbors_label:     
                         y = coord_dset[ids,:,self.t_obs:self.seq_len]
+                        if self.reduce_batches:
+                              y = y[:,:max_batch,:,:]
+                              
                   else:                        
                         y = np.expand_dims( coord_dset[ids,0,self.t_obs:self.seq_len], 1)
 

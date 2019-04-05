@@ -27,6 +27,7 @@ class Model1(nn.Module):
         device,
         input_dim,
         input_length,
+        output_length,
         kernel_size, 
         nb_blocks_transformer,
         h,
@@ -43,6 +44,8 @@ class Model1(nn.Module):
         self.device = device
         self.input_dim = input_dim
         self.input_length = input_length
+        self.output_length = output_length
+
         self.kernel_size = kernel_size
         self.nb_blocks_transformer = nb_blocks_transformer
         self.h = h
@@ -62,6 +65,9 @@ class Model1(nn.Module):
 
         # init network
         self.tcn = TemporalConvNet(device, input_dim, self.num_channels, kernel_size, dropout_tcn)
+        # self.tcn = ConvNet(device, input_dim, [dmodel], 4, dropout_tcn)
+
+
 ############# TRANSFORMER #########################################
 
         self.encoder = Transformer(device,nb_blocks_transformer,h,dmodel,d_ff_hidden,dk,dv,dropout_tfr)
@@ -70,6 +76,10 @@ class Model1(nn.Module):
 
         self.predictor = []
         self.predictor.append(nn.Linear(dmodel,predictor_layers[0]))
+
+        # self.predictor.append(nn.Linear(dmodel*self.input_length,predictor_layers[0]))
+        # self.predictor.append(nn.Linear(2*dmodel,predictor_layers[0]))
+
         self.predictor.append(nn.ReLU())
 
         for i in range(1,len(predictor_layers)):
@@ -98,18 +108,25 @@ class Model1(nn.Module):
         
         active_agents = torch.cat([ i*Nmax + e for i,e in enumerate(active_x)],dim = 0)
         y = torch.zeros(B*Nmax,self.dmodel,Tobs).to(self.device) # [B*Nmax],Nfeat,Tobs
+
+        # print(x[active_agents].size())
         y[active_agents] = self.tcn(x[active_agents]) # [B*Nmax],Nfeat,Tobs
 
         y = y.permute(0,2,1) # [B*Nmax],Tobs,Nfeat
-        y = y.view(B,Nmax,Tobs,self.dmodel) # B,Nmax,Tobs,Nfeat
+        y = y.view(B,Nmax,Tobs,self.dmodel).contiguous() # B,Nmax,Tobs,Nfeat
+        # y = y.view(B,Nmax,-1) # B,Nmax,Tobs*Nfeat
+
         conv_features = y[:,:,-1] # B,Nmax,Nfeat
 
         x = conv_features
         
 
         y = self.encoder(x)
+        # y = x
 
-
+        # y = f.relu(y + x) # residual adding
+        # y = torch.cat([x,y],dim = 2)
+        # print(y.size())
         y = self.predictor(y)
 
         t_pred = int(self.pred_dim/float(Nfeat))
@@ -136,3 +153,25 @@ class Model1(nn.Module):
 
 
 
+
+class ConvNet(nn.Module):
+    def __init__(self,device, num_inputs, num_channels, kernel_size=2, dropout=0.2,stride = 1):
+        super(ConvNet, self).__init__()
+        self.device = device
+        layers = []
+        num_levels = len(num_channels)
+        for i in range(num_levels):
+            p = int(   float( (num_inputs*(stride -1) + kernel_size - stride))/ 2.0   )
+            padding = (p,p+1)
+            # print(padding)
+            layers += [ nn.ConstantPad1d(padding, 0.) ]
+            if i == 0:
+                layers += [ nn.Conv1d(num_inputs ,num_channels[i],kernel_size,stride= stride)]
+            else:
+                layers += [ nn.Conv1d(num_channels[i-1] ,num_channels[i],kernel_size,stride= stride)]
+
+          
+        self.network = nn.Sequential(*layers)
+
+    def forward(self, x):
+        return self.network(x)
