@@ -5,6 +5,7 @@
     "extracted_datasets": "./data/extracted_datasets/",
     "preprocessed_datasets": "./data/preprocessed_datasets/",
     "prepared_datasets": "./data/prepared_datasets/",
+    "filtered_datasets":"./data/filtered_datasets/",
     "reports": "./data/reports/",
     "gradients": "./data/gradients/",
 

@@ -130,7 +130,7 @@ def fde_loss(outputs,targets):
 def get_colors(nb_colors,nb_colors_per_map = 20,maps = [cm.tab20,cm.tab20b,cm.tab20c,cm.gist_rainbow,cm.gist_ncar] ):
     max_colors = len(maps) * nb_colors_per_map
     if nb_colors >= max_colors:
-        return None
+        return []
     x = np.arange(nb_colors)
     colors =  np.concatenate([ maps[int(i/nb_colors_per_map)]( np.linspace(0, 1, nb_colors_per_map)) for i in range( int(nb_colors/nb_colors_per_map) + 1 ) ], axis = 0)
     return colors
@@ -147,11 +147,13 @@ def plot_samples(kept_samples,epoch,n_columns = 2,n_rows = 2,root = "./data/repo
 
         colors = np.array(get_colors(len(kept_samples[plot][0])))
 
-        if colors is not None:          
+        if len(colors) > 0:          
             last_points = []
             r = 0
             c = 0
             for j,agent in enumerate(kept_samples[plot][0]):
+                               
+
                 color = colors[j]
                 agent = agent.reshape(-1,2)
             

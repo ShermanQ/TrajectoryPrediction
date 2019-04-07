@@ -23,6 +23,7 @@ class CustomDataLoader():
 
             # print(self.batches[:3])
       def __split_batches(self):
+            torch.manual_seed(100)
             self.batches = list(torch.utils.data.BatchSampler(
                   torch.utils.data.RandomSampler(range(self.data_len)),
                   batch_size = self.batch_size,
@@ -31,7 +32,7 @@ class CustomDataLoader():
             self.nb_batches = len(self.batches)
             print(self.nb_batches)
             if self.test :
-                  self.nb_batches = 1
+                  self.nb_batches = 10
 
             
 
