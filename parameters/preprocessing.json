@@ -41,6 +41,9 @@
  
     ],
     "distance_threshold":3,
+    "acceleration_threshold":5,
+    "deceleration_threshold":-8,
+    "augmentation_angles":[90,180,270],
     "types":[
         "bicycle",
         "pedestrian",

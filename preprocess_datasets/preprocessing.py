@@ -1,4 +1,4 @@
-import extractors.helpers as helpers
+import helpers 
 import json
 import matplotlib.pyplot as plt
 import os 
@@ -107,7 +107,31 @@ def indices_to_sequence(indices):
             indices_sequences.append([indices[i]])
     return indices_sequences
 
-def find_outlier_points(trajectory,framerate = 0.1,acceleration_thresh = 5, deceleration_thresh = -8):
+# def find_outlier_points(trajectory,framerate = 0.1,acceleration_thresh = 5, deceleration_thresh = -8):
+#     coordinates = trajectory["coordinates"]
+#     speeds = get_speeds(coordinates,framerate)
+#     # speeds = [speeds[0]] + speeds 
+#     speeds = speeds 
+
+#     accelerations = get_accelerations(speeds,framerate)
+
+    
+#     indices = []
+#     for i,a in enumerate(accelerations):
+#         if not( a > deceleration_thresh and a < acceleration_thresh):
+#             if i+1 not in indices:
+#                 indices.append(i+1)
+#             if i + 2 not in indices:
+#                 indices.append(i+2)
+
+#     indices_sequences = indices_to_sequence(indices)
+    
+#     outlier_points = [coordinates[i] for i in indices]
+
+#     return indices_sequences,outlier_points,accelerations,speeds
+
+
+def nb_outlier_points(trajectory,framerate = 0.1,acceleration_thresh = 5, deceleration_thresh = -8):
     coordinates = trajectory["coordinates"]
     speeds = get_speeds(coordinates,framerate)
     # speeds = [speeds[0]] + speeds 
@@ -116,19 +140,13 @@ def find_outlier_points(trajectory,framerate = 0.1,acceleration_thresh = 5, dece
     accelerations = get_accelerations(speeds,framerate)
 
     
-    indices = []
+    nb_outliers = 0
     for i,a in enumerate(accelerations):
         if not( a > deceleration_thresh and a < acceleration_thresh):
-            if i+1 not in indices:
-                indices.append(i+1)
-            if i + 2 not in indices:
-                indices.append(i+2)
+            nb_outliers += 1
+   
 
-    indices_sequences = indices_to_sequence(indices)
-    
-    outlier_points = [coordinates[i] for i in indices]
-
-    return indices_sequences,outlier_points,accelerations,speeds
+    return nb_outliers
 
 
 def interpolate(trajectory,indices):

@@ -2,6 +2,7 @@
     "original_datasets": "./data/original_datasets/",
     "original_images": "./data/original_datasets/images/",
     "prepared_images": "./data/prepared_datasets/images/",
+    "filtered_images": "./data/filtered_datasets/images/",
     "extracted_datasets": "./data/extracted_datasets/",
     "preprocessed_datasets": "./data/preprocessed_datasets/",
     "prepared_datasets": "./data/prepared_datasets/",

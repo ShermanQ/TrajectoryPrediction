@@ -5,10 +5,13 @@ import numpy as np
 import pandas as pd
 import helpers
 from scipy.spatial.distance import euclidean
+from preprocess_datasets.preprocessing import get_speeds,get_accelerations,nb_outlier_points
 
 class Stats():
-    def __init__(self,preprocessing_params,data):
+    def __init__(self,preprocessing_params,data,prepare_params):
         preprocessing_params = json.load(open(preprocessing_params)) 
+        prepare_params = json.load(open(prepare_params)) 
+
         data = json.load(open(data))
         self.scenes = preprocessing_params["scenes"]
         self.extracted_datasets = data["filtered_datasets"] + "{}.csv"
@@ -16,6 +19,9 @@ class Stats():
         self.trajectories_temp = data["temp"] + "trajectories.txt"
         self.scaler_dest = data["scalers"] 
         self.dist_threshold = preprocessing_params["distance_threshold"]
+        self.delta_t = 1.0/float(prepare_params["framerate"])
+        self.acc_thresh = preprocessing_params["acceleration_threshold"]
+        self.dec_thresh = preprocessing_params["deceleration_threshold"]
 
         
 
@@ -31,9 +37,15 @@ class Stats():
             # stats = self.__get_frames_stats(scene)
             # print(stats)
 
-            ctr = self.__get_stopped(scene)
-            tot1 += ctr[0]
-            tot2 += ctr[1]
+            # ctr = self.__get_stopped(scene)
+            # print(ctr)
+            # tot1 += ctr[0]
+            # tot2 += ctr[1]
+
+            # ctr = self.__get_outlier_accelerations(scene)
+            # print(ctr)
+            # tot1 += ctr[0]
+            # tot2 += ctr[1]
 
         print(tot1,tot2)
 
@@ -69,6 +81,21 @@ class Stats():
                 if distance < self.dist_threshold:
                     ctr += 1
         return (ctr,k+1)
+
+    def __get_outlier_accelerations(self,scene):
+        helpers.extract_trajectories(self.extracted_datasets.format(scene),self.trajectories_temp,save=True)
+        ctr = 0
+        nbs = []
+        with open(self.trajectories_temp) as trajectories:
+            for k,trajectory in enumerate(trajectories):                
+                trajectory = json.loads(trajectory)
+                nb_out = nb_outlier_points(trajectory,self.delta_t,self.acc_thresh,self.dec_thresh)
+                if nb_out > 0:
+                    ctr += 1
+                    nbs.append(nb_out)
+        
+        return (ctr,k+1,np.sum(nbs),np.mean(nbs))
+        
 
         
 

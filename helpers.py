@@ -62,6 +62,57 @@ def clip_scene(clips,scene_path,new_path = "./data/temp/temp.csv"):
 
     remove_file(new_path)
 
+# {
+#     "coordinates" : [],
+#     "bboxes" : [],
+#     "frames" : [],
+#     "scene" : line[1],
+#     "user_type" : line[10],
+#     "id" : id_,
+#     "dataset" : line[0]
+# }
+# filename is 
+def save_traj(trajectory):
+    rows = []
+    coordinates = trajectory["coordinates"]
+    bboxes = trajectory["bboxes"]
+    frames = trajectory["frames"]
+
+    scene = trajectory["scene"]
+    user_type = trajectory["user_type"]
+    dataset = trajectory["dataset"]
+    id_ = trajectory["id"]
+
+
+    traj_len = len(coordinates)
+
+    scenes = [scene for _ in range(traj_len)]
+    user_types = [user_type for _ in range(traj_len)]
+    datasets = [dataset for _ in range(traj_len)]
+    ids = [id_ for _ in range(traj_len)]
+
+
+    for d,s,f,i,c,b,t in zip(datasets,scenes,frames,ids,coordinates,bboxes,user_types):
+        row = []
+        row.append(d)
+        row.append(s)
+        row.append(f)
+        row.append(i)
+        for e in c:
+            row.append(e)
+        for e in b:
+            row.append(e)
+        row.append(t)
+        rows.append(row)
+    return rows
+
+
+
+
+
+
+    
+    return rows
 
 
 """
@@ -77,6 +128,7 @@ def clip_scene(clips,scene_path,new_path = "./data/temp/temp.csv"):
         }
     }
 """
+    
 
 def extract_trajectories(file_name,destination_path = "", save = False):
 
