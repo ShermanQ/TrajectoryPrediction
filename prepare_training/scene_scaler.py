@@ -115,7 +115,10 @@ class SceneScalerMultiScene():
         self.original_file = data["preprocessed_datasets"] + "{}.csv"
         self.scaler_dest = data["scalers"] 
         self.scene_list = scene_list
-        self.scaler = None
+        
+        print("loading scaler")
+        self.__get_scaler()
+        print("done!")
 
     def __get_scaler(self):
         mms = MinMaxScaler(feature_range=(1e-10,1))
@@ -133,14 +136,14 @@ class SceneScalerMultiScene():
             min_scene = min(min_x - x_mean,min_y - y_mean) 
             max_scene = max(max_x - x_mean,max_y  - y_mean)
 
-            print(min_scene,max_scene)
+            # print(min_scene,max_scene)
 
             min_ = min(min_scene,min_)
             max_ = max(max_scene,max_)
-        print(min_,max_)
+        # print(min_,max_)
 
         mms = mms.fit([[min_],[max_]])
-        print(mms.data_min_,mms.data_max_)
+        # print(mms.data_min_,mms.data_max_)
         self.scaler = mms
 
         helpers.remove_file(self.scaler_dest)
@@ -150,8 +153,8 @@ class SceneScalerMultiScene():
 
 
     def min_max_scale(self,scene):
-        if self.scaler == None:
-            self.__get_scaler()
+        # if self.scaler == None:
+        #     self.__get_scaler()
 
         helpers.remove_file(self.temp)
         os.rename(self.original_file.format(scene),self.temp)

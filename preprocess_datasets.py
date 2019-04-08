@@ -6,6 +6,7 @@ from preprocess_datasets.data_augmenter import DataAugmenter
 import sys
 import json
 
+
 # python preprocess_datasets.py parameters/preprocessing.json parameters/data.json  parameters/prepare_training.json
 def main():
     args = sys.argv
@@ -30,19 +31,19 @@ def main():
 
     #################framerate#######################
 
-    print("Managing framerate")
-    rate_manager = FramerateManager(args[2],new_rate)
-    for scene in scene_list:
-        print(scene)
-        rate_manager.change_rate(scene)
-    print("DOne!")
+    # print("Managing framerate")
+    # rate_manager = FramerateManager(args[2],new_rate)
+    # for scene in scene_list:
+    #     print(scene)
+    #     rate_manager.change_rate(scene)
+    # print("DOne!")
 
-    ##################### conversion ###############
-    pix2met = Pixel2Meters(args[2],args[4])
-    for scene in scene_list:
-        print(scene)
-        pix2met.convert(scene)
-    ################################################
+    # ##################### conversion ###############
+    # pix2met = Pixel2Meters(args[2],1)
+    # for scene in scene_list:
+    #     print(scene)
+    #     pix2met.convert(scene)
+    # ################################################
 
     
 

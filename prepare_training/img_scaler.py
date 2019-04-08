@@ -8,7 +8,7 @@ class ImgScaler():
     def __init__(self,data,target_size):
         data = json.load(open(data))
         self.target_size = target_size
-        self.original_image = data["original_images"] + "{}.jpg"
+        self.original_image = data["preprocessed_images"] + "{}.jpg"
         self.destination_image = data["prepared_images"] + "{}.jpg"
 
     def scale(self,scene):

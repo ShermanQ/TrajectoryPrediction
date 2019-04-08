@@ -27,8 +27,12 @@ class DigitManager():
         helpers.remove_file(self.original_file.format(scene_name))
 
         with open(self.temp) as scene_csv:
+        # with open(self.original_file.format(scene_name)) as scene_csv:
+
             csv_reader = csv.reader(scene_csv)
             with open(self.original_file.format(scene_name),"a") as new_csv:
+            # with open(self.destination_file.format(scene_name),"a") as new_csv:
+
                 csv_writer = csv.writer(new_csv)
             
                 for row in csv_reader:

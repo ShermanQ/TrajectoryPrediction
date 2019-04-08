@@ -6,6 +6,7 @@ import pandas as pd
 import helpers
 from scipy.spatial.distance import euclidean
 from skimage import io,transform,util
+import os
 
 
 
@@ -17,15 +18,20 @@ class DataAugmenter():
 
 
         # self.scenes = preprocessing_params["scenes"]
-        self.original_dir = data["filtered_datasets"]
+        self.destination_dir = data["preprocessed_datasets"]
         self.original_file = data["filtered_datasets"] + "{}.csv"
         self.angles = preprocessing_params["augmentation_angles"]
         self.augmented_name = "{}{}_{}.csv"
 
         self.original_image = data["original_images"] + "{}.jpg"
-        self.destination_image = data["filtered_images"] + "{}{}.jpg"
+        self.destination_image = data["preprocessed_images"] + "{}{}.jpg"
         
     def augment_scene(self,scene):
+        helpers.remove_file("{}{}.csv".format(self.destination_dir,scene))
+        command = "cp {} {}".format(self.original_file.format(scene),"{}{}.csv".format(self.destination_dir,scene))
+        
+        os.system(command)  
+
         for angle in self.angles:
             print("{} degrees".format(angle))
 
@@ -35,12 +41,14 @@ class DataAugmenter():
             r = np.array([[c,-s],
                           [s,c]
                          ])
+
+            
             with open(self.original_file.format(scene)) as original_file:
                 original_reader = csv.reader(original_file)
 
-                helpers.remove_file(self.augmented_name.format(self.original_dir,scene,angle))
+                helpers.remove_file(self.augmented_name.format(self.destination_dir,scene,angle))
             
-                with open(self.augmented_name.format(self.original_dir,scene,angle), "a+") as new_file:
+                with open(self.augmented_name.format(self.destination_dir,scene,angle), "a+") as new_file:
                     writer= csv.writer(new_file)
 
                     for orig_row in original_reader:
