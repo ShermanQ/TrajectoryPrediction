@@ -18,6 +18,8 @@ from classes.tcn_mlp import TCN_MLP
 from classes.rnn_mlp import custom_mse
 # import helpers.helpers_training as training
 import helpers.net_training as training
+import helpers
+
 
 import sys
 import json
@@ -79,6 +81,9 @@ def main():
         data_file = torch_param["toy_hdf5"]
         train_scenes = prepare_param["toy_train_scenes"]
         test_scenes = prepare_param["toy_test_scenes"] 
+    else:
+        train_scenes = helpers.helpers_training.augment_scene_list(train_scenes,preprocessing["augmentation_angles"])
+        test_scenes = helpers.helpers_training.augment_scene_list(test_scenes,preprocessing["augmentation_angles"])
 
 
     train_dataset = Hdf5Dataset(

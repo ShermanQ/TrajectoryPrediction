@@ -6,15 +6,7 @@ import helpers
 import h5py
 import os
 
-def augment_scene_list(scene_list,angles):
-    new_list = []
 
-    for scene in scene_list:
-        new_list.append(scene)
-        for angle in angles:
-            scene_angle = scene + "_{}".format(angle)
-            new_list.append(scene_angle)
-    return new_list
 #python prepare_training.py parameters/parameters.json parameters/prepare_training.json parameters/data.json parameters/preprocessing.json
 def main():
     args = sys.argv
@@ -43,9 +35,9 @@ def main():
         train_list = prepare_training_params["train_scenes"]
         test_list = prepare_training_params["test_scenes"]
 
-        scene_list = augment_scene_list(scene_list,preprocessing["augmentation_angles"])
-        train_list = augment_scene_list(train_list,preprocessing["augmentation_angles"])
-        test_list = augment_scene_list(test_list,preprocessing["augmentation_angles"])
+        scene_list = helpers.augment_scene_list(scene_list,preprocessing["augmentation_angles"])
+        train_list = helpers.augment_scene_list(train_list,preprocessing["augmentation_angles"])
+        test_list = helpers.augment_scene_list(test_list,preprocessing["augmentation_angles"])
 
 
 

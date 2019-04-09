@@ -17,6 +17,8 @@ from classes.datasets import Hdf5Dataset,CustomDataLoader
 from classes.sophie_gan import sophie,discriminatorLSTM,custom_mse
 # import helpers.helpers_training as training
 import helpers.gan_training as training
+import helpers
+
 
 import torchvision.models as models
 
@@ -89,6 +91,9 @@ def main():
         nb_neighbors_max = np.array(json.load(open(torch_param["toy_nb_neighboors_path"]))["max_neighbors"])  - 1
         train_scenes = prepare_param["toy_train_scenes"]
         test_scenes = prepare_param["toy_test_scenes"]
+    else:
+        train_scenes = helpers.helpers_training.augment_scene_list(train_scenes,preprocessing["augmentation_angles"])
+        test_scenes = helpers.helpers_training.augment_scene_list(test_scenes,preprocessing["augmentation_angles"])
 
 
     

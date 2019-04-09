@@ -7,17 +7,21 @@ import os
 import json
 import h5py
 import numpy as np
+import helpers
+
+from helpers import augment_scene_list
 
 
 class TorchExtractor():
-    def __init__(self,data,torch_params,prepare_params):
+    def __init__(self,data,torch_params,prepare_params,preprocessing):
     # def __init__(self,data,torch_params):
 
         data = json.load(open(data))
         torch_params = json.load(open(torch_params))
         prepare_params = json.load(open(prepare_params))
+        preprocessing = json.load(open(preprocessing))
 
-
+        
         # self.prepared_samples = data["prepared_samples_grouped"]
         # self.prepared_labels = data["prepared_labels_grouped"]
         # self.ids_path = data["prepared_ids"]
@@ -48,6 +52,9 @@ class TorchExtractor():
             self.max_neighbor_path = torch_params["nb_neighboors_path"]
             self.test_scenes = list(prepare_params["test_scenes"])
             self.train_scenes = list(prepare_params["train_scenes"])
+            self.train_scenes = augment_scene_list(self.train_scenes,preprocessing["augmentation_angles"])
+            self.test_scenes = augment_scene_list(self.test_scenes,preprocessing["augmentation_angles"])
+
 
         self.seq_len = prepare_params["t_obs"] + prepare_params["t_pred"]
         self.eval_prop = prepare_params["eval_prop"]

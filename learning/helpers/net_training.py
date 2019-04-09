@@ -20,24 +20,32 @@ def train(model, device, train_loader,criterion, optimizer, epoch,batch_size,pri
     model.train()
     epoch_loss = 0.
     batches_loss = []
+    torch.cuda.synchronize()
 
     start_time = time.time()
+
+    nb_grad_plots = 20
+    ids_grads = np.arange(int(train_loader.nb_batches) )
+    np.random.shuffle(ids_grads)
+    ids_grads = ids_grads[:nb_grad_plots]
+    print(ids_grads)
+
     for batch_idx, data in enumerate(train_loader):
         s = time.time()
         inputs, labels, ids = data
         inputs, labels = inputs.to(device), labels.to(device)
 
-        torch.cuda.synchronize()
+        # torch.cuda.synchronize()
         # print("data loading {}".format(time.time()-s))
-        s = time.time()
+        # s = time.time()
 
         
         optimizer.zero_grad()
         outputs = model(inputs)
 
-        torch.cuda.synchronize()
+        # torch.cuda.synchronize()
         # print("overall model {}".format(time.time()-s))
-        s = time.time()
+        # s = time.time()
 # ####################
         mask = helpers.mask_loss(labels.detach().cpu().numpy())
         outputs = outputs.contiguous().view([outputs.size()[0] * outputs.size()[1]] + list(outputs.size()[2:]))
@@ -47,23 +55,30 @@ def train(model, device, train_loader,criterion, optimizer, epoch,batch_size,pri
         outputs = outputs[mask]
         labels = labels[mask]
 
-        torch.cuda.synchronize()
+        # torch.cuda.synchronize()
         # print("masking {}".format(time.time()-s))
-        s = time.time()
+        # s = time.time()
 # ###########################
         loss = criterion(outputs, labels)
 
-        torch.cuda.synchronize()
+        # torch.cuda.synchronize()
         # print("loss {}".format(time.time()-s))
-        s = time.time()
+        # s = time.time()
 
         loss.backward()
-        helpers.plot_grad_flow(model.named_parameters(),epoch)
 
-        torch.cuda.synchronize()
+        # torch.cuda.synchronize()
         # print("backward {}".format(time.time()-s))
         
-        s = time.time()
+        # s = time.time()
+
+        if batch_idx in ids_grads:
+            helpers.plot_grad_flow(model.named_parameters(),epoch)
+
+        # torch.cuda.synchronize()
+        # print("grad flow {}".format(time.time()-s))
+        
+        # s = time.time()
         optimizer.step()
 
         epoch_loss += loss.item()

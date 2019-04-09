@@ -9,11 +9,12 @@ import time
 from classes.datasets import Hdf5Dataset,CustomDataLoader
 from classes.model1 import Model1,mse_loss
 import helpers.net_training as training
+import helpers
 import sys
 import json
 
 
-#python learning/model1_training.py parameters/data.json parameters/model1_training.json parameters/torch_extractors.json parameters/prepare_training.json
+#python learning/model1_training.py parameters/data.json parameters/model1_training.json parameters/torch_extractors.json parameters/prepare_training.json "parameters/preprocessing.json"
 
 def main():
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")    
@@ -28,11 +29,15 @@ def main():
     # training_param = json.load(open(args[2]))
     # torch_param = json.load(open(args[3]))
     # prepare_param = json.load(open(args[4]))
+    # preprocessing = json.load(open(args[5]))
+
 
     data = json.load(open("parameters/data.json"))
     torch_param = json.load(open("parameters/torch_extractors.json"))
     prepare_param = json.load(open("parameters/prepare_training.json"))
     training_param = json.load(open("parameters/model1_training.json"))
+    preprocessing = json.load(open("parameters/preprocessing.json"))
+
 
 
     toy = prepare_param["toy"]
@@ -49,7 +54,11 @@ def main():
         train_scenes = prepare_param["toy_train_scenes"]
         test_scenes = prepare_param["toy_test_scenes"] 
         nb_neighbors_max = np.array(json.load(open(torch_param["toy_nb_neighboors_path"]))["max_neighbors"])
+    else:
+        train_scenes = helpers.helpers_training.augment_scene_list(train_scenes,preprocessing["augmentation_angles"])
+        test_scenes = helpers.helpers_training.augment_scene_list(test_scenes,preprocessing["augmentation_angles"])
 
+    
 
     print(nb_neighbors_max)
     train_dataset = Hdf5Dataset(

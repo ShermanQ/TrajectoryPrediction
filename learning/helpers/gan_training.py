@@ -40,6 +40,13 @@ def train_sophie(
     batch_idx = 0
     # torch.cuda.synchronize
     start_time = time.time()
+    nb_grad_plots = 20
+    ids_grads = np.arange(int(train_loader.nb_batches) )
+    np.random.shuffle(ids_grads)
+    ids_grads = ids_grads[:nb_grad_plots]
+    print(ids_grads)
+
+
     for batch_idx, data in enumerate(train_loader):
 
         # torch.cuda.synchronize
@@ -76,7 +83,8 @@ def train_sophie(
         disc_loss = criterion_gan(disc_class,labels[ids])
 
         disc_loss.backward()
-        helpers.plot_grad_flow(discriminator.named_parameters(),"disc_{}".format(epoch))
+        if batch_idx in ids_grads:
+            helpers.plot_grad_flow(discriminator.named_parameters(),"disc_{}".format(epoch))
 
         optimizer_disc.step()
 
@@ -94,7 +102,8 @@ def train_sophie(
 
         loss.backward()
 
-        helpers.plot_grad_flow(generator.named_parameters(),"gen_{}".format(epoch))
+        if batch_idx in ids_grads:
+            helpers.plot_grad_flow(generator.named_parameters(),"gen_{}".format(epoch))
         optimizer_gen.step()
    
 

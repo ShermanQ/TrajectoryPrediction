@@ -264,5 +264,19 @@ def plot_grad_flow(named_parameters,epoch,root = "./data/reports/gradients/"):
                 Line2D([0], [0], color="b", lw=4),
                 Line2D([0], [0], color="k", lw=4)], ['max-gradient', 'mean-gradient', 'zero-gradient'])
 
-    plt.savefig("{}gradients_{}.jpg".format(root,epoch), bbox_extra_artists=(lgd,), bbox_inches='tight')
+    # plt.savefig("{}gradients_{}.jpg".format(root,epoch), bbox_extra_artists=(lgd,), bbox_inches='tight')
+    plt.savefig("{}gradients_{}.jpg".format(root,time.time()), bbox_extra_artists=(lgd,), bbox_inches='tight')
+
     plt.close()
+
+
+def augment_scene_list(scene_list,angles):
+    new_list = []
+
+    for scene in scene_list:
+        new_list.append(scene)
+        for angle in angles:
+            scene_angle = scene + "_{}".format(angle)
+            new_list.append(scene_angle)
+    return new_list
+    

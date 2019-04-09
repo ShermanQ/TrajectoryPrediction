@@ -62,6 +62,16 @@ def clip_scene(clips,scene_path,new_path = "./data/temp/temp.csv"):
 
     remove_file(new_path)
 
+def augment_scene_list(scene_list,angles):
+    new_list = []
+
+    for scene in scene_list:
+        new_list.append(scene)
+        for angle in angles:
+            scene_angle = scene + "_{}".format(angle)
+            new_list.append(scene_angle)
+    return new_list
+    
 # {
 #     "coordinates" : [],
 #     "bboxes" : [],

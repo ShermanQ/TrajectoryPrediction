@@ -95,6 +95,9 @@ class Model1(nn.Module):
 
 
     def forward(self,x):
+
+        torch.cuda.synchronize()
+        s = time.time()
         active_x = self.__get_active_ids(x)
         # permute channels and sequence length
         B,Nmax,Tobs,Nfeat = x.size()
@@ -120,14 +123,25 @@ class Model1(nn.Module):
 
         x = conv_features
         
+        # print("tcn {}".format(time.time() - s))
+        # torch.cuda.synchronize()
+        # s = time.time()
+
 
         y = self.encoder(x)
+
+        # print("encoder {}".format(time.time() - s))
+        # torch.cuda.synchronize()
+        # s = time.time()
         # y = x
 
         # y = f.relu(y + x) # residual adding
         # y = torch.cat([x,y],dim = 2)
         # print(y.size())
         y = self.predictor(y)
+
+        # print("predictor {}".format(time.time() - s))
+        # torch.cuda.synchronize()
 
         t_pred = int(self.pred_dim/float(Nfeat))
         y = y.view(B,Nmax,t_pred,Nfeat) #B,Nmax,Tpred,Nfeat
