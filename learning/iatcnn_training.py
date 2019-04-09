@@ -72,6 +72,8 @@ def main():
     torch_param = json.load(open("parameters/torch_extractors.json"))
     prepare_param = json.load(open("parameters/prepare_training.json"))
     training_param = json.load(open("parameters/iatcnn_training.json"))
+    preprocessing = json.load(open("parameters/preprocessing.json"))
+
 
 
     

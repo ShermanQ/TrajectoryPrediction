@@ -37,6 +37,9 @@ class Model1(nn.Module):
         dv,
         predictor_layers,
         pred_dim,
+        convnet_embedding,
+        convnet_nb_layers,
+        use_tcn,
         dropout_tcn = 0.2,
         dropout_tfr = 0.1):
         super(Model1,self).__init__()
@@ -58,15 +61,28 @@ class Model1(nn.Module):
         self.dropout_tcn = dropout_tcn
         self.dropout_tfr = dropout_tfr
 
+        self.convnet_embedding = convnet_embedding
+        self.convnet_nb_layers = convnet_nb_layers
+        self.use_tcn = use_tcn
+
+############# x/y embedding ###############################
+        self.coord_embedding = nn.Linear(input_dim,convnet_embedding)
 ############# TCN #########################################
         # compute nb temporal blocks
-        self.nb_temporal_blocks = self.__get_nb_blocks(input_length,kernel_size)        
-        self.num_channels = [dmodel for _ in range(self.nb_temporal_blocks)]
+
+        if self.use_tcn:
+            self.nb_temporal_blocks = self.__get_nb_blocks(input_length,kernel_size)        
+            self.num_channels = [dmodel for _ in range(self.nb_temporal_blocks)]
 
         # init network
-        self.tcn = TemporalConvNet(device, input_dim, self.num_channels, kernel_size, dropout_tcn)
-        # self.tcn = ConvNet(device, input_dim, [dmodel], 4, dropout_tcn)
+            self.tcn = TemporalConvNet(device, self.convnet_embedding, self.num_channels, kernel_size, dropout_tcn)
+            self.conv_enc = nn.Linear(input_length*dmodel,dmodel)
 
+
+        else:
+            self.tcn = ConvNet(device, self.input_length, convnet_embedding,convnet_nb_layers, kernel_size, dropout_tcn)
+
+            self.conv_enc = nn.Linear(input_length*convnet_embedding,dmodel)
 
 ############# TRANSFORMER #########################################
 
@@ -98,6 +114,9 @@ class Model1(nn.Module):
 
         torch.cuda.synchronize()
         s = time.time()
+        x = self.coord_embedding(x)
+        # x = f.relu(x)
+
         active_x = self.__get_active_ids(x)
         # permute channels and sequence length
         B,Nmax,Tobs,Nfeat = x.size()
@@ -110,22 +129,26 @@ class Model1(nn.Module):
         # set the output values of the active agents to zeros tensor
         
         active_agents = torch.cat([ i*Nmax + e for i,e in enumerate(active_x)],dim = 0)
-        y = torch.zeros(B*Nmax,self.dmodel,Tobs).to(self.device) # [B*Nmax],Nfeat,Tobs
+        # y = torch.zeros(B*Nmax,self.dmodel,Tobs).to(self.device) # [B*Nmax],Nfeat,Tobs
+        y = torch.zeros(B*Nmax,self.convnet_embedding,Tobs).to(self.device) # [B*Nmax],Nfeat,Tobs
+
 
         # print(x[active_agents].size())
         y[active_agents] = self.tcn(x[active_agents]) # [B*Nmax],Nfeat,Tobs
 
         y = y.permute(0,2,1) # [B*Nmax],Tobs,Nfeat
-        y = y.view(B,Nmax,Tobs,self.dmodel).contiguous() # B,Nmax,Tobs,Nfeat
-        # y = y.view(B,Nmax,-1) # B,Nmax,Tobs*Nfeat
+        y = y.view(B,Nmax,Tobs,y.size()[2]).contiguous() # B,Nmax,Tobs,Nfeat
+        y = y.view(B,Nmax,-1) # B,Nmax,Tobs*Nfeat
 
-        conv_features = y[:,:,-1] # B,Nmax,Nfeat
+        # conv_features = y[:,:,-1] # B,Nmax,Nfeat
+        conv_features = y # B,Nmax,Nfeat
 
-        x = conv_features
+        x = self.conv_enc(conv_features)
         
         # print("tcn {}".format(time.time() - s))
         # torch.cuda.synchronize()
         # s = time.time()
+        
 
 
         y = self.encoder(x)
@@ -140,11 +163,15 @@ class Model1(nn.Module):
         # print(y.size())
         y = self.predictor(y)
 
+        # print(y.size())
+
+
         # print("predictor {}".format(time.time() - s))
         # torch.cuda.synchronize()
 
-        t_pred = int(self.pred_dim/float(Nfeat))
-        y = y.view(B,Nmax,t_pred,Nfeat) #B,Nmax,Tpred,Nfeat
+        t_pred = int(self.pred_dim/float(self.input_dim))
+        # print(t_pred,self.pred_dim,self.input_dim)
+        y = y.view(B,Nmax,t_pred,self.input_dim) #B,Nmax,Tpred,Nfeat
 
         return y
 
@@ -169,23 +196,23 @@ class Model1(nn.Module):
 
 
 class ConvNet(nn.Module):
-    def __init__(self,device, num_inputs, num_channels, kernel_size=2, dropout=0.2,stride = 1):
+    def __init__(self,device, num_inputs, embedding,nb_layers, kernel_size, dropout=0.2,stride = 1):
         super(ConvNet, self).__init__()
         self.device = device
         layers = []
-        num_levels = len(num_channels)
-        for i in range(num_levels):
-            p = int(   float( (num_inputs*(stride -1) + kernel_size - stride))/ 2.0   )
-            padding = (p,p+1)
-            # print(padding)
-            layers += [ nn.ConstantPad1d(padding, 0.) ]
-            if i == 0:
-                layers += [ nn.Conv1d(num_inputs ,num_channels[i],kernel_size,stride= stride)]
-            else:
-                layers += [ nn.Conv1d(num_channels[i-1] ,num_channels[i],kernel_size,stride= stride)]
 
+        
+        for i in range(nb_layers):
+            p = float( (num_inputs*(stride -1) + kernel_size - stride))/ 2.0   
+
+            padding = (int( np.floor(p)),int( np.ceil(p)))
+            layers += [ nn.ConstantPad1d(padding, 0.) ]
+            
+            layers += [ nn.Conv1d(embedding ,embedding,kernel_size,stride= stride)]
+            
           
         self.network = nn.Sequential(*layers)
 
     def forward(self, x):
-        return self.network(x)
+        x = self.network(x)
+        return x

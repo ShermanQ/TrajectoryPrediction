@@ -109,12 +109,17 @@ def main():
         dv = int(training_param["dmodel"]/training_param["h"]),
         predictor_layers = training_param["predictor_layers"],
         pred_dim = training_param["pred_length"] * training_param["input_dim"] ,
+        
+        convnet_embedding = training_param["convnet_embedding"],
+        convnet_nb_layers = training_param["convnet_nb_layers"],
+        use_tcn = training_param["use_tcn"],
         dropout_tcn = training_param["dropout_tcn"],
         dropout_tfr = training_param["dropout_tfr"]
+
     )
 
     net = net.to(device)
-    # print(net)
+    print(net)
 
     optimizer = optim.Adam(net.parameters(),lr = training_param["lr"])
     criterion = mse_loss
