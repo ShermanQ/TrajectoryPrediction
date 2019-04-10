@@ -111,7 +111,8 @@ def train(model, device, train_loader,criterion, optimizer, epoch,batch_size,pri
     model: 0 rnn_mlp
            1 iatcnn
 """
-def evaluate(model, device, eval_loader,criterion, epoch, batch_size,scalers_path,multiple_scalers,model_type,nb_plots = 8 ):
+def evaluate(model, device, eval_loader,criterion, epoch, batch_size,scalers_path,multiple_scalers,
+            model_type,nb_plots = 8, offsets = 0 ):
     model.eval()
     eval_loss = 0.
     fde = 0.
@@ -138,7 +139,16 @@ def evaluate(model, device, eval_loader,criterion, epoch, batch_size,scalers_pat
         
         s = time.time()
         outputs = model(inputs)
+
+        #### function takes inputs labels outputs offsets ###
+        #### returns labels and outputs in trajectory format ####
         
+        inputs,labels,outputs = helpers.offsets_to_trajectories(inputs.detach().cpu().numpy(),
+                                                                labels.detach().cpu().numpy(),
+                                                                outputs.detach().cpu().numpy(),
+                                                                offsets)
+
+        inputs,labels,outputs = torch.FloatTensor(inputs).to(device),torch.FloatTensor(labels).to(device),torch.FloatTensor(outputs).to(device)
         if keep_batch:
             kept_sample_id = np.random.randint(0,labels.size()[0])
 
@@ -193,7 +203,7 @@ def evaluate(model, device, eval_loader,criterion, epoch, batch_size,scalers_pat
         eval_loss += loss.item()
 
     # print(len(kept_samples))
-    helpers.plot_samples(kept_samples,epoch,1,1)
+    helpers.plot_samples(kept_samples,epoch,1,1) #### retrieve 
 
             
     eval_loss /= eval_loader_len 
@@ -218,7 +228,8 @@ def evaluate(model, device, eval_loader,criterion, epoch, batch_size,scalers_pat
     If exception during training, model is stored
 """
 def training_loop(n_epochs,batch_size,net,device,train_loader,eval_loader,criterion_train,criterion_eval,optimizer,
-        scalers_path,multiple_scalers,model_type,plot = True,early_stopping = True,load_path = None,plot_every = 5,save_every = 1):
+        scalers_path,multiple_scalers,model_type,plot = True,early_stopping = True,load_path = None,plot_every = 5,
+        save_every = 1,offsets = 0):
 
     losses = {
         "train":{
@@ -252,7 +263,9 @@ def training_loop(n_epochs,batch_size,net,device,train_loader,eval_loader,criter
         train_loss,_ = train(net, device, train_loader,criterion_train, optimizer, epoch,batch_size)
         
         
-        eval_loss,fde,ade = evaluate(net, device, eval_loader,criterion_eval, epoch, batch_size,scalers_path,multiple_scalers,model_type)
+        eval_loss,fde,ade = evaluate(net, device, eval_loader,criterion_eval, 
+                epoch, batch_size,scalers_path,multiple_scalers,model_type,offsets=offsets
+                )
             
 
         losses["train"]["loss"].append(train_loss)

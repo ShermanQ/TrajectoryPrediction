@@ -284,3 +284,17 @@ def augment_scene_list(scene_list,angles):
             new_list.append(scene_angle)
     return new_list
     
+
+def offsets_to_trajectories(inputs,labels,outputs,offsets):
+    # print(inputs.shape) # B,N,obs,2
+    # print(labels.shape) # B,N,obs,2
+    # print(outputs.shape) # B,N,obs,2
+
+    
+    if offsets == 1:
+        return inputs,labels,outputs
+    elif offsets == 2:
+        return inputs,labels,outputs
+    else :
+        return inputs,labels,outputs
+

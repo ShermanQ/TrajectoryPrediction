@@ -58,7 +58,7 @@ class CustomDataLoader():
 """
 class Hdf5Dataset():
       'Characterizes a dataset for PyTorch'
-      def __init__(self,images_path,hdf5_file,scene_list,t_obs,t_pred,set_type,use_images,data_type,use_neighbors_sample,use_neighbors_label,reduce_batches = True,predict_offsets = 0):
+      def __init__(self,images_path,hdf5_file,scene_list,t_obs,t_pred,set_type,use_images,data_type,use_neighbors_sample,use_neighbors_label,reduce_batches = True,predict_offsets = 0,predict_smooth=0,smooth_suffix = ""):
 
             self.images_path = images_path + "{}.jpg"
             self.hdf5_file = hdf5_file
@@ -72,6 +72,9 @@ class Hdf5Dataset():
             self.use_neighbors_label = use_neighbors_label
             self.reduce_batches = reduce_batches
             self.predict_offsets = predict_offsets
+
+            self.predict_smooth = predict_smooth
+            self.smooth_suffix = smooth_suffix
 
 
             self.dset_name = "samples_{}_{}".format(set_type,data_type)
@@ -113,9 +116,15 @@ class Hdf5Dataset():
 
 
                   else: 
-                        X = coord_dset[ids,0,:self.t_obs] 
+                        # X = coord_dset[ids,0,:self.t_obs]
+                        X = np.expand_dims( coord_dset[ids,0,:self.t_obs] ,1)
+
                         if self.predict_offsets == 1 :
-                              last_points = np.repeat(  np.expand_dims(np.expand_dims(X,1)[:,:,-1],2),  self.t_pred, axis=2) #B,1,tpred,2
+                              # last_points = np.repeat(  np.expand_dims(np.expand_dims(X,1)[:,:,-1],2),  self.t_pred, axis=2) #B,1,tpred,2
+                              last_points = np.repeat(  np.expand_dims(X[:,:,-1],2),  self.t_pred, axis=2) #B,1,tpred,2
+
+                  if self.predict_smooth:
+                        coord_dset = hdf5_file[self.dset_name+self.smooth_suffix]
 
                         
                   if self.use_neighbors_label:     

@@ -8,6 +8,7 @@
     "stopped_threshold" : 0.001,
     "stopped_prop" : 1.0,
     "new_padding":0.0,
-    "old_padding":0.0
+    "old_padding":0.0,
+    "smooth":1
 
 }

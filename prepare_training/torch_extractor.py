@@ -34,6 +34,8 @@ class TorchExtractor():
 
         self.new_padding = torch_params["new_padding"]
         self.old_padding = torch_params["old_padding"]
+        self.smooth = torch_params["smooth"]
+        self.smooth_suffix = prepare_params["smooth_suffix"]
 
         
 
@@ -87,6 +89,21 @@ class TorchExtractor():
         self.split_dset("eval_frames",max_neighboors,"frames",self.train_scenes,self.eval_prop -1)
 
 
+        if self.smooth:
+
+            self.test_scenes = self.__smooth_scenes(self.test_scenes)
+            self.train_scenes = self.__smooth_scenes(self.train_scenes)
+
+            self.split_dset("test_trajectories"+self.smooth_suffix,max_neighboors,"trajectories",self.test_scenes,1.0)
+            self.split_dset("test_frames"+self.smooth_suffix,max_neighboors,"frames",self.test_scenes,1.0)
+
+            self.split_dset("train_frames"+self.smooth_suffix,max_neighboors,"frames",self.train_scenes,self.eval_prop)
+            self.split_dset("train_trajectories"+self.smooth_suffix,max_neighboors,"trajectories",self.train_scenes,self.eval_prop)
+
+            self.split_dset("eval_trajectories"+self.smooth_suffix,max_neighboors,"trajectories",self.train_scenes,self.eval_prop -1)
+            self.split_dset("eval_frames"+self.smooth_suffix,max_neighboors,"frames",self.train_scenes,self.eval_prop -1)
+
+
 
 
         with h5py.File(self.split_hdf5,"r") as dest_file:
@@ -96,7 +113,9 @@ class TorchExtractor():
                 print(dest_file[key].shape)
         json.dump({"max_neighbors" : max_neighboors},open(self.max_neighbor_path,"w"))
 
-                
+
+    def __smooth_scenes(self,scenes):
+        return [scene + self.smooth_suffix for scene in scenes]        
 
 
 

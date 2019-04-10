@@ -47,6 +47,8 @@ class RNN_MLP(nn.Module):
         
 
     def forward(self,x):
+        x = x.squeeze(1)
+
         h = self.init_hidden_state()
         output,h = self.encoder(x,h)
         x = self.mlp(output[:,-1]).view(self.batch_size,1,int(self.output_size/self.input_dim),self.input_dim)       

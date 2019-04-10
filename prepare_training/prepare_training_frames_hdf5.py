@@ -63,7 +63,7 @@ class PrepareTrainingFramesHdf5():
 
 
         max_neighbors = self.__nb_max_neighbors(scene)
-        print(max_neighbors)
+        print("max_neighbors {}".format(max_neighbors))
 
         if self.smooth:
             smooth_params ={
@@ -84,7 +84,6 @@ class PrepareTrainingFramesHdf5():
             data_shape = (max_neighbors,self.t_obs + self.t_pred,2)
 
             if scene in group:
-                print("in")
                 del group[scene] 
             dset = group.create_dataset(scene,shape=(0,data_shape[0],data_shape[1],data_shape[2]),maxshape = (None,data_shape[0],data_shape[1],data_shape[2]),dtype='float32')
   

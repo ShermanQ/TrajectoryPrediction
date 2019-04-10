@@ -44,6 +44,7 @@ class TCN_MLP(nn.Module):
         
 
     def forward(self,x): # x: B,Tobs,I
+        x = x.squeeze(1)
         x = x.permute(0,2,1) # x: B,I,Tobs
         
         conv_features = self.tcn(x) # B,num_channels[-1], T_obs
