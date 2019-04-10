@@ -43,7 +43,7 @@ def main():
 
  
 
-    sampler = prepare_training_frames_hdf5.PrepareTrainingFramesHdf5(data_params_path,args[2],prep_toy)
+    sampler = prepare_training_frames_hdf5.PrepareTrainingFramesHdf5(data_params_path,args[2],prep_toy,smooth = False)
     
     print("sampling frames")
     
@@ -52,7 +52,7 @@ def main():
         sampler.extract_data(scene)
     print("DOne!")
 
-    sampler = prepare_training_hdf5.PrepareTrainingHdf5(data_params_path,args[2],prep_toy)
+    sampler = prepare_training_hdf5.PrepareTrainingHdf5(data_params_path,args[2],prep_toy,smooth = False)
     
     print("sampling trajectories")
     for scene in scene_list:
@@ -60,6 +60,27 @@ def main():
 
         sampler.extract_data(scene)
         print("DOne!")
+
+
+    if prepare_training_params["smooth"]:
+        sampler = prepare_training_frames_hdf5.PrepareTrainingFramesHdf5(data_params_path,args[2],prep_toy,smooth = True)
+    
+        print("sampling frames smooth")
+        
+        for scene in scene_list:
+            print(scene)
+            sampler.extract_data(scene)
+        print("DOne!")
+
+        sampler = prepare_training_hdf5.PrepareTrainingHdf5(data_params_path,args[2],prep_toy,smooth = True)
+        
+        print("sampling trajectories smooth")
+        for scene in scene_list:
+            print(scene)
+
+            sampler.extract_data(scene)
+            print("DOne!")
+
 
 
     

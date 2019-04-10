@@ -17,12 +17,16 @@ import h5py
     Do that for every trajectory
 """
 class PrepareTrainingHdf5():
-    def __init__(self,data,param,toy):
+    def __init__(self,data,param,toy,smooth):
         data = json.load(open(data))
         param = json.load(open(param))
         self.frames_temp = data["temp"] + "frames.txt"
         self.trajectories_temp = data["temp"] + "trajectories.txt"
+        self.framerate = 1./float(param["framerate"])
 
+
+        self.smooth = smooth
+        self.smooth_suffix = param["smooth_suffix"]
 
         self.original_file = data["preprocessed_datasets"] + "{}.csv"
         
@@ -64,13 +68,22 @@ class PrepareTrainingHdf5():
         max_neighbors = self.__nb_max_neighbors(scene)
         print(max_neighbors)
 
+        if self.smooth:
+            smooth_params ={
+                "framerate":self.framerate,
+                "destination_path": self.original_file.format(scene+self.smooth_suffix)
+            }
+            helpers.save_trajs(self.trajectories_temp,self.original_file.format(scene),smooth_params,smooth = True)
+
+            scene += self.smooth_suffix
+
         helpers.extract_frames(self.original_file.format(scene),self.frames_temp,save = True)
         helpers.extract_trajectories(self.original_file.format(scene),self.trajectories_temp,save = True)
 
       
         with h5py.File(self.hdf5_dest,"r+") as f:
             # for key in f:
-            #     print(key)
+            #     print(key
             group = f["trajectories"]
             dset = None
             data_shape = (max_neighbors,self.t_obs + self.t_pred,2)
@@ -116,6 +129,8 @@ class PrepareTrainingHdf5():
                             print("trajectory {} discarded".format(current_id))
         os.remove(self.frames_temp)
         os.remove(self.trajectories_temp)
+        if self.smooth:
+            helpers.remove_file(self.original_file.format(scene))
 
     """
     in:

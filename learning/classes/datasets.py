@@ -150,11 +150,11 @@ class Hdf5Dataset():
 
 
                   if not self.use_images:
-                        return (torch.FloatTensor(X),torch.FloatTensor(y),scenes)
+                        return (torch.FloatTensor(X).contiguous(),torch.FloatTensor(y).contiguous(),scenes)
                  
                   imgs = torch.stack([self.images[img] for img in scenes],dim = 0) 
                   
-                  return (torch.FloatTensor(X),torch.FloatTensor(y),imgs,scenes)
+                  return (torch.FloatTensor(X).contiguous(),torch.FloatTensor(y).contiguous(),imgs,scenes)
 
       def __load_images(self):
             images = {}

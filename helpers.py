@@ -1,6 +1,11 @@
 import os
 import csv
 import json
+import scipy
+import matplotlib.pyplot as plt
+from scipy.interpolate import splev, splrep
+import numpy as np
+from scipy.spatial.distance import euclidean
 
 """
     Get the directories/files contained in a directory
@@ -116,13 +121,34 @@ def save_traj(trajectory):
         rows.append(row)
     return rows
 
+def save_trajs(trajectories_temp,original_path,smooth_params,smooth = False):
+
+    extract_trajectories(original_path,trajectories_temp,save=True,smooth = smooth,framerate = smooth_params["framerate"])
+    if not smooth:
+        remove_file(original_path)
+
+    remove_file(smooth_params["destination_path"])
+    with open(trajectories_temp) as trajectories:
+        f = None
+
+        if smooth:
+            f = open(smooth_params["destination_path"],"a+")
+        else:
+            f = open(original_path,"a+")
+        
+        csv_writer = csv.writer(f)
+        for k,trajectory in enumerate(trajectories):                
+            trajectory = json.loads(trajectory)
+            
+            rows = save_traj(trajectory)
+            for row in rows:
+                csv_writer.writerow(row)
 
 
+        f.close()
+    remove_file(trajectories_temp)
 
 
-
-    
-    return rows
 
 
 """
@@ -140,7 +166,7 @@ def save_traj(trajectory):
 """
     
 
-def extract_trajectories(file_name,destination_path = "", save = False):
+def extract_trajectories(file_name,destination_path = "", save = False,smooth = False,framerate = 1):
 
     trajectories = {}
 
@@ -169,6 +195,13 @@ def extract_trajectories(file_name,destination_path = "", save = False):
             trajectories[id_]["bboxes"].append(bbox)
             trajectories[id_]["frames"].append(frame)
 
+    if smooth:
+        err_tot = 0
+        for i,id_ in enumerate(trajectories):
+            trajectories[id_]["coordinates"],err = smooth_trajectory(trajectories[id_]["coordinates"],framerate)
+            err_tot += err
+        err_tot /= float(i)
+        print("mean error {}".format(err_tot))
     if save:
 
         remove_file(destination_path)
@@ -205,6 +238,44 @@ def extract_trajectories(file_name,destination_path = "", save = False):
         }
     }
 """
+# coordinates: traj_len,2
+def smooth_trajectory(coordinates,framerate,k = 4,s = 0.0001):
+    x = [e[0] for e in coordinates]
+    y = [e[1] for e in coordinates]
+    t = [framerate*i for i in range(len(coordinates))]
+
+    # sx = scipy.interpolate.make_interp_spline(t,x,k)
+    # sy = scipy.interpolate.make_interp_spline(t,y,k)
+    sx = splrep(t, x, s = s)
+    sy = splrep(t, y, s = s)
+    
+    
+
+
+    # x_smooth = sx[t]
+    # y_smooth = sy[t]
+
+    x_smooth = splev(t, sx)
+    y_smooth = splev(t, sy)
+
+    err_x = np.mean([euclidean(a,b) for a,b in zip(x,sx)])
+    err_y = np.mean([euclidean(a,b) for a,b in zip(y,sy)])
+
+    
+
+
+    # fig,axs = plt.subplots(2,1,squeeze = False,sharex=True,sharey=True)
+    # axs[0][0].plot(x,y)
+    # axs[1][0].plot(x_smooth,y_smooth)
+    
+    # plt.show()
+
+
+    coordinates_smooth = [[x_s,y_s] for x_s,y_s in zip(x_smooth,y_smooth)]
+
+    err = np.mean([euclidean(a,b) for a,b in zip(coordinates,coordinates_smooth)])
+    
+    return coordinates_smooth,err
 
 
 def extract_frames(file_path,destination_path = "", save = False):
