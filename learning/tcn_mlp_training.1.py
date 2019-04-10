@@ -87,7 +87,6 @@ def main():
         test_scenes = helpers.helpers_training.augment_scene_list(test_scenes,preprocessing["augmentation_angles"])
 
 
- 
     train_dataset = Hdf5Dataset(
         images_path = data["prepared_images"],
         hdf5_file= data_file,
@@ -98,8 +97,7 @@ def main():
         use_images = False,
         data_type = "trajectories",
         use_neighbors_label = False,
-        use_neighbors_sample = False,
-        predict_offsets = training_param["offsets"]
+        use_neighbors_sample = False
         )
 
     eval_dataset = Hdf5Dataset(
@@ -112,8 +110,7 @@ def main():
         use_images = False,
         data_type = "trajectories",
         use_neighbors_label = False,
-        use_neighbors_sample = False,
-        predict_offsets = training_param["offsets"]
+        use_neighbors_sample = False
         )
 
     # print("n_train_samples: {}".format(train_dataset.get_len()))

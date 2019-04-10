@@ -17,5 +17,7 @@
     "save_every":5,
     "kernel_size":2,
     "dropout" : 0.2,
-    "nb_conv_feat":32
+    "nb_conv_feat":32,
+    "offsets":1
+
 }

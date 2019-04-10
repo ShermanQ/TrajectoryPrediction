@@ -52,12 +52,13 @@ class CustomDataLoader():
       set_type:  train eval  test
       use_images: True False
       use_neighbors: True False
+      predict_offsets: 0: none, 1: based on last obs point, 2: based on previous point
 
       data_type: frames trajectories
 """
 class Hdf5Dataset():
       'Characterizes a dataset for PyTorch'
-      def __init__(self,images_path,hdf5_file,scene_list,t_obs,t_pred,set_type,use_images,data_type,use_neighbors_sample,use_neighbors_label,reduce_batches = True):
+      def __init__(self,images_path,hdf5_file,scene_list,t_obs,t_pred,set_type,use_images,data_type,use_neighbors_sample,use_neighbors_label,reduce_batches = True,predict_offsets = 0):
 
             self.images_path = images_path + "{}.jpg"
             self.hdf5_file = hdf5_file
@@ -70,6 +71,7 @@ class Hdf5Dataset():
             self.use_neighbors_sample = use_neighbors_sample
             self.use_neighbors_label = use_neighbors_label
             self.reduce_batches = reduce_batches
+            self.predict_offsets = predict_offsets
 
 
             self.dset_name = "samples_{}_{}".format(set_type,data_type)
@@ -92,8 +94,10 @@ class Hdf5Dataset():
 
                   X,y,scenes = [],[],[]
                   max_batch = 0
+                  last_points = np.zeros((len(ids),coord_dset[:].shape[1],self.t_pred,2))
                   if self.use_neighbors_sample:
                         X = coord_dset[ids,:,:self.t_obs]
+
 
 
                         if self.reduce_batches:
@@ -103,18 +107,43 @@ class Hdf5Dataset():
                               max_batch = np.max(nb_agents)
                               
                               X = X[:,:max_batch,:,:]
+                        if self.predict_offsets == 1:
+                              last_points = np.repeat(  np.expand_dims(X[:,:,-1],2),  self.t_pred, axis=2)#B,N,tpred,2
+
 
 
                   else: 
                         X = coord_dset[ids,0,:self.t_obs] 
+                        if self.predict_offsets == 1 :
+                              last_points = np.repeat(  np.expand_dims(np.expand_dims(X,1)[:,:,-1],2),  self.t_pred, axis=2) #B,1,tpred,2
+
                         
                   if self.use_neighbors_label:     
-                        y = coord_dset[ids,:,self.t_obs:self.seq_len]
+                        y = coord_dset[ids,:,self.t_obs:self.seq_len] #B,N,tpred,2
                         if self.reduce_batches:
-                              y = y[:,:max_batch,:,:]
+                              y = y[:,:max_batch,:,:] #B,max_batch,tpred,2
+
+                        if self.predict_offsets:
+
+                              if self.predict_offsets == 2:# y shifted left
+                                    last_points = coord_dset[ids,:,self.t_obs-1:self.seq_len-1]
+                                    if self.reduce_batches:
+                                          last_points = last_points[:,:max_batch,:,:]
+
+                              y = np.subtract(y,last_points)
+
+                        
                               
                   else:                        
-                        y = np.expand_dims( coord_dset[ids,0,self.t_obs:self.seq_len], 1)
+                        y = np.expand_dims( coord_dset[ids,0,self.t_obs:self.seq_len], 1) #B,1,tpred,2
+                        if self.predict_offsets:
+                              if self.use_neighbors_sample and self.predict_offsets == 1:
+                                    last_points = np.expand_dims( last_points[:,0], 1) #B,1,tpred,2
+
+                              if self.predict_offsets == 2: # y shifted left
+                                    last_points = np.expand_dims( coord_dset[ids,0,self.t_obs-1:self.seq_len-1], 1)
+                                    
+                              y = np.subtract(y,last_points)
 
 
                   scenes = [img.decode('UTF-8') for img in scenes_dset[ids]] 
