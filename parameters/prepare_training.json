@@ -10,7 +10,7 @@
     "center":1,
     "img_size":224,
     "remove_hdf5":0,
-    "toy": 0,
+    "toy": 1,
     "toy_scenes":[
         "little3",
         "little0"

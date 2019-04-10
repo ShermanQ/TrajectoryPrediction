@@ -250,17 +250,21 @@ def plot_grad_flow(named_parameters,epoch,root = "./data/reports/gradients/"):
             layers.append(n)
             ave_grads.append(p.grad.abs().mean())
             max_grads.append(p.grad.abs().max())
-    plt.bar(np.arange(len(max_grads)), max_grads, alpha=0.1, lw=1, color="c")
-    plt.bar(np.arange(len(max_grads)), ave_grads, alpha=0.1, lw=1, color="b")
-    plt.hlines(0, 0, len(ave_grads)+1, lw=2, color="k" )
-    plt.xticks(range(0,len(ave_grads), 1), layers, rotation="vertical")
-    plt.xlim(left=0, right=len(ave_grads))
-    plt.ylim(bottom = -0.001, top=0.02) # zoom in on the lower gradient regions
-    plt.xlabel("Layers")
-    plt.ylabel("average gradient")
-    plt.title("Gradient flow")
-    plt.grid(True)
-    lgd = plt.legend([Line2D([0], [0], color="c", lw=4),
+    
+    fig, ax = plt.subplots()
+
+
+    ax.bar(np.arange(len(max_grads)), max_grads, alpha=0.1, lw=1, color="c")
+    ax.bar(np.arange(len(max_grads)), ave_grads, alpha=0.1, lw=1, color="b")
+    ax.hlines(0, 0, len(ave_grads)+1, lw=2, color="k" )
+    ax.set_xticks(range(0, len(ave_grads), 1))
+    ax.set_xticklabels(layers, rotation='vertical', fontsize='small')
+    ax.set_yscale('log')
+    ax.set_xlabel("Layers")
+    ax.set_ylabel("Gradient magnitude")
+    ax.set_title('Gradient flow')
+    ax.grid(True)
+    lgd = ax.legend([Line2D([0], [0], color="c", lw=4),
                 Line2D([0], [0], color="b", lw=4),
                 Line2D([0], [0], color="k", lw=4)], ['max-gradient', 'mean-gradient', 'zero-gradient'])
 

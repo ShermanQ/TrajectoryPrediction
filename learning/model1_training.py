@@ -90,7 +90,7 @@ def main():
         )
 
     train_loader = CustomDataLoader( batch_size = training_param["batch_size"],shuffle = True,drop_last = True,dataset = train_dataset,test= training_param["test"])
-    eval_loader = CustomDataLoader( batch_size = training_param["batch_size"],shuffle = False,drop_last = True,dataset = eval_dataset,test= training_param["test"])
+    eval_loader = CustomDataLoader( batch_size = training_param["batch_size"],shuffle = False,drop_last = False,dataset = eval_dataset,test= training_param["test"])
     
   
 

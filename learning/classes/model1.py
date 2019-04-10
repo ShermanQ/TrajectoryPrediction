@@ -72,17 +72,17 @@ class Model1(nn.Module):
 
         if self.use_tcn:
             self.nb_temporal_blocks = self.__get_nb_blocks(input_length,kernel_size)        
-            self.num_channels = [dmodel for _ in range(self.nb_temporal_blocks)]
+            self.num_channels = [convnet_embedding for _ in range(self.nb_temporal_blocks)]
 
         # init network
             self.tcn = TemporalConvNet(device, self.convnet_embedding, self.num_channels, kernel_size, dropout_tcn)
-            self.conv_enc = nn.Linear(input_length*dmodel,dmodel)
+            # self.conv_enc = nn.Linear(input_length*dmodel,dmodel)
 
 
         else:
             self.tcn = ConvNet(device, self.input_length, convnet_embedding,convnet_nb_layers, kernel_size, dropout_tcn)
 
-            self.conv_enc = nn.Linear(input_length*convnet_embedding,dmodel)
+        self.conv_enc = nn.Linear(input_length*convnet_embedding,dmodel)
 
 ############# TRANSFORMER #########################################
 
@@ -143,6 +143,7 @@ class Model1(nn.Module):
         # conv_features = y[:,:,-1] # B,Nmax,Nfeat
         conv_features = y # B,Nmax,Nfeat
 
+        # print(conv_features.size())
         x = self.conv_enc(conv_features)
         
         # print("tcn {}".format(time.time() - s))

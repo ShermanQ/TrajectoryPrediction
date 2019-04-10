@@ -51,6 +51,9 @@ class ScaledDotProduct(nn.Module):
         # softmax
         att_weigths = f.softmax(att,dim = 2 ) # B * Sq *Sk
 
+        
+
+
         # matmul
 
         att = torch.bmm(att_weigths,v)
@@ -82,7 +85,7 @@ class AttentionHead(nn.Module):
         Q = self.q_projection(q)
         K = self.k_projection(k)
         V = self.v_projection(v)
-        att = self.dot_attention(Q,K,V,self.dot_attention.get_mask(Q,K))
+        att = self.dot_attention(Q,K,V,self.dot_attention.get_mask(Q.detach(),K.detach()))
         return att #B,Nmax,dv
 
 class MultiHeadAttention(nn.Module):
@@ -133,6 +136,12 @@ class EncoderBlock(nn.Module):
         x = self.norm_layer1( x + self.dropout(self.multihead_att(x,x,x)) ) #B,Nmax,dmodel
         
         x = self.norm_layer2( x + self.dropout( self.feed_forward(x) ) )
+
+        # x =  self.multihead_att(x,x,x)  #B,Nmax,dmodel
+
+
+        # x = self.feed_forward(x) 
+
         
         return x #B,Nmax,dmodel
 
