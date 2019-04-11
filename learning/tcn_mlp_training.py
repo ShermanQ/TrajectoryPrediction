@@ -170,7 +170,7 @@ def main():
         data["multiple_scalers"],training_param["model_type"],
         plot = training_param["plot"],early_stopping = True,load_path = training_param["load_path"],
         plot_every = training_param["plot_every"], save_every = training_param["save_every"],
-        offsets = training_param["offsets"])
+        offsets = training_param["offsets"], normalized = prepare_param["normalize"])
 
 
     # load_path = "./learning/data/models/model_1552260631.156045.tar"

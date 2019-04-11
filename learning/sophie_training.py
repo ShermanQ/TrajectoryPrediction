@@ -111,7 +111,9 @@ def main():
         use_images = True,
         data_type = "trajectories",
         use_neighbors_label = True,
-        use_neighbors_sample = True
+        use_neighbors_sample = True,
+        predict_smooth= training_param["predict_smooth"],
+        smooth_suffix= prepare_param["smooth_suffix"]
         )
 
     eval_dataset = Hdf5Dataset(
@@ -124,7 +126,9 @@ def main():
         use_images = True,
         data_type = "trajectories",
         use_neighbors_label = True,
-        use_neighbors_sample = True
+        use_neighbors_sample = True,
+        predict_smooth= training_param["predict_smooth"],
+        smooth_suffix= prepare_param["smooth_suffix"]
         )
 
     # print("n_train_samples: {}".format(train_dataset.get_len()))
@@ -192,7 +196,8 @@ def main():
     training.sophie_training_loop(training_param["n_epochs"],training_param["batch_size"],generator,discriminator,optimizer_gen,optimizer_disc,device,
         train_loader,eval_loader,training_param["obs_length"], criterion_gan,criterion_gen, 
         training_param["pred_length"], training_param["output_size"],data["scalers"],data["multiple_scalers"],
-        training_param["plot"], training_param["load_path"],plot_every = training_param["plot_every"], save_every = training_param["save_every"])
+        training_param["plot"], training_param["load_path"],plot_every = training_param["plot_every"],
+        save_every = training_param["save_every"], offsets = training_param["offsets"], normalized = prepare_param["normalize"])
 
 
     

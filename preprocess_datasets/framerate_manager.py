@@ -4,19 +4,20 @@ import helpers
 import json
 import csv
 
+
 class FramerateManager():
     def __init__(self,data,new_rate):
         data = json.load(open(data))
 
         self.framerates_json = json.load(open(data["framerates_json"]))
         self.new_rate = new_rate
-        self.temp = data["temp"] + "temp.txt"
+        self.temp = data["temp"] + "{}.txt"
         self.destination_file = data["filtered_datasets"] + "{}.csv"
         self.original_file = data["extracted_datasets"] + "{}.csv"
 
     def change_rate(self,scene_name):
         
-        
+        # print("worker {} starting".format(scene_name))
         former_rate = float(self.framerates_json[scene_name])
         
         rate_ratio = int(former_rate/self.new_rate)
@@ -27,15 +28,17 @@ class FramerateManager():
 
         self.counter = 0
 
-        helpers.extract_frames(self.original_file.format(scene_name),self.temp,save=True)
-        with open(self.temp) as frames:
+        helpers.extract_frames(self.original_file.format(scene_name),self.temp.format(scene_name),save=True)
+        with open(self.temp.format(scene_name)) as frames:
             for frame in frames:
                 frame = json.loads(frame)
                 i = frame["frame"]
                 if i % rate_ratio == 0:
                     self.__write_frame(frame["ids"],scene_name)
                     self.counter += 1   
-        helpers.remove_file(self.temp) 
+        helpers.remove_file(self.temp.format(scene_name)) 
+        # print("worker {} exiting".format(scene_name))
+
         
 
         

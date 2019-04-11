@@ -109,7 +109,10 @@ def main():
         use_images = False,
         data_type = "frames",
         use_neighbors_label = True,
-        use_neighbors_sample = True
+        use_neighbors_sample = True,
+        predict_offsets = training_param["offsets"],
+        predict_smooth= training_param["predict_smooth"],
+        smooth_suffix= prepare_param["smooth_suffix"]
         )
 
     
@@ -124,7 +127,10 @@ def main():
         use_images = False,
         data_type = "frames",
         use_neighbors_label = True,
-        use_neighbors_sample = True
+        use_neighbors_sample = True,
+        predict_offsets = training_param["offsets"],
+        predict_smooth= training_param["predict_smooth"],
+        smooth_suffix= prepare_param["smooth_suffix"]
         )
 
     # print("n_train_samples: {}".format(train_dataset.get_len()))
@@ -167,7 +173,8 @@ def main():
         net,device,train_loader,eval_loader,criterion,criterion,optimizer,data["scalers"],
         data["multiple_scalers"],training_param["model_type"],
         plot = training_param["plot"],early_stopping = True,load_path = training_param["load_path"],
-        plot_every = training_param["plot_every"], save_every = training_param["save_every"])
+        plot_every = training_param["plot_every"], save_every = training_param["save_every"],
+        offsets = training_param["offsets"], normalized = prepare_param["normalize"])
 
 
 

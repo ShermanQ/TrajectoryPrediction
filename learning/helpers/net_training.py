@@ -112,7 +112,7 @@ def train(model, device, train_loader,criterion, optimizer, epoch,batch_size,pri
            1 iatcnn
 """
 def evaluate(model, device, eval_loader,criterion, epoch, batch_size,scalers_path,multiple_scalers,
-            model_type,nb_plots = 8, offsets = 0 ):
+            model_type,nb_plots = 8, offsets = 0 ,normalized = 0):
     model.eval()
     eval_loss = 0.
     fde = 0.
@@ -188,12 +188,14 @@ def evaluate(model, device, eval_loader,criterion, epoch, batch_size,scalers_pat
 
 ###########################
         loss = criterion(outputs, labels)
-        inv_labels,inv_outputs = None,None
-        if model_type == 0:
-            inv_labels,inv_outputs = helpers.revert_scaling(ids,labels,outputs,scalers_path,multiple_scalers)
-            inv_outputs = inv_outputs.view(inv_labels.size())
-        elif model_type == 1:
-            inv_labels,inv_outputs = helpers.revert_scaling(ids,labels,outputs[:,:,:2],scalers_path,multiple_scalers)
+        inv_labels,inv_outputs = labels,outputs
+
+        if normalized:
+            if model_type == 0:
+                inv_labels,inv_outputs = helpers.revert_scaling(ids,labels,outputs,scalers_path,multiple_scalers)
+                inv_outputs = inv_outputs.view(inv_labels.size())
+            elif model_type == 1:
+                inv_labels,inv_outputs = helpers.revert_scaling(ids,labels,outputs[:,:,:2],scalers_path,multiple_scalers)
 
         
 
@@ -229,7 +231,7 @@ def evaluate(model, device, eval_loader,criterion, epoch, batch_size,scalers_pat
 """
 def training_loop(n_epochs,batch_size,net,device,train_loader,eval_loader,criterion_train,criterion_eval,optimizer,
         scalers_path,multiple_scalers,model_type,plot = True,early_stopping = True,load_path = None,plot_every = 5,
-        save_every = 1,offsets = 0):
+        save_every = 1,offsets = 0,normalized = 0):
 
     losses = {
         "train":{
@@ -264,7 +266,7 @@ def training_loop(n_epochs,batch_size,net,device,train_loader,eval_loader,criter
         
         
         eval_loss,fde,ade = evaluate(net, device, eval_loader,criterion_eval, 
-                epoch, batch_size,scalers_path,multiple_scalers,model_type,offsets=offsets
+                epoch, batch_size,scalers_path,multiple_scalers,model_type,offsets=offsets,normalized
                 )
             
 

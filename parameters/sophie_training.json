@@ -28,5 +28,6 @@
     "decoder_num_layer" : 1,
     "plot": 1,
     "plot_every": 5,
-    "save_every": 1
+    "save_every": 1,
+    "predict_smooth":0
 }

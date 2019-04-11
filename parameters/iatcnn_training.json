@@ -17,6 +17,8 @@
     "output_size":5,
     "model_type": 1,
     "plot_every": 5,
-    "save_every":5
+    "save_every":5,
+    "offsets":2,
+    "predict_smooth":0
 
 }

@@ -59,30 +59,30 @@ def main():
         digit_man.change_digit_number(scene)
     print("DOne!")
 
+    if prepare_training_params["normalize"]:
+        print("Normalizing scenes")
+        center = int(prepare_training_params["center"])
+        scaler = None
+        if data["multiple_scalers"]:
+            print("-----------multiple scalers")
+            scaler = scene_scaler.SceneScaler(data_params_path,center)        
+        else:
+            print("-----------unique scaler")
+            scaler = scene_scaler.SceneScalerMultiScene(data_params_path,center,scene_list)
+            
+        for scene in scene_list:
+            print(scene)
+            scaler.min_max_scale(scene)
+        print("DOne!")
 
-    print("Normalizing scenes")
-    center = int(prepare_training_params["center"])
-    scaler = None
-    if data["multiple_scalers"]:
-        print("-----------multiple scalers")
-        scaler = scene_scaler.SceneScaler(data_params_path,center)        
-    else:
-        print("-----------unique scaler")
-        scaler = scene_scaler.SceneScalerMultiScene(data_params_path,center,scene_list)
-        
-    for scene in scene_list:
-        print(scene)
-        scaler.min_max_scale(scene)
-    print("DOne!")
 
-
-    print("Managing normalized decimal number")
-    nb_digits = int(prepare_training_params["number_digits_norm"])
-    digit_man = digit_manager.DigitManager(data_params_path,nb_digits)
-    for scene in scene_list:
-        print(scene)
-        digit_man.change_digit_number(scene)
-    print("DOne!")
+        print("Managing normalized decimal number")
+        nb_digits = int(prepare_training_params["number_digits_norm"])
+        digit_man = digit_manager.DigitManager(data_params_path,nb_digits)
+        for scene in scene_list:
+            print(scene)
+            digit_man.change_digit_number(scene)
+        print("DOne!")
 
 
     img_size = int(prepare_training_params["img_size"])

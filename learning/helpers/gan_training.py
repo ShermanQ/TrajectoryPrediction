@@ -149,7 +149,9 @@ def eval_sophie(
         scalers_path,
         multiple_scalers,
         print_every = 100,
-        nb_plots = 16):
+        nb_plots = 16,
+        offsets = 0,
+        normalized = 0):
     # model.train()
    
     # generator.eval()
@@ -220,8 +222,10 @@ def eval_sophie(
                     ))
 
             ###################################
-            inv_labels,inv_outputs = helpers.revert_scaling(ids,traj_pred_real,traj_pred_fake,scalers_path,multiple_scalers)
-            inv_outputs = inv_outputs.view(inv_labels.size())
+            inv_labels,inv_outputs = traj_pred_real, traj_pred_fake
+            if normalized:
+                inv_labels,inv_outputs = helpers.revert_scaling(ids,traj_pred_real,traj_pred_fake,scalers_path,multiple_scalers)
+                inv_outputs = inv_outputs.view(inv_labels.size())
 
             losses["ade"] += helpers.ade_loss(inv_outputs,inv_labels).item()
             losses["fde"] += helpers.fde_loss(inv_outputs,inv_labels).item()
@@ -279,7 +283,8 @@ def save_sophie(epoch,generator,discriminator,optimizer_gen,optimizer_disc,losse
 
 def sophie_training_loop(n_epochs,batch_size,generator,discriminator,optimizer_gen,optimizer_disc,device,
         train_loader,eval_loader,obs_length, criterion_gan,criterion_gen, 
-        pred_length, output_size,scalers_path,multiple_scalers,plot = True,load_path = None,plot_every = 5,save_every = 5):
+        pred_length, output_size,scalers_path,multiple_scalers,plot = True,load_path = None,plot_every = 5,save_every = 5,
+        offsets = 0,normalized = 0):
 
     
     losses = {
@@ -326,7 +331,7 @@ def sophie_training_loop(n_epochs,batch_size,generator,discriminator,optimizer_g
 
             losses["train"][key].append(train_losses[key])
 
-        test_losses = eval_sophie(generator,discriminator,device,eval_loader,criterion_gan,criterion_gen,epoch,batch_size,obs_length,pred_length,output_size,scalers_path,multiple_scalers)
+        test_losses = eval_sophie(generator,discriminator,device,eval_loader,criterion_gan,criterion_gen,epoch,batch_size,obs_length,pred_length,output_size,scalers_path,multiple_scalers,offsets,normalized)
         for key in test_losses:
             losses["eval"][key].append(test_losses[key])
 
