@@ -12,7 +12,10 @@ class CustomDataLoader():
       def __init__(self,batch_size,shuffle,drop_last,dataset,test = 0):
             self.shuffle = shuffle 
             self.dataset = dataset
+            print("len")
             self.data_len = self.dataset.get_len()
+            print(self.data_len)
+
             self.batch_size = batch_size
             self.drop_last = drop_last
             # self.batches = self.__split_batches
@@ -85,7 +88,7 @@ class Hdf5Dataset():
 
       def get_len(self):
             with h5py.File(self.hdf5_file,"r") as hdf5_file: 
-                  return len(hdf5_file[self.dset_name][:])
+                  return hdf5_file[self.dset_name].shape[0]
 
 
       def get_ids(self,ids):
@@ -97,7 +100,7 @@ class Hdf5Dataset():
 
                   X,y,scenes = [],[],[]
                   max_batch = 0
-                  last_points = np.zeros((len(ids),coord_dset[:].shape[1],self.t_pred,2))
+                  last_points = np.zeros((len(ids),coord_dset.shape[1],self.t_pred,2))
                   if self.use_neighbors_sample:
                         X = coord_dset[ids,:,:self.t_obs]
 

@@ -287,13 +287,22 @@ def augment_scene_list(scene_list,angles):
 
 def offsets_to_trajectories(inputs,labels,outputs,offsets):
     # print(inputs.shape) # B,N,obs,2
-    # print(labels.shape) # B,N,obs,2
-    # print(outputs.shape) # B,N,obs,2
+    # print(labels.shape) # B,N,pred,2
+    # print(outputs.shape) # B,N,pred,2
 
     
     if offsets == 1:
+        last_points = np.repeat(  np.expand_dims(inputs[:,:,-1],2),  labels.shape[2], axis=2)
+        labels = np.add(last_points,labels)
+        outputs = np.add(last_points,outputs)
         return inputs,labels,outputs
     elif offsets == 2:
+        last_points = np.repeat(  np.expand_dims(inputs[:,:,-1],2),  labels.shape[2], axis=2)# B,N,pred,2
+
+        labels = np.concatenate([np.expand_dims( np.add(last_points[:,:,i], np.sum(labels[:,:,:i+1],axis = 2)), 2) for i in range(labels.shape[2])], axis = 2)
+        outputs = np.concatenate([np.expand_dims( np.add(last_points[:,:,i], np.sum(outputs[:,:,:i+1],axis = 2)), 2) for i in range(outputs.shape[2])], axis = 2)
+
+
         return inputs,labels,outputs
     else :
         return inputs,labels,outputs
