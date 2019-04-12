@@ -94,12 +94,12 @@ def main():
     #     print(scene)
     #     stops.remove_stopped(scene)
 
-    # print("augmenting scenes")
-    # data_augmenter = DataAugmenter(args[1],args[2],args[3])
-    # for scene in scene_list:
-    #     print(scene)
-    #     data_augmenter.augment_scene(scene)
-    #     data_augmenter.augment_scene_images(scene)
+    print("augmenting scenes")
+    data_augmenter = DataAugmenter(args[1],args[2],args[3])
+    for scene in scene_list:
+        print(scene)
+        data_augmenter.augment_scene(scene)
+        data_augmenter.augment_scene_images(scene)
 
     
 

@@ -37,6 +37,7 @@ class PrepareTrainingFramesHdf5():
         self.t_obs = int(param["t_obs"])
         self.t_pred = int(param["t_pred"])
         self.padding = param["padding"]
+        self.types_dic = param["types_dic"]
 
 
 
@@ -81,12 +82,18 @@ class PrepareTrainingFramesHdf5():
             #     print(key
             group = f["frames"]
             dset = None
+            dset_types = None
+
             data_shape = (max_neighbors,self.t_obs + self.t_pred,2)
 
             if scene in group:
                 del group[scene] 
+            if scene+"_types" in group:                
+                del group[scene+"_types"] 
+
             dset = group.create_dataset(scene,shape=(0,data_shape[0],data_shape[1],data_shape[2]),maxshape = (None,data_shape[0],data_shape[1],data_shape[2]),dtype='float32')
-  
+            dset_types = group.create_dataset(scene+"_types",shape=(0,data_shape[0]),maxshape = (None,data_shape[0]),dtype='float32')
+
             with open(self.frames_temp) as frames:
                 observations = {}
                 sample_id = 0
@@ -99,15 +106,23 @@ class PrepareTrainingFramesHdf5():
                         if len(observations[id_]) < self.t_obs + self.t_pred:
                             observations[id_].append(frame)
                         else:
-                            samples = self.__samples(observations[id_])
-                            samples = np.array(samples)
+                            samples,types = self.__samples(observations[id_])
+                            samples,types = np.array(samples),np.array(types)
 
                             nb_neighbors = len(samples)
                             if nb_neighbors != 0:
                                 padding = np.zeros(shape = (max_neighbors-nb_neighbors,data_shape[1],data_shape[2]))
                                 samples = np.concatenate((samples,padding),axis = 0)
+
+                                padding_types = np.zeros(shape = (max_neighbors-nb_neighbors))
+                                types = np.concatenate((types,padding_types),axis = 0)
+
                                 dset.resize(dset.shape[0]+1,axis=0)
                                 dset[-1] = samples
+
+                                dset_types.resize(dset_types.shape[0]+1,axis=0)
+                                dset_types[-1] = types
+
                             
                             
                             delete_ids.append(id_)
@@ -131,13 +146,15 @@ class PrepareTrainingFramesHdf5():
         labels: same idea but for prediction time
     """
     def __samples(self,observations):
-        ids = self.__get_neighbors(observations)
+        ids,types = self.__get_neighbors(observations)
         samples = []
+        types_list = []
         for id_ in sorted(ids):
             if self.__add_neighbor(ids,id_,0):
                 sample = ids[id_][0:self.t_obs+self.t_pred]
                 samples.append(sample)
-        return samples
+                types_list.append(types[id_])
+        return samples,types_list
 
    
 
@@ -154,21 +171,30 @@ class PrepareTrainingFramesHdf5():
     """
     def __get_neighbors(self,frames):
         ids = {}
+        types = {}
         for i,frame in enumerate(frames):
             frame = json.loads(frame)
             frame = frame["ids"]
 
+            # if id in frame and not yet appeared in the sequence
+            # add the id to observed ids and add padding point from
+            # t0 up to  t - 1
             for id_ in frame:
                 if id_ != "frame":
                     if int(id_) not in ids:
                         ids[int(id_)] = [[self.padding,self.padding] for j in range(i)]
+                    if int(id_) not in types:
+                        types[int(id_)] = self.types_dic[frame[str(id_)]["type"]]
+                       
             
+            # for every already observed ids if its in the current frame, add its 
+            # coordinates otherwise add padding
             for id_ in ids:
                 if str(id_) in frame:
                     ids[id_].append(frame[str(id_)]["coordinates"])
                 else:
                     ids[id_].append([self.padding,self.padding])
-        return ids
+        return ids,types
 
 
 
@@ -182,13 +208,19 @@ class PrepareTrainingFramesHdf5():
             current_frame: the frame of the trajectory to be considered
         out: 
             True if the neighboor appears during observation time
+            *** if appears at least in the last obervation timestep ***
     """
+    # def __add_neighbor(self,ids,id_,current_frame):
+    #     add = False
+    #     for p in ids[id_][current_frame:current_frame+self.t_obs]:
+    #         if p != [self.padding,self.padding]:
+    #             return True
+    #     return add
+
     def __add_neighbor(self,ids,id_,current_frame):
-        add = False
-        for p in ids[id_][current_frame:current_frame+self.t_obs]:
-            if p != [self.padding,self.padding]:
-                return True
-        return add
+        if ids[id_][current_frame:current_frame+self.t_obs][-1] != [self.padding,self.padding]:
+            return True
+        return False
 
 
 

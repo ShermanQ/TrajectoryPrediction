@@ -65,7 +65,7 @@ def main():
         scaler = None
         if data["multiple_scalers"]:
             print("-----------multiple scalers")
-            scaler = scene_scaler.SceneScaler(data_params_path,center)        
+            scaler = scene_scaler.SceneScaler(data_params_path,center,True)        
         else:
             print("-----------unique scaler")
             scaler = scene_scaler.SceneScalerMultiScene(data_params_path,center,scene_list)

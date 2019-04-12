@@ -266,8 +266,8 @@ def training_loop(n_epochs,batch_size,net,device,train_loader,eval_loader,criter
         
         
         eval_loss,fde,ade = evaluate(net, device, eval_loader,criterion_eval, 
-                epoch, batch_size,scalers_path,multiple_scalers,model_type,offsets=offsets,normalized
-                )
+                epoch, batch_size,scalers_path,multiple_scalers,model_type,offsets=offsets,
+                normalized =normalized )
             
 
         losses["train"]["loss"].append(train_loss)

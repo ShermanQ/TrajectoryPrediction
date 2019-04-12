@@ -12,8 +12,16 @@
     "remove_hdf5":0,
     "toy": 1,
     "smooth":1,
-    "normalize":0,
+    "normalize":1,
     "smooth_suffix":"_smooth",
+    "types_dic":{
+        "bicycle":1,
+        "pedestrian":2,
+        "car":3,
+        "skate":4,
+        "cart":5,
+        "bus":6
+    },
     "toy_scenes":[
         "little3",
         "little0"

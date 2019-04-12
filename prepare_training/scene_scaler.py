@@ -9,13 +9,14 @@ import joblib
 
 
 class SceneScaler():
-    def __init__(self,data,center):
+    def __init__(self,data,center,scale =True):
         data = json.load(open(data))
 
         self.center = center
         self.temp = data["temp"] + "temp.csv"
         self.original_file = data["preprocessed_datasets"] + "{}.csv"
         self.scaler_dest = data["scalers"] + "{}.joblib"
+        self.scale = scale
 
 
     def min_max_scale(self,scene):
@@ -107,7 +108,7 @@ class SceneScaler():
 
 
 class SceneScalerMultiScene():
-    def __init__(self,data,center,scene_list):
+    def __init__(self,data,center,scene_list,scale = True):
         data = json.load(open(data))
 
         self.center = center
@@ -115,10 +116,12 @@ class SceneScalerMultiScene():
         self.original_file = data["preprocessed_datasets"] + "{}.csv"
         self.scaler_dest = data["scalers"] 
         self.scene_list = scene_list
+        self.scale = scale
         
-        print("loading scaler")
-        self.__get_scaler()
-        print("done!")
+        if scale:
+            print("loading scaler")
+            self.__get_scaler()
+            print("done!")
 
     def __get_scaler(self):
         mms = MinMaxScaler(feature_range=(1e-10,1))
@@ -177,15 +180,16 @@ class SceneScalerMultiScene():
                         row = self.__center_scene(row,x_mean,y_mean)
                     new_row = row
                     
-                    ps_untransformed = [[float(row[i])] for i in range(4,10)]
-                    ps = self.scaler.transform(ps_untransformed)
+                    if self.scale:
+                        ps_untransformed = [[float(row[i])] for i in range(4,10)]
+                        ps = self.scaler.transform(ps_untransformed)
 
-                    
-                    for i in range(len(ps)):
-                        if ps_untransformed[i][0] == -10000:
-                            new_row[4 + i] = -1
-                        else:
-                            new_row[4 + i] = ps[i][0]
+                        
+                        for i in range(len(ps)):
+                            if ps_untransformed[i][0] == -10000:
+                                new_row[4 + i] = -1
+                            else:
+                                new_row[4 + i] = ps[i][0]
                     data_writer.writerow(new_row)
         helpers.remove_file(self.temp)
 

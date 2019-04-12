@@ -240,15 +240,20 @@ def extract_trajectories(file_name,destination_path = "", save = False,smooth = 
 """
 # coordinates: traj_len,2
 def smooth_trajectory(coordinates,framerate,k = 4,s = 0.0001):
+   
     x = [e[0] for e in coordinates]
     y = [e[1] for e in coordinates]
     t = [framerate*i for i in range(len(coordinates))]
 
     # sx = scipy.interpolate.make_interp_spline(t,x,k)
     # sy = scipy.interpolate.make_interp_spline(t,y,k)
-    sx = splrep(t, x, s = s)
-    sy = splrep(t, y, s = s)
-    
+
+    try:
+        sx = splrep(t, x, s = s)
+        sy = splrep(t, y, s = s)
+    except TypeError as e :
+        print(e)
+        return coordinates,0.
     
 
 

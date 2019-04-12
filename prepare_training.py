@@ -52,34 +52,34 @@ def main():
         sampler.extract_data(scene)
     print("DOne!")
 
-    sampler = prepare_training_hdf5.PrepareTrainingHdf5(data_params_path,args[2],prep_toy,smooth = False)
+    # sampler = prepare_training_hdf5.PrepareTrainingHdf5(data_params_path,args[2],prep_toy,smooth = False)
     
-    print("sampling trajectories")
-    for scene in scene_list:
-        print(scene)
+    # print("sampling trajectories")
+    # for scene in scene_list:
+    #     print(scene)
 
-        sampler.extract_data(scene)
-        print("DOne!")
+    #     sampler.extract_data(scene)
+    #     print("DOne!")
 
 
-    if prepare_training_params["smooth"]:
-        sampler = prepare_training_frames_hdf5.PrepareTrainingFramesHdf5(data_params_path,args[2],prep_toy,smooth = True)
+    # if prepare_training_params["smooth"]:
+    #     sampler = prepare_training_frames_hdf5.PrepareTrainingFramesHdf5(data_params_path,args[2],prep_toy,smooth = True)
     
-        print("sampling frames smooth")
+    #     print("sampling frames smooth")
         
-        for scene in scene_list:
-            print(scene)
-            sampler.extract_data(scene)
-        print("DOne!")
+    #     for scene in scene_list:
+    #         print(scene)
+    #         sampler.extract_data(scene)
+    #     print("DOne!")
 
-        sampler = prepare_training_hdf5.PrepareTrainingHdf5(data_params_path,args[2],prep_toy,smooth = True)
+    #     sampler = prepare_training_hdf5.PrepareTrainingHdf5(data_params_path,args[2],prep_toy,smooth = True)
         
-        print("sampling trajectories smooth")
-        for scene in scene_list:
-            print(scene)
+    #     print("sampling trajectories smooth")
+    #     for scene in scene_list:
+    #         print(scene)
 
-            sampler.extract_data(scene)
-            print("DOne!")
+    #         sampler.extract_data(scene)
+    #         print("DOne!")
 
 
 
