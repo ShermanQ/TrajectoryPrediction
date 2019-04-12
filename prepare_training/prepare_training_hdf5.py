@@ -45,6 +45,8 @@ class PrepareTrainingHdf5():
         self.t_pred = int(param["t_pred"])
 
         self.padding = param["padding"]
+        self.types_dic = param["types_dic"]
+
 
 
 
@@ -86,11 +88,16 @@ class PrepareTrainingHdf5():
             #     print(key
             group = f["trajectories"]
             dset = None
+            dset_types = None
+
             data_shape = (max_neighbors,self.t_obs + self.t_pred,2)
 
             if scene in group:
                 del group[scene] 
+            if scene+"_types" in group:                
+                del group[scene+"_types"] 
             dset = group.create_dataset(scene,shape=(0,data_shape[0],data_shape[1],data_shape[2]),maxshape = (None,data_shape[0],data_shape[1],data_shape[2]),dtype='float32')
+            dset_types = group.create_dataset(scene+"_types",shape=(0,data_shape[0]),maxshape = (None,data_shape[0]),dtype='float32')
             
 
             with open(self.trajectories_temp) as trajectories:
@@ -110,19 +117,28 @@ class PrepareTrainingHdf5():
                         if continuous:
                             start,stop = frames[0],frames[-1] + 1             
 
-                            ids = self.__get_neighbors(islice(child_iterator,start,stop))
+                            ids,n_types = self.__get_neighbors(islice(child_iterator,start,stop))
                             len_traj = len(ids[current_id])
 
                             for i in range(0,len_traj,self.shift):
 
-                                samples = np.array( self.__samples(len_traj,current_id,ids,i) )
+                                samples,types =  self.__samples(len_traj,current_id,ids,i,n_types) 
+                                samples,types = np.array(samples),np.array(types)
+                                
 
                                 nb_neighbors = len(samples)
                                 if nb_neighbors != 0:
                                     padding = np.zeros(shape = (max_neighbors-nb_neighbors,data_shape[1],data_shape[2]))
                                     samples = np.concatenate((samples,padding),axis = 0)
+
+                                    padding_types = np.zeros(shape = (max_neighbors-nb_neighbors))
+                                    types = np.concatenate((types,padding_types),axis = 0)
+
                                     dset.resize(dset.shape[0]+1,axis=0)
                                     dset[-1] = samples
+
+                                    dset_types.resize(dset_types.shape[0]+1,axis=0)
+                                    dset_types[-1] = types
                            
                         else:
                             print("trajectory {} discarded".format(current_id))
@@ -164,12 +180,16 @@ class PrepareTrainingHdf5():
         return np.max(nb_agents_scene)
 
 
-    def __samples(self,len_traj,current_id,ids,current_frame):
+    def __samples(self,len_traj,current_id,ids,current_frame,types):
         
         samples = []
+        types_list = []
+
         if current_frame + self.t_obs + self.t_pred -1 < len_traj:
             sample = ids[current_id][current_frame:current_frame+self.t_obs+self.t_pred]
             samples.append(sample)
+            types_list.append(types[current_id])
+
 
             for id_ in sorted(ids):
                 if id_ != current_id:
@@ -177,7 +197,8 @@ class PrepareTrainingHdf5():
                     if self.__add_neighbor(ids,id_,current_frame):
                         sample = ids[id_][current_frame:current_frame+self.t_obs+self.t_pred]
                         samples.append(sample)
-        return samples
+                        types_list.append(types[id_])
+        return samples,types_list
 
  
     """
@@ -192,6 +213,8 @@ class PrepareTrainingHdf5():
     """
     def __get_neighbors(self,frames):
         ids = {}
+        types = {}
+
         for i,frame in enumerate(frames):
             frame = json.loads(frame)
             frame = frame["ids"]
@@ -199,13 +222,15 @@ class PrepareTrainingHdf5():
             for id_ in frame:
                 if int(id_) not in ids:
                     ids[int(id_)] = [[self.padding,self.padding] for j in range(i)]
+                if int(id_) not in types:
+                    types[int(id_)] = self.types_dic[frame[str(id_)]["type"]]
             
             for id_ in ids:
                 if str(id_) in frame:
                     ids[id_].append(frame[str(id_)]["coordinates"])
                 else:
                     ids[id_].append([self.padding,self.padding])
-        return ids
+        return ids,types
 
 
     """
