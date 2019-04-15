@@ -8,6 +8,7 @@ import json
 import h5py
 import numpy as np
 import helpers
+from sklearn.preprocessing import OneHotEncoder
 
 from helpers import augment_scene_list
 
@@ -38,6 +39,7 @@ class TorchExtractor():
         self.smooth_suffix = prepare_params["smooth_suffix"]
 
         
+        
 
 
         prep_toy = prepare_params["toy"]
@@ -54,14 +56,20 @@ class TorchExtractor():
             self.max_neighbor_path = torch_params["nb_neighboors_path"]
             self.test_scenes = list(prepare_params["test_scenes"])
             self.train_scenes = list(prepare_params["train_scenes"])
-            self.train_scenes = augment_scene_list(self.train_scenes,preprocessing["augmentation_angles"])
-            self.test_scenes = augment_scene_list(self.test_scenes,preprocessing["augmentation_angles"])
+            # self.train_scenes = augment_scene_list(self.train_scenes,preprocessing["augmentation_angles"])
+            # self.test_scenes = augment_scene_list(self.test_scenes,preprocessing["augmentation_angles"])
 
 
         self.seq_len = prepare_params["t_obs"] + prepare_params["t_pred"]
         self.eval_prop = prepare_params["eval_prop"]
-        
+        self.nb_types = len(prepare_params["types_dic"].keys()) + 1
+        print(self.nb_types)
+        cat = np.arange(self.nb_types).reshape(self.nb_types,1)
+        print(cat)
+        self.ohe = OneHotEncoder(sparse = False,categories = "auto")
+        self.ohe = self.ohe.fit(cat)
 
+        print(self.ohe.categories_)
 
 
 
@@ -80,13 +88,15 @@ class TorchExtractor():
             os.remove(self.split_hdf5)
  
         self.split_dset("test_trajectories",max_neighboors,"trajectories",self.test_scenes,1.0)
-        self.split_dset("test_frames",max_neighboors,"frames",self.test_scenes,1.0)
-
-        self.split_dset("train_frames",max_neighboors,"frames",self.train_scenes,self.eval_prop)
         self.split_dset("train_trajectories",max_neighboors,"trajectories",self.train_scenes,self.eval_prop)
 
+
         self.split_dset("eval_trajectories",max_neighboors,"trajectories",self.train_scenes,self.eval_prop -1)
-        self.split_dset("eval_frames",max_neighboors,"frames",self.train_scenes,self.eval_prop -1)
+
+        # self.split_dset("test_frames",max_neighboors,"frames",self.test_scenes,1.0)
+        # self.split_dset("eval_frames",max_neighboors,"frames",self.train_scenes,self.eval_prop -1)
+        # self.split_dset("train_frames",max_neighboors,"frames",self.train_scenes,self.eval_prop)
+
 
 
         if self.smooth:
@@ -95,13 +105,12 @@ class TorchExtractor():
             self.train_scenes = self.__smooth_scenes(self.train_scenes)
 
             self.split_dset("test_trajectories"+self.smooth_suffix,max_neighboors,"trajectories",self.test_scenes,1.0)
-            self.split_dset("test_frames"+self.smooth_suffix,max_neighboors,"frames",self.test_scenes,1.0)
-
-            self.split_dset("train_frames"+self.smooth_suffix,max_neighboors,"frames",self.train_scenes,self.eval_prop)
             self.split_dset("train_trajectories"+self.smooth_suffix,max_neighboors,"trajectories",self.train_scenes,self.eval_prop)
-
             self.split_dset("eval_trajectories"+self.smooth_suffix,max_neighboors,"trajectories",self.train_scenes,self.eval_prop -1)
-            self.split_dset("eval_frames"+self.smooth_suffix,max_neighboors,"frames",self.train_scenes,self.eval_prop -1)
+
+            # self.split_dset("test_frames"+self.smooth_suffix,max_neighboors,"frames",self.test_scenes,1.0)
+            # self.split_dset("train_frames"+self.smooth_suffix,max_neighboors,"frames",self.train_scenes,self.eval_prop)
+            # self.split_dset("eval_frames"+self.smooth_suffix,max_neighboors,"frames",self.train_scenes,self.eval_prop -1)
 
 
 
@@ -147,35 +156,56 @@ class TorchExtractor():
             with h5py.File(self.split_hdf5,"a") as dest_file:
                         # test
 
+
+
+
                 samples = dest_file.create_dataset("samples_{}".format(name),shape=(0,max_neighboors,self.seq_len,2),maxshape = (None,max_neighboors,self.seq_len,2),dtype='float32')
                 images = dest_file.create_dataset("images_{}".format(name),shape=(0,),maxshape = (None,),dtype="S20")
+                types = dest_file.create_dataset("types_{}".format(name),shape=(0,max_neighboors,self.nb_types-1),maxshape = (None,max_neighboors,self.nb_types-1),dtype='float32')
 
                 for key in scene_list:
                     
                     dset = original_file[sample_type][key]
+                    dset_types = original_file[sample_type][key+"_types"]
+
                     nb_neighbors = dset[0].shape[0]
                     
                     
                     nb_samples = int(prop*dset.shape[0])
                     scenes = np.array([np.string_(key) for _ in range(np.abs(nb_samples))])
-                    print(scenes)
+                    # print(scenes)
 
                     padding = np.zeros(shape = (np.abs(nb_samples), max_neighboors-nb_neighbors,self.seq_len,2))
+                    padding_types = np.zeros(shape = (np.abs(nb_samples), max_neighboors-nb_neighbors,self.nb_types - 1))
+
 
                     
                     samples.resize(samples.shape[0]+np.abs(nb_samples),axis=0)
                     images.resize(images.shape[0]+np.abs(nb_samples),axis=0)
+                    types.resize(types.shape[0]+np.abs(nb_samples),axis=0)
+
+
+                    
 
                     if nb_samples > 0:
                         samples[-nb_samples:] = np.concatenate((dset[:nb_samples],padding),axis = 1)
+
+                        ohe_types = np.array([self.ohe.transform(d.reshape(-1,1))  for d in dset_types[:nb_samples]])
+                        types[-nb_samples:] = np.concatenate((ohe_types[:,:,1:],padding_types),axis = 1)
+
                         images[-nb_samples:] = scenes
                     else:
                         samples[nb_samples:] = np.concatenate((dset[nb_samples:],padding),axis = 1)
+
+
+                        ohe_types = np.array([self.ohe.transform(d.reshape(-1,1))  for d in dset_types[nb_samples:]])
+                        types[nb_samples:] = np.concatenate((ohe_types[:,:,1:],padding_types),axis = 1)
+
                         images[nb_samples:] = scenes
 
 
                     
-                    
+                    #dset_types[:nb_samples] ohe
 
 
        

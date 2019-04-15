@@ -82,9 +82,9 @@ def main():
         data_file = torch_param["toy_hdf5"]
         train_scenes = prepare_param["toy_train_scenes"]
         test_scenes = prepare_param["toy_test_scenes"] 
-    else:
-        train_scenes = helpers.helpers_training.augment_scene_list(train_scenes,preprocessing["augmentation_angles"])
-        test_scenes = helpers.helpers_training.augment_scene_list(test_scenes,preprocessing["augmentation_angles"])
+    # else:
+    #     train_scenes = helpers.helpers_training.augment_scene_list(train_scenes,preprocessing["augmentation_angles"])
+    #     test_scenes = helpers.helpers_training.augment_scene_list(test_scenes,preprocessing["augmentation_angles"])
 
 
     train_dataset = Hdf5Dataset(
@@ -133,7 +133,9 @@ def main():
         hidden_size = training_param["hidden_size"],
         recurrent_layer = training_param["recurrent_layer"],
         mlp_layers = training_param["mlp_layers"],
-        output_size = training_param["output_size"]
+        output_size = training_param["output_size"],
+        # nb_cat= len(prepare_param["types_dic"]),
+        nb_cat= 0,
     )
 
     # sum_ = 0

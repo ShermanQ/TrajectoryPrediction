@@ -1,11 +1,13 @@
 from prepare_training import prepare_training_hdf5,prepare_training_frames_hdf5
+from prepare_training import img_scaler
+
 import sys
 import json
 import csv
 import helpers
 import h5py
 import os
-
+import time
 
 #python prepare_training.py parameters/parameters.json parameters/prepare_training.json parameters/data.json parameters/preprocessing.json
 def main():
@@ -35,23 +37,28 @@ def main():
         train_list = prepare_training_params["train_scenes"]
         test_list = prepare_training_params["test_scenes"]
 
-        scene_list = helpers.augment_scene_list(scene_list,preprocessing["augmentation_angles"])
-        train_list = helpers.augment_scene_list(train_list,preprocessing["augmentation_angles"])
-        test_list = helpers.augment_scene_list(test_list,preprocessing["augmentation_angles"])
+        # scene_list = helpers.augment_scene_list(scene_list,preprocessing["augmentation_angles"])
+        # train_list = helpers.augment_scene_list(train_list,preprocessing["augmentation_angles"])
+        # test_list = helpers.augment_scene_list(test_list,preprocessing["augmentation_angles"])
 
-
+    for scene in scene_list:
+        os.system(" rm  {}{}.csv".format(data["preprocessed_datasets"],scene))
+        os.system(" cp {}{}.csv {}{}.csv".format(data["filtered_datasets"],scene,data["preprocessed_datasets"],scene))
 
  
+    s = time.time()
 
-    # sampler = prepare_training_frames_hdf5.PrepareTrainingFramesHdf5(data_params_path,args[2],prep_toy,smooth = False)
-    
-    # print("sampling frames")
-    
-    # for scene in scene_list:
-    #     print(scene)
-    #     sampler.extract_data(scene)
-    # print("DOne!")
 
+    img_size = int(prepare_training_params["img_size"])
+    scaler = img_scaler.ImgScaler(data_params_path,img_size)  
+    print("scaling images")
+    for scene in helpers.augment_scene_list(scene_list,preprocessing["augmentation_angles"]):
+        print(scene)
+        scaler.scale(scene)
+
+
+   
+    print(time.time()-s)
     sampler = prepare_training_hdf5.PrepareTrainingHdf5(data_params_path,args[2],prep_toy,smooth = False)
     
     print("sampling trajectories")
@@ -61,8 +68,34 @@ def main():
         sampler.extract_data(scene)
         print("DOne!")
 
+    print(time.time()-s)
 
-    # if prepare_training_params["smooth"]:
+   
+    if prepare_training_params["smooth"]:
+        sampler = prepare_training_hdf5.PrepareTrainingHdf5(data_params_path,args[2],prep_toy,smooth = True)
+        
+        print("sampling trajectories smooth")
+        for scene in scene_list:
+            print(scene)
+
+            sampler.extract_data(scene)
+            print("DOne!")
+
+            print(time.time()-s)
+
+
+
+ # sampler = prepare_training_frames_hdf5.PrepareTrainingFramesHdf5(data_params_path,args[2],prep_toy,smooth = False)
+    
+    # print("sampling frames")
+    
+    # for scene in scene_list:
+    #     print(scene)
+    #     sampler.extract_data(scene)
+    # print("DOne!")
+
+    
+ # if prepare_training_params["smooth"]:
     #     sampler = prepare_training_frames_hdf5.PrepareTrainingFramesHdf5(data_params_path,args[2],prep_toy,smooth = True)
     
     #     print("sampling frames smooth")
@@ -72,18 +105,7 @@ def main():
     #         sampler.extract_data(scene)
     #     print("DOne!")
 
-    #     sampler = prepare_training_hdf5.PrepareTrainingHdf5(data_params_path,args[2],prep_toy,smooth = True)
-        
-    #     print("sampling trajectories smooth")
-    #     for scene in scene_list:
-    #         print(scene)
-
-    #         sampler.extract_data(scene)
-    #         print("DOne!")
-
-
-
-    
+    #     print(time.time()-s)
 
 
     

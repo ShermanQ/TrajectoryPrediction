@@ -112,6 +112,10 @@ class Model1(nn.Module):
 
     def forward(self,x):
 
+        types = x[1]
+        x = x[0]
+
+        print(x.size())
         torch.cuda.synchronize()
         s = time.time()
         x = self.coord_embedding(x)
@@ -123,6 +127,9 @@ class Model1(nn.Module):
         x = x.permute(0,1,3,2)  # B,Nmax,Nfeat,Tobs # à vérifier
         x = x.view(-1,x.size()[2],x.size()[3]) # [B*Nmax],Nfeat,Tobs
 
+        print(x.size())
+
+
         # get ids for real agents
         # generate vector of zeros which size is the same as net output size
         # send only in the net the active agents
@@ -132,6 +139,7 @@ class Model1(nn.Module):
         # y = torch.zeros(B*Nmax,self.dmodel,Tobs).to(self.device) # [B*Nmax],Nfeat,Tobs
         y = torch.zeros(B*Nmax,self.convnet_embedding,Tobs).to(self.device) # [B*Nmax],Nfeat,Tobs
 
+        print(x.size())
 
         # print(x[active_agents].size())
         y[active_agents] = self.tcn(x[active_agents]) # [B*Nmax],Nfeat,Tobs

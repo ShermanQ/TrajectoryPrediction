@@ -3,6 +3,8 @@ from preprocess_datasets.sdd_pixel2meter import Pixel2Meters
 from preprocess_datasets.framerate_manager import FramerateManager
 from preprocess_datasets.stops_remover import StopsRemover
 from preprocess_datasets.data_augmenter import DataAugmenter
+from preprocess_datasets.digit_manager import DigitManager
+from preprocess_datasets.scene_centers import SceneCenters
 import sys
 import json
 import threading
@@ -84,25 +86,41 @@ def main():
 
     
 
+    print("Managing decimal number")
+    nb_digits = int(prepare_training_params["number_digits_meters"])
+    digit_man = DigitManager(args[2],nb_digits)
+    for scene in scene_list:
+        print(scene)
+        digit_man.change_digit_number(scene)
+    print("DOne!")
 
-    # stats = Stats(args[1],args[2],args[3])
-    # stats.get_stats()
+    print(time.time() - s)
 
-    # print("removing full standing trajectories")
-    # stops = StopsRemover(args[1],args[2],args[3])
-    # for scene in scene_list:
-    #     print(scene)
-    #     stops.remove_stopped(scene)
+    
+    
 
     print("augmenting scenes")
     data_augmenter = DataAugmenter(args[1],args[2],args[3])
     for scene in scene_list:
         print(scene)
-        data_augmenter.augment_scene(scene)
+        # data_augmenter.augment_scene(scene)
         data_augmenter.augment_scene_images(scene)
 
+    center = SceneCenters(args[1],args[2],args[3])
     
-
+    center.get_centers(scene_list)
+    
 
 if __name__ == "__main__":
     main()
+
+
+
+# print("removing full standing trajectories")
+    # stops = StopsRemover(args[1],args[2],args[3])
+    # for scene in scene_list:
+    #     print(scene)
+    #     stops.remove_stopped(scene)
+
+# stats = Stats(args[1],args[2],args[3])
+    # stats.get_stats()

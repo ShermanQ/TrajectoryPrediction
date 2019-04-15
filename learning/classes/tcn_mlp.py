@@ -10,7 +10,7 @@ import collections
 from classes.tcn import TemporalConvNet
 
 class TCN_MLP(nn.Module):
-    def __init__(self,device,batch_size,input_length,output_length, num_inputs,nb_conv_feat,mlp_layers,output_size, kernel_size=2, dropout=0.2):
+    def __init__(self,device,batch_size,input_length,output_length, num_inputs,nb_conv_feat,mlp_layers,output_size,nb_cat = 0, kernel_size=2, dropout=0.2):
         super(TCN_MLP, self).__init__()
 
         self.device = device
@@ -33,17 +33,23 @@ class TCN_MLP(nn.Module):
 
 
         self.mlp = nn.Sequential()
-        self.mlp.add_module("layer0",nn.Linear(self.input_length* self.num_channels[-1],mlp_layers[0]))
+        self.mlp.add_module("layer0",nn.Linear(self.input_length* self.num_channels[-1] ,mlp_layers[0]))
         self.mlp.add_module("relu0",  nn.ReLU())
-        for i in range(2,len(mlp_layers)):
+        for i in range(1,len(mlp_layers)):
             self.mlp.add_module("layer{}".format(i),nn.Linear(self.mlp_layers[i-1],self.mlp_layers[i]))
             self.mlp.add_module("relu{}".format(i), nn.ReLU())
-
-        self.mlp.add_module("layer{}".format(len(mlp_layers)), nn.Linear(mlp_layers[-1],self.output_size* self.output_length) )
-
         
 
+
+        # self.mlp.add_module("layer{}".format(len(mlp_layers)), nn.Linear(mlp_layers[-1],self.output_size* self.output_length) )
+        self.predictor =  nn.Linear(mlp_layers[-1] + nb_cat,self.output_size* self.output_length) 
+
+        self.nb_cat = nb_cat
+
     def forward(self,x): # x: B,Tobs,I
+        
+        types = x[1]
+        x = x[0]
         x = x.squeeze(1)
         x = x.permute(0,2,1) # x: B,I,Tobs
         
@@ -51,7 +57,18 @@ class TCN_MLP(nn.Module):
         conv_features = conv_features.permute(0,2,1)
         b,tobs,f = conv_features.size()
         conv_features = conv_features.contiguous().view(b,tobs*f) # B,num_channels[-1] * T_obs
-        y = self.mlp(conv_features).view(self.batch_size, self.output_length,self.output_size).unsqueeze(1)     
+
+        # if self.nb_cat > 0:
+        #     conv_features = torch.cat([conv_features,types],dim = 1)
+        # print(conv_features.size())
+        y = self.mlp(conv_features)
+        
+        if self.nb_cat > 0:
+            y = torch.cat([y,types],dim = 1)
+
+        y = self.predictor(y)
+        
+        y = y.view(self.batch_size, self.output_length,self.output_size).unsqueeze(1)     
         return y # B,1, T_pred, I
 
     def __get_nb_blocks(self,receptieve_field,kernel_size):

@@ -2,6 +2,7 @@ import time
 import prepare_training.torch_extractor as torch_extractor
 import json 
 import sys 
+import os
 
 """
     the script master/prepare_training.py extracts data for training
@@ -13,6 +14,9 @@ import sys
 # python data_torch.py parameters/data.json parameters/torch_extractors.json parameters/prepare_training.json parameters/preprocessing.json
 def main():
     args = sys.argv
+    data = json.load(open(args[1]))
+    
+    os.system(" cp {} {}".format(data["scene_centers"],data["torch_data"]))
 
     s = time.time()
     extractor = torch_extractor.TorchExtractor(args[1],args[2],args[3],args[4])

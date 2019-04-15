@@ -2,6 +2,8 @@
     "original_datasets": "./data/original_datasets/",
     "original_images": "./data/original_datasets/images/",
     "prepared_images": "./data/prepared_datasets/images/",
+    "filtered_images": "./data/filtered_datasets/images/",
+
     "preprocessed_images": "./data/preprocessed_datasets/images/",
     "extracted_datasets": "./data/extracted_datasets/",
     "preprocessed_datasets": "./data/preprocessed_datasets/",
@@ -17,6 +19,8 @@
     
     "torch_data": "./learning/data/",
     "sdd_pixel2meters":"./data/original_datasets/sdd/correspondences.json",
+    "scene_centers":"./data/prepared_datasets/scene_centers.json",
+
     "hdf5_file":"./data/prepared_datasets/data.hdf5",
     "hdf5_toy":"./data/prepared_datasets/toy.hdf5"
 

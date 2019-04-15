@@ -142,6 +142,7 @@ class PrepareTrainingHdf5():
                            
                         else:
                             print("trajectory {} discarded".format(current_id))
+       
         os.remove(self.frames_temp)
         os.remove(self.trajectories_temp)
         if self.smooth:

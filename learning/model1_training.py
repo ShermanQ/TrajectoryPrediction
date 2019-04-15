@@ -69,9 +69,12 @@ def main():
         t_pred=prepare_param["t_pred"],
         set_type = "train",
         use_images = False,
-        data_type = "frames",
+        data_type = "trajectories",
         use_neighbors_label = True,
-        use_neighbors_sample = True
+        use_neighbors_sample = True,
+        predict_offsets = training_param["offsets"],
+        predict_smooth= training_param["predict_smooth"],
+        smooth_suffix= prepare_param["smooth_suffix"]
         )
 
     
@@ -84,9 +87,12 @@ def main():
         t_pred=prepare_param["t_pred"],
         set_type = "eval", ##############
         use_images = False,
-        data_type = "frames",
+        data_type = "trajectories",
         use_neighbors_label = True,
-        use_neighbors_sample = True
+        use_neighbors_sample = True,
+        predict_offsets = training_param["offsets"],
+        predict_smooth= 0,
+        smooth_suffix= prepare_param["smooth_suffix"]
         )
 
     train_loader = CustomDataLoader( batch_size = training_param["batch_size"],shuffle = True,drop_last = True,dataset = train_dataset,test= training_param["test"])

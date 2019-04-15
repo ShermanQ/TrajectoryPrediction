@@ -24,5 +24,7 @@
     "test":0,
     "convnet_embedding":32,
     "convnet_nb_layers":4,
-    "use_tcn": 0
+    "use_tcn": 1,
+    "offsets":2,
+    "predict_smooth":0
 }

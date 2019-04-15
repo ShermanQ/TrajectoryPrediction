@@ -32,8 +32,8 @@ def train(model, device, train_loader,criterion, optimizer, epoch,batch_size,pri
 
     for batch_idx, data in enumerate(train_loader):
         s = time.time()
-        inputs, labels, ids = data
-        inputs, labels = inputs.to(device), labels.to(device)
+        inputs, labels, ids,types = data
+        inputs, labels,types = inputs.to(device), labels.to(device), types.to(device)
 
         # torch.cuda.synchronize()
         # print("data loading {}".format(time.time()-s))
@@ -41,7 +41,7 @@ def train(model, device, train_loader,criterion, optimizer, epoch,batch_size,pri
 
         
         optimizer.zero_grad()
-        outputs = model(inputs)
+        outputs = model((inputs,types))
 
         # torch.cuda.synchronize()
         # print("overall model {}".format(time.time()-s))
@@ -134,11 +134,11 @@ def evaluate(model, device, eval_loader,criterion, epoch, batch_size,scalers_pat
         keep_batch = (i in kept_batches_id )
 
 
-        inputs, labels, ids = data
-        inputs, labels = inputs.to(device), labels.to(device)
+        inputs, labels, ids, types = data
+        inputs, labels,types = inputs.to(device), labels.to(device), types.to(device)
         
         s = time.time()
-        outputs = model(inputs)
+        outputs = model((inputs,types))
 
         #### function takes inputs labels outputs offsets ###
         #### returns labels and outputs in trajectory format ####
@@ -159,6 +159,8 @@ def evaluate(model, device, eval_loader,criterion, epoch, batch_size,scalers_pat
                 ins = inputs[kept_sample_id].unsqueeze(0)
             elif model_type == 1:
                 kept_mask = helpers.mask_loss(l.unsqueeze(0).detach().cpu().numpy())
+
+            
 
                 l = l[kept_mask]
                 o = o[kept_mask]
@@ -191,12 +193,13 @@ def evaluate(model, device, eval_loader,criterion, epoch, batch_size,scalers_pat
         inv_labels,inv_outputs = labels,outputs
 
         if normalized:
-            if model_type == 0:
-                inv_labels,inv_outputs = helpers.revert_scaling(ids,labels,outputs,scalers_path,multiple_scalers)
-                inv_outputs = inv_outputs.view(inv_labels.size())
-            elif model_type == 1:
-                inv_labels,inv_outputs = helpers.revert_scaling(ids,labels,outputs[:,:,:2],scalers_path,multiple_scalers)
-
+            # if model_type == 0:
+            #     inv_labels,inv_outputs = helpers.revert_scaling(ids,labels,outputs,scalers_path,multiple_scalers)
+            #     inv_outputs = inv_outputs.view(inv_labels.size())
+            # elif model_type == 1:
+            #     inv_labels,inv_outputs = helpers.revert_scaling(ids,labels,outputs[:,:,:2],scalers_path,multiple_scalers)
+            inv_labels,inv_outputs = helpers.revert_scaling(ids,labels,outputs,scalers_path,multiple_scalers)
+            inv_outputs = inv_outputs.view(inv_labels.size())
         
 
         ade += helpers.ade_loss(inv_outputs,inv_labels).item()

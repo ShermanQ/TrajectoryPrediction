@@ -18,7 +18,7 @@ class DataAugmenter():
 
 
         # self.scenes = preprocessing_params["scenes"]
-        self.destination_dir = data["preprocessed_datasets"]
+        self.destination_dir = data["filtered_datasets"]
         self.original_file = data["filtered_datasets"] + "{}.csv"
         self.angles = preprocessing_params["augmentation_angles"]
         self.augmented_name = "{}{}_{}.csv"

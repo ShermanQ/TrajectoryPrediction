@@ -93,9 +93,9 @@ def main():
         nb_neighbors_max = np.array(json.load(open(torch_param["toy_nb_neighboors_path"]))["max_neighbors"])
         train_scenes = prepare_param["toy_train_scenes"]
         test_scenes = prepare_param["toy_test_scenes"] 
-    else:
-        train_scenes = helpers.helpers_training.augment_scene_list(train_scenes,preprocessing["augmentation_angles"])
-        test_scenes = helpers.helpers_training.augment_scene_list(test_scenes,preprocessing["augmentation_angles"])
+    # else:
+    #     train_scenes = helpers.helpers_training.augment_scene_list(train_scenes,preprocessing["augmentation_angles"])
+    #     test_scenes = helpers.helpers_training.augment_scene_list(test_scenes,preprocessing["augmentation_angles"])
     
     
     print(nb_neighbors_max)
@@ -107,7 +107,7 @@ def main():
         t_pred=prepare_param["t_pred"],
         set_type = "train",
         use_images = False,
-        data_type = "frames",
+        data_type = "trajectories",
         use_neighbors_label = True,
         use_neighbors_sample = True,
         predict_offsets = training_param["offsets"],
@@ -125,7 +125,7 @@ def main():
         t_pred=prepare_param["t_pred"],
         set_type = "eval",
         use_images = False,
-        data_type = "frames",
+        data_type = "trajectories",
         use_neighbors_label = True,
         use_neighbors_sample = True,
         predict_offsets = training_param["offsets"],

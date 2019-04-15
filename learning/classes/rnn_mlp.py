@@ -8,6 +8,8 @@ import imp
 from torch.nn.utils import weight_norm
 import collections
 
+
+
 def custom_mse(pred_seq,gt_seq):
     pred_seq = pred_seq.view(gt_seq.size())
     mse = nn.MSELoss(reduction= "none")
@@ -21,7 +23,7 @@ def custom_mse(pred_seq,gt_seq):
     return mse_loss
 
 class RNN_MLP(nn.Module):
-    def __init__(self,device,batch_size,input_dim,hidden_size,recurrent_layer,mlp_layers,output_size):
+    def __init__(self,device,batch_size,input_dim,hidden_size,recurrent_layer,mlp_layers,output_size,nb_cat = 0,):
         super(RNN_MLP, self).__init__()
 
         self.device = device
@@ -36,22 +38,30 @@ class RNN_MLP(nn.Module):
         self.encoder = nn.LSTM(input_size = self.input_dim,hidden_size = self.hidden_size,num_layers = self.recurrent_layer,batch_first = True)
 
         self.mlp = nn.Sequential()
-        self.mlp.add_module("layer0",nn.Linear(self.hidden_size,mlp_layers[0]))
+        self.mlp.add_module("layer0",nn.Linear(self.hidden_size + nb_cat,mlp_layers[0]))
         self.mlp.add_module("relu0",  nn.ReLU())
-        for i in range(2,len(mlp_layers)):
+        for i in range(1,len(mlp_layers)):
             self.mlp.add_module("layer{}".format(i),nn.Linear(self.mlp_layers[i-1],self.mlp_layers[i]))
             self.mlp.add_module("relu{}".format(i), nn.ReLU())
 
         self.mlp.add_module("layer{}".format(len(mlp_layers)), nn.Linear(mlp_layers[-1],self.output_size) )
+        self.nb_cat = nb_cat
+
+        
 
         
 
     def forward(self,x):
+        types = x[1]
+        x = x[0]
         x = x.squeeze(1)
 
         h = self.init_hidden_state()
         output,h = self.encoder(x,h)
-        x = self.mlp(output[:,-1]).view(self.batch_size,1,int(self.output_size/self.input_dim),self.input_dim)       
+        output = output[:,-1]
+        if self.nb_cat > 0:
+            output = torch.cat([output,types],dim = 1)
+        x = self.mlp(output).view(self.batch_size,1,int(self.output_size/self.input_dim),self.input_dim)       
         return x
 
     def init_hidden_state(self):
