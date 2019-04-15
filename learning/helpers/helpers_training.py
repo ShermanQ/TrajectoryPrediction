@@ -156,6 +156,8 @@ def plot_samples(kept_samples,epoch,n_columns = 2,n_rows = 2,root = "./data/repo
 
                 color = colors[j]
                 agent = agent.reshape(-1,2)
+
+                agent = [e for e in agent if e[0]!=0 and e[1] != 0]
             
                 x = [e[0] for e in agent]
                 y = [e[1] for e in agent]
@@ -178,6 +180,8 @@ def plot_samples(kept_samples,epoch,n_columns = 2,n_rows = 2,root = "./data/repo
                 color = colors[j]                    
                 
                 agent = agent.reshape(-1,2)
+                agent = [e for e in agent if e[0]!=0 and e[1] != 0]
+
                 
                 x = [last_points[j][0]] + [e[0] for e in agent]
                 y = [last_points[j][1]]+[e[1] for e in agent]
@@ -201,6 +205,8 @@ def plot_samples(kept_samples,epoch,n_columns = 2,n_rows = 2,root = "./data/repo
             for j,agent in enumerate(kept_samples[plot][0]):
                 color = colors[j]
                 agent = agent.reshape(-1,2)
+                agent = [e for e in agent if e[0]!=0 and e[1] != 0]
+
             
                 x = [e[0] for e in agent]
                 y = [e[1] for e in agent]
@@ -218,6 +224,8 @@ def plot_samples(kept_samples,epoch,n_columns = 2,n_rows = 2,root = "./data/repo
             for j,agent in enumerate(kept_samples[plot][2]):
                 color = colors[j]
                 agent = agent.reshape(-1,2)
+                agent = [e for e in agent if e[0]!=0 and e[1] != 0]
+
                 
                 x = [e[0] for e in agent]
                 y = [e[1] for e in agent]

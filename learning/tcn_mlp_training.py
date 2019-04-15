@@ -102,7 +102,9 @@ def main():
         predict_offsets = training_param["offsets"],
         predict_smooth= training_param["predict_smooth"],
         smooth_suffix= prepare_param["smooth_suffix"],
-        centers = json.load(open(data["scene_centers"]))
+        centers = json.load(open(data["scene_centers"])),
+        augmentation = training_param["augmentation"],
+        augmentation_angles = training_param["augmentation_angles"]
         )
 
     eval_dataset = Hdf5Dataset(
@@ -119,7 +121,9 @@ def main():
         predict_offsets = training_param["offsets"],
         predict_smooth= 0,
         smooth_suffix= prepare_param["smooth_suffix"],
-        centers = json.load(open(data["scene_centers"]))
+        centers = json.load(open(data["scene_centers"])),
+        augmentation = 0,
+        augmentation_angles = []
 
 
         )

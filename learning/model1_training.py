@@ -54,9 +54,9 @@ def main():
         train_scenes = prepare_param["toy_train_scenes"]
         test_scenes = prepare_param["toy_test_scenes"] 
         nb_neighbors_max = np.array(json.load(open(torch_param["toy_nb_neighboors_path"]))["max_neighbors"])
-    else:
-        train_scenes = helpers.helpers_training.augment_scene_list(train_scenes,preprocessing["augmentation_angles"])
-        test_scenes = helpers.helpers_training.augment_scene_list(test_scenes,preprocessing["augmentation_angles"])
+    # else:
+    #     train_scenes = helpers.helpers_training.augment_scene_list(train_scenes,preprocessing["augmentation_angles"])
+    #     test_scenes = helpers.helpers_training.augment_scene_list(test_scenes,preprocessing["augmentation_angles"])
 
     
 
@@ -68,14 +68,18 @@ def main():
         t_obs=prepare_param["t_obs"],
         t_pred=prepare_param["t_pred"],
         set_type = "train",
-        use_images = False,
+        use_images = True,
         data_type = "trajectories",
         use_neighbors_label = True,
         use_neighbors_sample = True,
         predict_offsets = training_param["offsets"],
         predict_smooth= training_param["predict_smooth"],
         smooth_suffix= prepare_param["smooth_suffix"],
-        centers = json.load(open(data["scene_centers"]))
+        centers = json.load(open(data["scene_centers"])),
+        augmentation = training_param["augmentation"],
+        # augmentation = 0,
+
+        augmentation_angles = training_param["augmentation_angles"]
         )
 
     
@@ -94,7 +98,9 @@ def main():
         predict_offsets = training_param["offsets"],
         predict_smooth= 0,
         smooth_suffix= prepare_param["smooth_suffix"],
-        centers = json.load(open(data["scene_centers"]))
+        centers = json.load(open(data["scene_centers"])),
+        augmentation = 0,
+        augmentation_angles = []
         )
 
     train_loader = CustomDataLoader( batch_size = training_param["batch_size"],shuffle = True,drop_last = True,dataset = train_dataset,test= training_param["test"])

@@ -6,6 +6,7 @@ import json
 import h5py
 import cv2
 import time
+import helpers
 
 
 class CustomDataLoader():
@@ -61,20 +62,19 @@ class CustomDataLoader():
 """
 class Hdf5Dataset():
       'Characterizes a dataset for PyTorch'
-      def __init__(self,images_path,hdf5_file,scene_list,t_obs,t_pred,set_type,use_images,data_type,use_neighbors_sample,use_neighbors_label,centers,center = 1,reduce_batches = True,predict_offsets = 0,predict_smooth=0,smooth_suffix = ""):
+      def __init__(self,images_path,hdf5_file,scene_list,t_obs,t_pred,set_type,use_images,data_type,use_neighbors_sample,use_neighbors_label,augmentation,augmentation_angles,centers,reduce_batches = True,predict_offsets = 0,predict_smooth=0,smooth_suffix = ""):
 
             self.images_path = images_path + "{}.jpg"
             self.hdf5_file = hdf5_file
             self.set_type = set_type
             self.scene_list = scene_list
 
-            self.images = self.__load_images()
             self.data_type = data_type
             self.use_images = use_images
             self.use_neighbors_sample = use_neighbors_sample
             self.use_neighbors_label = use_neighbors_label
 
-            self.center = center
+            
             self.centers = centers
             self.reduce_batches = reduce_batches
             self.predict_offsets = predict_offsets
@@ -90,9 +90,20 @@ class Hdf5Dataset():
             self.t_obs = t_obs
             self.t_pred = t_pred
             self.seq_len = t_obs + t_pred
+            self.augmentation = augmentation 
+            self.augmentation_angles = augmentation_angles
+            
+
+            if self.augmentation:
+                  self.r_matrices = self.__get_matrices()
+                  self.scene_list = helpers.helpers_training.augment_scene_list(self.scene_list,self.augmentation_angles)
+            
+            self.images = self.__load_images()
 
       def get_len(self):
             with h5py.File(self.hdf5_file,"r") as hdf5_file: 
+                  if self.augmentation:
+                        return hdf5_file[self.dset_name].shape[0]  * (len(self.augmentation_angles) + 1)
                   return hdf5_file[self.dset_name].shape[0]
 
 
@@ -102,9 +113,18 @@ class Hdf5Dataset():
                   scenes_dset = hdf5_file[self.dset_img_name]   
                   types_dset = hdf5_file[self.dset_types]   
 
-             
+                  if self.augmentation:
 
+                        red_ids = sorted(np.array(ids) % coord_dset.shape[0])
+                        m_ids = (np.array(ids) / float(coord_dset.shape[0]) ).astype(int)*90
+                        ids,matrix_indexes = [],[]
 
+                        for i in range(len(red_ids)):                              
+                              if i > 0 and  red_ids[i] == ids[-1]:
+                                    ids.append(red_ids[i]+1)
+                              else:
+                                    ids.append(red_ids[i])
+            
                   X,y,scenes = [],[],[]
                   max_batch = coord_dset.shape[1]
 
@@ -170,8 +190,9 @@ class Hdf5Dataset():
 
                   scenes = [img.decode('UTF-8') for img in scenes_dset[ids]] # B
 
-                  
-                  if self.center:
+                 
+
+                  if self.augmentation:
                         centers = np.array([self.centers[scene] for scene in scenes]) # B,2
                         centers = np.expand_dims(centers,axis = 1) # B,1,2
                         centers = np.expand_dims(centers,axis = 1) # B,1,1,2
@@ -180,20 +201,39 @@ class Hdf5Dataset():
                         centers_x = np.repeat(centers,X.shape[2],axis = 2) # B,N,t_obs,2
                         centers_y = np.repeat(centers,y.shape[2],axis = 2) # B,N,t_pred,2
 
+                        matrices = np.array([self.r_matrices[m] for m in m_ids])
+                        matrices = np.expand_dims(matrices,axis = 1)
+                        matrices = np.repeat(matrices,X.shape[1],axis = 1)
                         
                         if self.use_neighbors_sample:
-                              X[:,(nb_agents-1)] = np.subtract(X[:,(nb_agents-1)],centers_x[:,(nb_agents-1)])
+                              X[:,(nb_agents-1)] = np.subtract(X[:,(nb_agents-1)],centers_x[:,(nb_agents-1)]) #center x
 
                               if not self.predict_offsets:
-                                    y[:,(nb_agents-1)] = np.subtract(y[:,(nb_agents-1)],centers_y[:,(nb_agents-1)])
+                                    y[:,(nb_agents-1)] = np.subtract(y[:,(nb_agents-1)],centers_y[:,(nb_agents-1)]) #center y if not offsets 
+                                    # excluding padding [0,0] points
+                              X[:,(nb_agents-1)] = np.matmul(X[:,(nb_agents-1)],matrices[:,(nb_agents-1)]) #rotate x around 0,0
+                              y[:,(nb_agents-1)] = np.matmul(y[:,(nb_agents-1)],matrices[:,(nb_agents-1)]) #rotate y around 0,0
+
+                              X[:,(nb_agents-1)] = np.add(X[:,(nb_agents-1)],centers_x[:,(nb_agents-1)]) #translate back
+
+                              if not self.predict_offsets:
+                                    y[:,(nb_agents-1)] = np.add(y[:,(nb_agents-1)],centers_y[:,(nb_agents-1)]) #translate back
 
                         else:
                               X = np.subtract(X,centers_x)
                               if not self.predict_offsets:
                                     y = np.subtract(y,centers_y)
+                              X = np.matmul(X,matrices)
+                              y = np.matmul(y,matrices)
 
+                              X = np.add(X,centers_x)
+                              if not self.predict_offsets:
+                                    y = np.add(y,centers_y)
+                        scenes = [scene if m == 0 else scene +"_{}".format(m) for scene,m in zip(scenes,m_ids)] # B
+                               
 
-                        # y = np.subtract(y,centers_y)
+                  
+
 
 
 
@@ -213,6 +253,19 @@ class Hdf5Dataset():
                   img = img.permute(2,0,1)
                   images[scene] = img
             return images
+      def __get_matrices(self):
+
+            matrices = {}
+
+            for theta in [0] + self.augmentation_angles:
+                  theta_rad = np.radians(theta)
+                  c, s = np.cos(theta_rad), np.sin(theta_rad)
+            
+                  r = np.array([[c,-s],
+                              [s,c]
+                              ])
+                  matrices[theta] = r 
+            return matrices
 
 
         

@@ -25,6 +25,8 @@
     "convnet_embedding":32,
     "convnet_nb_layers":4,
     "use_tcn": 1,
-    "offsets":1,
-    "predict_smooth":0
+    "offsets":2,
+    "predict_smooth":1,
+    "augmentation":1,
+    "augmentation_angles":[90,180,270]
 }
