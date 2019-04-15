@@ -61,7 +61,7 @@ class CustomDataLoader():
 """
 class Hdf5Dataset():
       'Characterizes a dataset for PyTorch'
-      def __init__(self,images_path,hdf5_file,scene_list,t_obs,t_pred,set_type,use_images,data_type,use_neighbors_sample,use_neighbors_label,reduce_batches = True,predict_offsets = 0,predict_smooth=0,smooth_suffix = ""):
+      def __init__(self,images_path,hdf5_file,scene_list,t_obs,t_pred,set_type,use_images,data_type,use_neighbors_sample,use_neighbors_label,centers,center = 1,reduce_batches = True,predict_offsets = 0,predict_smooth=0,smooth_suffix = ""):
 
             self.images_path = images_path + "{}.jpg"
             self.hdf5_file = hdf5_file
@@ -73,6 +73,9 @@ class Hdf5Dataset():
             self.use_images = use_images
             self.use_neighbors_sample = use_neighbors_sample
             self.use_neighbors_label = use_neighbors_label
+
+            self.center = center
+            self.centers = centers
             self.reduce_batches = reduce_batches
             self.predict_offsets = predict_offsets
 
@@ -165,7 +168,35 @@ class Hdf5Dataset():
                               y = np.subtract(y,last_points)
 
 
-                  scenes = [img.decode('UTF-8') for img in scenes_dset[ids]] 
+                  scenes = [img.decode('UTF-8') for img in scenes_dset[ids]] # B
+
+                  
+                  if self.center:
+                        centers = np.array([self.centers[scene] for scene in scenes]) # B,2
+                        centers = np.expand_dims(centers,axis = 1) # B,1,2
+                        centers = np.expand_dims(centers,axis = 1) # B,1,1,2
+                        centers = np.repeat(centers,X.shape[1],axis = 1) # B,N,1,2
+
+                        centers_x = np.repeat(centers,X.shape[2],axis = 2) # B,N,t_obs,2
+                        centers_y = np.repeat(centers,y.shape[2],axis = 2) # B,N,t_pred,2
+
+                        
+                        if self.use_neighbors_sample:
+                              X[:,(nb_agents-1)] = np.subtract(X[:,(nb_agents-1)],centers_x[:,(nb_agents-1)])
+
+                              if not self.predict_offsets:
+                                    y[:,(nb_agents-1)] = np.subtract(y[:,(nb_agents-1)],centers_y[:,(nb_agents-1)])
+
+                        else:
+                              X = np.subtract(X,centers_x)
+                              if not self.predict_offsets:
+                                    y = np.subtract(y,centers_y)
+
+
+                        # y = np.subtract(y,centers_y)
+
+
+
 
                   if not self.use_images:
                         return (torch.FloatTensor(X).contiguous(),torch.FloatTensor(y).contiguous(),scenes,torch.FloatTensor(types))

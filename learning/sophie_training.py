@@ -127,7 +127,7 @@ def main():
         data_type = "trajectories",
         use_neighbors_label = True,
         use_neighbors_sample = True,
-        predict_smooth= training_param["predict_smooth"],
+        predict_smooth= 0,
         smooth_suffix= prepare_param["smooth_suffix"]
         )
 
@@ -185,7 +185,9 @@ def main():
     
     #losses
     criterion_gan = nn.BCELoss()
-    criterion_gen = custom_mse
+    # criterion_gen = custom_mse
+    criterion_gen = nn.MSELoss(reduction= "mean")
+
 
     # optimizer
     optimizer_gen = optim.Adam(generator.parameters(),lr = training_param["lr_generator"])

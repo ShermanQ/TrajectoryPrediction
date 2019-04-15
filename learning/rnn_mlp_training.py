@@ -115,7 +115,7 @@ def main():
         use_neighbors_label = False,
         use_neighbors_sample = False,
         predict_offsets = training_param["offsets"],
-        predict_smooth= training_param["predict_smooth"],
+        predict_smooth= 0,
         smooth_suffix= prepare_param["smooth_suffix"]
         )
 
@@ -149,7 +149,9 @@ def main():
 
 
     optimizer = optim.Adam(net.parameters(),lr = training_param["lr"])
-    criterion = custom_mse
+    # criterion = custom_mse
+    criterion = nn.MSELoss(reduction= "mean")
+
 
     training.training_loop(training_param["n_epochs"],training_param["batch_size"],
         net,device,train_loader,eval_loader,criterion,criterion,optimizer, data["scalers"],

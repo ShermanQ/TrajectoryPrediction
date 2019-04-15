@@ -74,7 +74,8 @@ def main():
         use_neighbors_sample = True,
         predict_offsets = training_param["offsets"],
         predict_smooth= training_param["predict_smooth"],
-        smooth_suffix= prepare_param["smooth_suffix"]
+        smooth_suffix= prepare_param["smooth_suffix"],
+        centers = json.load(open(data["scene_centers"]))
         )
 
     
@@ -92,7 +93,8 @@ def main():
         use_neighbors_sample = True,
         predict_offsets = training_param["offsets"],
         predict_smooth= 0,
-        smooth_suffix= prepare_param["smooth_suffix"]
+        smooth_suffix= prepare_param["smooth_suffix"],
+        centers = json.load(open(data["scene_centers"]))
         )
 
     train_loader = CustomDataLoader( batch_size = training_param["batch_size"],shuffle = True,drop_last = True,dataset = train_dataset,test= training_param["test"])
@@ -128,14 +130,15 @@ def main():
     print(net)
 
     optimizer = optim.Adam(net.parameters(),lr = training_param["lr"])
-    criterion = mse_loss
+    # criterion = mse_loss
+    criterion = nn.MSELoss(reduction= "mean")
     
 
     training.training_loop(training_param["n_epochs"],training_param["batch_size"],
         net,device,train_loader,eval_loader,criterion,criterion,optimizer,data["scalers"],
         data["multiple_scalers"],training_param["model_type"],
         plot = training_param["plot"],early_stopping = True,load_path = training_param["load_path"],
-        plot_every = training_param["plot_every"], save_every = training_param["save_every"])
+        plot_every = training_param["plot_every"],offsets = training_param["offsets"], save_every = training_param["save_every"])
 
 if __name__ == "__main__":
     main()

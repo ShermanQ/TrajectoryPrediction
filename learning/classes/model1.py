@@ -115,19 +115,17 @@ class Model1(nn.Module):
         types = x[1]
         x = x[0]
 
-        print(x.size())
+        active_x = self.__get_active_ids(x)
+
         torch.cuda.synchronize()
         s = time.time()
         x = self.coord_embedding(x)
         # x = f.relu(x)
 
-        active_x = self.__get_active_ids(x)
         # permute channels and sequence length
         B,Nmax,Tobs,Nfeat = x.size()
         x = x.permute(0,1,3,2)  # B,Nmax,Nfeat,Tobs # à vérifier
         x = x.view(-1,x.size()[2],x.size()[3]) # [B*Nmax],Nfeat,Tobs
-
-        print(x.size())
 
 
         # get ids for real agents
@@ -139,7 +137,6 @@ class Model1(nn.Module):
         # y = torch.zeros(B*Nmax,self.dmodel,Tobs).to(self.device) # [B*Nmax],Nfeat,Tobs
         y = torch.zeros(B*Nmax,self.convnet_embedding,Tobs).to(self.device) # [B*Nmax],Nfeat,Tobs
 
-        print(x.size())
 
         # print(x[active_agents].size())
         y[active_agents] = self.tcn(x[active_agents]) # [B*Nmax],Nfeat,Tobs
