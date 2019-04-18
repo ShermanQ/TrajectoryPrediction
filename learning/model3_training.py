@@ -7,14 +7,15 @@ import numpy as np
 import time
 
 from classes.datasets import Hdf5Dataset,CustomDataLoader
-from classes.model1 import Model1,mse_loss
+from classes.model3 import Model3
+
 import helpers.net_training as training
 import helpers
 import sys
 import json
 
 
-#python learning/model1_training.py parameters/data.json parameters/model1_training.json parameters/torch_extractors.json parameters/prepare_training.json "parameters/preprocessing.json"
+#python learning/model3_training.py parameters/data.json parameters/model3_training.json parameters/torch_extractors.json parameters/prepare_training.json "parameters/preprocessing.json"
 
 def main():
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")    
@@ -35,7 +36,8 @@ def main():
     data = json.load(open("parameters/data.json"))
     torch_param = json.load(open("parameters/torch_extractors.json"))
     prepare_param = json.load(open("parameters/prepare_training.json"))
-    training_param = json.load(open("parameters/model1_training.json"))
+    training_param = json.load(open("parameters/model3_training.json"))
+
     preprocessing = json.load(open("parameters/preprocessing.json"))
 
 
@@ -103,35 +105,27 @@ def main():
         augmentation_angles = []
         )
 
-    train_loader = CustomDataLoader( batch_size = training_param["batch_size"],shuffle = True,drop_last = True,dataset = train_dataset,test= training_param["test"])
-    eval_loader = CustomDataLoader( batch_size = training_param["batch_size"],shuffle = False,drop_last = False,dataset = eval_dataset,test= training_param["test"])
+    train_loader = CustomDataLoader( batch_size = training_param["batch_size"],shuffle = True,drop_last = True,dataset = train_dataset)
+    eval_loader = CustomDataLoader( batch_size = training_param["batch_size"],shuffle = False,drop_last = False,dataset = eval_dataset)
     
   
 
 
-    net = Model1(
-        device = device,
-        input_dim = training_param["input_dim"],
-        input_length = training_param["obs_length"],
-        output_length = training_param["pred_length"],
-        kernel_size = training_param["kernel_size"],
-        nb_blocks_transformer = training_param["nb_blocks"],
-        h = training_param["h"],
-        dmodel = training_param["dmodel"],
-        d_ff_hidden = 4 * training_param["dmodel"],
-        dk = int(training_param["dmodel"]/training_param["h"]),
-        dv = int(training_param["dmodel"]/training_param["h"]),
-        predictor_layers = training_param["predictor_layers"],
-        pred_dim = training_param["pred_length"] * training_param["input_dim"] ,
-        
-        convnet_embedding = training_param["convnet_embedding"],
-        convnet_nb_layers = training_param["convnet_nb_layers"],
-        use_tcn = training_param["use_tcn"],
-        dropout_tcn = training_param["dropout_tcn"],
-        dropout_tfr = training_param["dropout_tfr"]
+    net = Model3(
 
+        device = device, 
+        input_size = training_param["input_size"],
+        output_size = training_param["output_size"], 
+        pred_length = training_param["pred_length"], 
+        obs_length = training_param["obs_length"],
+        enc_hidden_size = training_param["enc_hidden_size"], 
+        dec_hidden_size = training_param["dec_hidden_size"], 
+        enc_num_layers = training_param["enc_num_layers"], 
+        dec_num_layer = training_param["dec_num_layer"],
+        embedding_size = training_param["embedding_size"], 
+        social_features_embedding_size = training_param["social_features_embedding_size"]
     )
-
+       
     net = net.to(device)
     print(net)
 

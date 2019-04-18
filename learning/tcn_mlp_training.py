@@ -103,7 +103,7 @@ def main():
         predict_smooth= training_param["predict_smooth"],
         smooth_suffix= prepare_param["smooth_suffix"],
         centers = json.load(open(data["scene_centers"])),
-        augmentation = training_param["augmentation"],
+        augmentation = 0,
         augmentation_angles = training_param["augmentation_angles"]
         )
 
@@ -122,7 +122,7 @@ def main():
         predict_smooth= 0,
         smooth_suffix= prepare_param["smooth_suffix"],
         centers = json.load(open(data["scene_centers"])),
-        augmentation = 0,
+        augmentation = 1,
         augmentation_angles = []
 
 
@@ -175,22 +175,77 @@ def main():
     # criterion = custom_mse
     criterion = nn.MSELoss(reduction= "mean")
 
+    if not training_param["learning_curves"]:
+        training.training_loop(training_param["n_epochs"],training_param["batch_size"],
+            net,device,train_loader,eval_loader,criterion,criterion,optimizer, data["scalers"],
+            data["multiple_scalers"],training_param["model_type"],
+            plot = training_param["plot"],early_stopping = True,load_path = training_param["load_path"],
+            plot_every = training_param["plot_every"], save_every = training_param["save_every"],
+            offsets = training_param["offsets"], normalized = prepare_param["normalize"])
 
-    training.training_loop(training_param["n_epochs"],training_param["batch_size"],
-        net,device,train_loader,eval_loader,criterion,criterion,optimizer, data["scalers"],
-        data["multiple_scalers"],training_param["model_type"],
-        plot = training_param["plot"],early_stopping = True,load_path = training_param["load_path"],
-        plot_every = training_param["plot_every"], save_every = training_param["save_every"],
-        offsets = training_param["offsets"], normalized = prepare_param["normalize"])
+    
+    else:
+        batch_props = training_param["learning_props"]
+
+        nb_samples = train_dataset.get_len()
+        print("nb samples train {}".format(nb_samples))
 
 
+        train_errors = []
+        dev_errors = [] 
+        nb_samples_kept = []
+        desired_perfs = []
+
+        print("learning curves")
+        for prop in batch_props:
+            print("**** proportion of train samples *** {}".format(prop))
+            train_loader.data_len = int( prop * nb_samples)
+            print("nb of kept train samples {}".format(train_loader.data_len))
+            train_loader.split_batches()
+            print("nb of kept batches {}".format(train_loader.nb_batches))
+
+            for epoch in range(training_param["n_epochs"]):
+                train_loss,_ = training.train(net, device, train_loader,criterion, optimizer, epoch,training_param["batch_size"])
+
+
+            train_loss,_,_ = training.evaluate(net, device, train_loader,criterion, 
+                epoch, training_param["batch_size"],data["scalers"],data["multiple_scalers"],
+                training_param["model_type"],offsets=training_param["offsets"],
+                normalized =prepare_param["normalize"] )
+
+            eval_loss,_,_ = training.evaluate(net, device, eval_loader,criterion, 
+                epoch, training_param["batch_size"],data["scalers"],data["multiple_scalers"],
+                training_param["model_type"],offsets=training_param["offsets"],
+                normalized =prepare_param["normalize"] )
+
+
+            
+            train_errors.append(np.sqrt(train_loss))
+            dev_errors.append(np.sqrt(eval_loss))
+            nb_samples_kept.append(int( prop * nb_samples))
+            desired_perfs.append(0.)
+
+        plt.plot(nb_samples_kept,train_errors,label = "train_error")
+        plt.plot(nb_samples_kept,dev_errors,label = "dev_error")
+        plt.plot(nb_samples_kept,desired_perfs,label = "desired_perfs")
+
+        plt.ylabel("loss function")
+        plt.xlabel("nb train samples")
+
+        plt.legend()
+
+        plt.savefig("{}learning_curves.jpg".format(data["reports"]))
+        plt.close()
+        # plt.show()
+
+
+        
+    
+# print(losses)
     # load_path = "./learning/data/models/model_1552260631.156045.tar"
     # checkpoint = torch.load(load_path)
     # net.load_state_dict(checkpoint['state_dict'])
     # net = net.to(device)
-
-    
-
 
     # net.eval()
 

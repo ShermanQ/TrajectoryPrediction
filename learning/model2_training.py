@@ -7,22 +7,28 @@ import numpy as np
 import time
 
 from classes.datasets import Hdf5Dataset,CustomDataLoader
-from classes.model1 import Model1,mse_loss
+# from classes.model2a import Model2a
+# from classes.model2b import Model2b
+# from classes.model2c import Model2c
+from classes.model2d import Model2d
+import matplotlib.pyplot as plt
+
 import helpers.net_training as training
 import helpers
 import sys
 import json
 
 
-#python learning/model1_training.py parameters/data.json parameters/model1_training.json parameters/torch_extractors.json parameters/prepare_training.json "parameters/preprocessing.json"
+
+#python learning/model2_training.py parameters/data.json parameters/model2a_training.json parameters/torch_extractors.json parameters/prepare_training.json "parameters/preprocessing.json"
 
 def main():
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")    
     # device = torch.device("cpu")
     print(device)
     print(torch.cuda.is_available())
-    
-        
+    #2
+    torch.manual_seed(51)
     args = sys.argv    
 
     # data = json.load(open(args[1]))
@@ -35,7 +41,11 @@ def main():
     data = json.load(open("parameters/data.json"))
     torch_param = json.load(open("parameters/torch_extractors.json"))
     prepare_param = json.load(open("parameters/prepare_training.json"))
-    training_param = json.load(open("parameters/model1_training.json"))
+    # training_param = json.load(open("parameters/model2a_training.json"))
+    # training_param = json.load(open("parameters/model2b_training.json"))
+    # training_param = json.load(open("parameters/model2c_training.json"))
+    training_param = json.load(open("parameters/model2d_training.json"))
+
     preprocessing = json.load(open("parameters/preprocessing.json"))
 
 
@@ -106,10 +116,78 @@ def main():
     train_loader = CustomDataLoader( batch_size = training_param["batch_size"],shuffle = True,drop_last = True,dataset = train_dataset,test= training_param["test"])
     eval_loader = CustomDataLoader( batch_size = training_param["batch_size"],shuffle = False,drop_last = False,dataset = eval_dataset,test= training_param["test"])
     
-  
+
+    # ins_x,ins_y,las_x,las_y = [],[],[],[]
+    # for batch_idx, data in enumerate(train_loader):
+    #     inputs, labels, ids,types = data
+
+    #     inputs = inputs.reshape(-1,inputs.shape[2],inputs.shape[3]).numpy()
+    #     labels = labels.reshape(-1,labels.shape[2],labels.shape[3]).numpy()
+
+    #     # a = (inputs != 0.).astype(int)
+    #     # b = np.sum(a,axis = 2)
+    #     # c = np.sum(b,axis = 1)
+
+    #     # active_ids = np.argwhere(c > 0)
 
 
-    net = Model1(
+
+    #     # inputs = inputs[active_ids]
+    #     # labels = labels[active_ids]
+
+
+       
+    #     las_x.append(labels[:,:,0].flatten())
+    #     las_y.append(labels[:,:,1].flatten())
+    #     ins_x.append(inputs[:,:,0].flatten())
+    #     ins_y.append(inputs[:,:,1].flatten())
+
+    #     # if batch_idx > 100:
+    #     #     break
+    # ins_x = np.concatenate(ins_x)
+    # las_x = np.concatenate(las_x)
+    # ins_y = np.concatenate(ins_y)
+    # las_y = np.concatenate(las_y)
+
+    # fig,axs = plt.subplots(2,2,squeeze = False)
+    # axs[0][0].hist(ins_x,bins = 100)
+    # axs[0][0].set_title("inputs_x")
+    # axs[0][1].hist(las_x,bins = 100)
+    # axs[0][1].set_title("labels_X")
+
+    # axs[1][0].hist(ins_y,bins = 100)
+    # axs[1][0].set_title("inputs_y")
+    # axs[1][1].hist(las_y,bins = 100)
+    # axs[1][1].set_title("labels_y")
+
+    # plt.show()
+
+
+
+       
+    # nb_samples = train_dataset.get_len()
+    # print("nb samples train {}".format(nb_samples))
+    # print("**** proportion of train samples *** {}".format(0.1))
+    # train_loader.data_len = int( 0.1 * nb_samples)
+    # print("nb of kept train samples {}".format(train_loader.data_len))
+    # train_loader.split_batches()
+    # print("nb of kept batches {}".format(train_loader.nb_batches))
+
+
+    # nb_samples = eval_dataset.get_len()
+    # print("nb samples eval {}".format(nb_samples))
+    # print("**** proportion of eval samples *** {}".format(0.1))
+    # eval_loader.data_len = int( 0.1 * nb_samples)
+    # print("nb of kept train samples {}".format(eval_loader.data_len))
+    # eval_loader.split_batches()
+    # print("nb of kept batches {}".format(eval_loader.nb_batches))
+
+
+    # net = Model2a(
+    # net = Model2b(
+    # net = Model2c(
+    net = Model2d(
+    
         device = device,
         input_dim = training_param["input_dim"],
         input_length = training_param["obs_length"],
@@ -131,6 +209,10 @@ def main():
         dropout_tfr = training_param["dropout_tfr"]
 
     )
+
+    
+    # helpers.plot_params(net.named_parameters(),-1,root="./data/reports/weights/")
+
 
     net = net.to(device)
     print(net)

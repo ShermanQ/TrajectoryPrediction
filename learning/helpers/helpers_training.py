@@ -261,7 +261,8 @@ def plot_grad_flow(named_parameters,epoch,root = "./data/reports/gradients/"):
     
     fig, ax = plt.subplots()
 
-
+    print("*** {} ****".format(ave_grads))
+    print("")
     ax.bar(np.arange(len(max_grads)), max_grads, alpha=0.1, lw=1, color="c")
     ax.bar(np.arange(len(max_grads)), ave_grads, alpha=0.1, lw=1, color="b")
     ax.hlines(0, 0, len(ave_grads)+1, lw=2, color="k" )
@@ -281,6 +282,33 @@ def plot_grad_flow(named_parameters,epoch,root = "./data/reports/gradients/"):
 
     plt.close()
 
+def plot_params(named_parameters,epoch,root="./data/reports/weights/"):
+    weights = {}
+    for n,p in named_parameters:
+        if(p.requires_grad) and ("bias" not in n):
+            weights[n] = p.cpu().detach().numpy().flatten()
+
+    n_rows = int(np.ceil( np.sqrt(len(weights))) )
+
+
+    fig,axs = plt.subplots(n_rows-1,n_rows,sharex=False,sharey=False,squeeze = False)
+    ctr = 0
+    fig.set_figheight(15)
+    fig.set_figwidth(30)
+
+    layers = list(weights.keys())
+    print(len(layers))
+    for i in range(n_rows-1 ):
+        for j in range(n_rows):
+
+            if ctr < len(weights) :
+                axs[i][j].hist(weights[layers[ctr]],label = layers[ctr],bins = 20)
+                # axs[i][j].set_title("weights {}".format(layers[ctr]))
+                lgd = axs[i][j].legend()
+            ctr += 1
+    fig.tight_layout()
+    plt.savefig("{}epoch_{}__{}.jpg".format(root,epoch,time.time()))
+    plt.close()
 
 def augment_scene_list(scene_list,angles):
     new_list = []

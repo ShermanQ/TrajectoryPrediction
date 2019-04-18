@@ -73,6 +73,8 @@ def train(model, device, train_loader,criterion, optimizer, epoch,batch_size,pri
         # s = time.time()
 
         if batch_idx in ids_grads:
+            helpers.plot_params(model.named_parameters(),epoch)
+
             helpers.plot_grad_flow(model.named_parameters(),epoch)
 
         # torch.cuda.synchronize()
@@ -267,6 +269,9 @@ def training_loop(n_epochs,batch_size,net,device,train_loader,eval_loader,criter
     for epoch in range(start_epoch,n_epochs):
         train_loss,_ = train(net, device, train_loader,criterion_train, optimizer, epoch,batch_size)
         
+        # train_loss,fde,ade = evaluate(net, device, train_loader,criterion_eval, 
+        #         epoch, batch_size,scalers_path,multiple_scalers,model_type,offsets=offsets,
+        #         normalized =normalized )
         
         eval_loss,fde,ade = evaluate(net, device, eval_loader,criterion_eval, 
                 epoch, batch_size,scalers_path,multiple_scalers,model_type,offsets=offsets,
@@ -295,7 +300,7 @@ def training_loop(n_epochs,batch_size,net,device,train_loader,eval_loader,criter
     if plot:
         plot_losses(losses,s,root = "./data/reports/losses/")
      
-    return losses
+    return losses,net
 
 
 def plot_losses(losses,idx,root = "./data/reports/losses/"):
