@@ -27,6 +27,6 @@
     "use_tcn": 1,
     "offsets": 1,
     "predict_smooth":1,
-    "augmentation":0,
+    "augmentation":1,
     "augmentation_angles":[90,180,270]
 }

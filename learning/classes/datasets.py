@@ -117,30 +117,33 @@ class Hdf5Dataset():
                   types_dset = hdf5_file[self.dset_types]   
 
 
-                  X,y,scenes,types,m_ids = [],[],[],[],[]
+                  X,y,types,m_ids = [],[],[],[]
                   max_batch = coord_dset.shape[1]
 
 
+
                   if self.augmentation:
-                        scenes = [scene if m == 0 else scene +"_{}".format(m) for scene,m in zip(scenes,m_ids)] # B
                         ids,m_ids = self.__augmentation_ids(ids,coord_dset)
-                  else:
-                        scenes = [img.decode('UTF-8') for img in scenes_dset[ids]] # B
+                  
+                  scenes = [img.decode('UTF-8') for img in scenes_dset[ids]] # B
+                  
+                        
 
                   if self.reduce_batches:
                         max_batch = self.__get_batch_max_neighbors(ids,coord_dset)
 
 
                   if self.use_neighbors:
-                        X,y,types = self.__get_x_y_neighbors(coord_dset,ids,max_batch)
+                        X,y,types = self.__get_x_y_neighbors(coord_dset,ids,max_batch,types_dset,hdf5_file)
 
                   else:
-                        X,y,types = self.__get_x_y(coord_dset,ids,max_batch)                      
+                        X,y,types = self.__get_x_y(coord_dset,ids,max_batch,types_dset,hdf5_file)                      
 
 
 
                   if self.augmentation:
                         X,y = self.__augment_batch(scenes,X,y,m_ids)
+                        scenes = [scene if m == 0 else scene +"_{}".format(m) for scene,m in zip(scenes,m_ids)] # B
 
                         
                   if not self.use_images:
@@ -154,15 +157,17 @@ class Hdf5Dataset():
       def __get_batch_max_neighbors(self,ids,coord_dset):
             b,n,s,i = coord_dset.shape
 
-            active_mask = (coord_dset[ids,:,:self.t_obs] != self.padding).astype(int)
-            nb_padding_traj = np.sum( np.sum(active_mask,axis = 2), axis = 1)/float(2.0*self.t_obs) #prop of padded points per traj
+            active_mask = (coord_dset[ids,:,:self.t_obs] == self.padding).astype(int)
+            a = np.sum(active_mask,axis = 3)
+            b = np.sum( a, axis = 2)
+            nb_padding_traj = b/float(2.0*self.t_obs) #prop of padded points per traj
             active_traj = nb_padding_traj < 1.0 # if less than 100% of the points are padding points then its an active trajectory
-            nb_agents = np.sum(active_traj,axis = 1)                      
+            nb_agents = np.sum(active_traj.astype(int),axis = 1)                      
             max_batch = np.max(nb_agents)
             return max_batch
 
 
-      def __get_x_y_neighbors(self,coord_dset,ids,max_batch):
+      def __get_x_y_neighbors(self,coord_dset,ids,max_batch,types_dset,hdf5_file):
             X = coord_dset[ids,:max_batch,:self.t_obs] # load obs for given ids
 
             if self.predict_smooth:
@@ -183,12 +188,12 @@ class Hdf5Dataset():
                         # offsets according to preceding point point, take points for tpred shifted 1 timestep left
                         last_points = coord_dset[ids,:max_batch,self.t_obs-1:self.seq_len-1]
 
-                  active_mask = (y != self.padding)
+                  active_mask = (y != self.padding).astype(int)
                   active_last_points = np.multiply(active_mask,last_points)
                   y = np.subtract(y,active_last_points)
             return X,y,types
 
-      def __get_x_y(self,coord_dset,ids,max_batch):
+      def __get_x_y(self,coord_dset,ids,max_batch,types_dset,hdf5_file):
             X = np.expand_dims( coord_dset[ids,0,:self.t_obs] ,1) # keep only first neighbors and expand nb_agent dim 
 
             if self.predict_smooth: # if predict smoothed target change dataset
@@ -208,7 +213,7 @@ class Hdf5Dataset():
                   elif self.predict_offsets == 2: # y shifted left
                         last_points = np.expand_dims( coord_dset[ids,0,self.t_obs-1:self.seq_len-1], 1)
 
-                  active_mask = (y != self.padding)
+                  active_mask = (y != self.padding).astype(int)
                   active_last_points = np.multiply(active_mask,last_points)
                   y = np.subtract(y,active_last_points)
             return X,y,types
@@ -234,8 +239,8 @@ class Hdf5Dataset():
             centers_x = np.repeat(centers,X.shape[2],axis = 2) # B,N,t_obs,2
             centers_y = np.repeat(centers,y.shape[2],axis = 2) # B,N,t_pred,2
 
-            centers_x = np.multiply( (X != self.padding), centers_x) # put 0 centers where padding points
-            centers_y = np.multiply( (y != self.padding), centers_y)
+            centers_x = np.multiply( (X != self.padding).astype(int), centers_x) # put 0 centers where padding points
+            centers_y = np.multiply( (y != self.padding).astype(int), centers_y)
 
             matrices = np.array([self.r_matrices[m] for m in m_ids]) #B,2,2
             matrices = np.expand_dims(matrices,axis = 1) #B,1,2,2
@@ -244,29 +249,31 @@ class Hdf5Dataset():
             matrices_x = np.repeat( np.expand_dims(matrices,axis = 2), X.shape[2],axis=2) #B,N,tobs,2,2
             matrices_y = np.repeat( np.expand_dims(matrices,axis = 2), y.shape[2],axis=2) #B,N,pred,2,2
 
-            matrices_x = np.multiply( X != self.padding, matrices_x) # put 0 matrices where padding points on x
-            matrices_y = np.multiply( y != self.padding, matrices_y) # put 0 matrices where padding points on y
+            matrices_x = np.multiply( np.expand_dims((X != self.padding).astype(int),4), matrices_x) # put 0 matrices where padding points on x
+            matrices_y = np.multiply( np.expand_dims( (y != self.padding).astype(int),4), matrices_y) # put 0 matrices where padding points on y
 
 
             eyes = np.expand_dims(np.expand_dims(np.expand_dims(np.eye(X.shape[-1]), 0),0),0) # create identity matrix of dimension 1,1,1,2,2
-            eyes_x = eyes.repeat(0,X.shape[0]).repeat(1,X.shape[1]).repeat(2,X.shape[2]) # B,N,tobs,2,2
-            eyes_y = eyes.repeat(0,y.shape[0]).repeat(1,y.shape[1]).repeat(2,y.shape[2]) # B,N,tpred,2,2
+            eyes_x = eyes.repeat(X.shape[0],0).repeat(X.shape[1],1).repeat(X.shape[2],2) # B,N,tobs,2,2
+            eyes_y = eyes.repeat(y.shape[0],0).repeat(y.shape[1],1).repeat(y.shape[2],2) # B,N,tpred,2,2
 
-            eyes_x = np.multiply( X == self.padding, eyes_x) # put 0 matrices where normal points on x
-            eyes_y = np.multiply( y == self.padding, eyes_y) # put 0 matrices where normal points on y
+            eyes_x = np.multiply( np.expand_dims( (X == self.padding).astype(int) ,4), eyes_x) # put 0 matrices where normal points on x
+            eyes_y = np.multiply( np.expand_dims( (y == self.padding).astype(int) ,4), eyes_y) # put 0 matrices where normal points on y
 
             matrices_x = np.add(matrices_x,eyes_x) # identity on padding points, rotation on normal points
             matrices_y = np.add(matrices_y,eyes_y)
            
 
             X = np.subtract(X,centers_x) # translate scene put origin on scene center
-            y = np.subtract(y,centers_y)
-
             X = np.matmul(X,matrices) # rotate
+            X = np.add(X,centers_x) # translate back
+
+            if not self.predict_offsets:
+                  y = np.subtract(y,centers_y)
             y = np.matmul(y,matrices)
 
-            X = np.add(X,centers_x) # translate back
-            y = np.add(y,centers_y)
+            if not self.predict_offsets:
+                  y = np.add(y,centers_y)
 
             return X,y
 

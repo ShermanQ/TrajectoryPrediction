@@ -80,8 +80,7 @@ def main():
         set_type = "train",
         use_images = False,
         data_type = "trajectories",
-        use_neighbors_label = True,
-        use_neighbors_sample = True,
+        use_neighbors = True,
         predict_offsets = training_param["offsets"],
         predict_smooth= training_param["predict_smooth"],
         smooth_suffix= prepare_param["smooth_suffix"],
@@ -103,8 +102,7 @@ def main():
         set_type = "eval", ##############
         use_images = False,
         data_type = "trajectories",
-        use_neighbors_label = True,
-        use_neighbors_sample = True,
+        use_neighbors = True,
         predict_offsets = training_param["offsets"],
         predict_smooth= 0,
         smooth_suffix= prepare_param["smooth_suffix"],
@@ -117,9 +115,9 @@ def main():
     eval_loader = CustomDataLoader( batch_size = training_param["batch_size"],shuffle = False,drop_last = False,dataset = eval_dataset,test= training_param["test"])
     
 
-    # ins_x,ins_y,las_x,las_y = [],[],[],[]
-    # for batch_idx, data in enumerate(train_loader):
-    #     inputs, labels, ids,types = data
+    ins_x,ins_y,las_x,las_y = [],[],[],[]
+    for batch_idx, data in enumerate(train_loader):
+        inputs, labels, ids,types = data
 
     #     inputs = inputs.reshape(-1,inputs.shape[2],inputs.shape[3]).numpy()
     #     labels = labels.reshape(-1,labels.shape[2],labels.shape[3]).numpy()
@@ -186,47 +184,47 @@ def main():
     # net = Model2a(
     # net = Model2b(
     # net = Model2c(
-    net = Model2d(
+    # net = Model2d(
     
-        device = device,
-        input_dim = training_param["input_dim"],
-        input_length = training_param["obs_length"],
-        output_length = training_param["pred_length"],
-        kernel_size = training_param["kernel_size"],
-        nb_blocks_transformer = training_param["nb_blocks"],
-        h = training_param["h"],
-        dmodel = training_param["dmodel"],
-        d_ff_hidden = 4 * training_param["dmodel"],
-        dk = int(training_param["dmodel"]/training_param["h"]),
-        dv = int(training_param["dmodel"]/training_param["h"]),
-        predictor_layers = training_param["predictor_layers"],
-        pred_dim = training_param["pred_length"] * training_param["input_dim"] ,
+    #     device = device,
+    #     input_dim = training_param["input_dim"],
+    #     input_length = training_param["obs_length"],
+    #     output_length = training_param["pred_length"],
+    #     kernel_size = training_param["kernel_size"],
+    #     nb_blocks_transformer = training_param["nb_blocks"],
+    #     h = training_param["h"],
+    #     dmodel = training_param["dmodel"],
+    #     d_ff_hidden = 4 * training_param["dmodel"],
+    #     dk = int(training_param["dmodel"]/training_param["h"]),
+    #     dv = int(training_param["dmodel"]/training_param["h"]),
+    #     predictor_layers = training_param["predictor_layers"],
+    #     pred_dim = training_param["pred_length"] * training_param["input_dim"] ,
         
-        convnet_embedding = training_param["convnet_embedding"],
-        convnet_nb_layers = training_param["convnet_nb_layers"],
-        use_tcn = training_param["use_tcn"],
-        dropout_tcn = training_param["dropout_tcn"],
-        dropout_tfr = training_param["dropout_tfr"]
+    #     convnet_embedding = training_param["convnet_embedding"],
+    #     convnet_nb_layers = training_param["convnet_nb_layers"],
+    #     use_tcn = training_param["use_tcn"],
+    #     dropout_tcn = training_param["dropout_tcn"],
+    #     dropout_tfr = training_param["dropout_tfr"]
 
-    )
+    # )
 
     
-    # helpers.plot_params(net.named_parameters(),-1,root="./data/reports/weights/")
+    # # helpers.plot_params(net.named_parameters(),-1,root="./data/reports/weights/")
 
 
-    net = net.to(device)
-    print(net)
+    # net = net.to(device)
+    # print(net)
 
-    optimizer = optim.Adam(net.parameters(),lr = training_param["lr"])
-    # criterion = mse_loss
-    criterion = nn.MSELoss(reduction= "mean")
+    # optimizer = optim.Adam(net.parameters(),lr = training_param["lr"])
+    # # criterion = mse_loss
+    # criterion = nn.MSELoss(reduction= "mean")
     
 
-    training.training_loop(training_param["n_epochs"],training_param["batch_size"],
-        net,device,train_loader,eval_loader,criterion,criterion,optimizer,data["scalers"],
-        data["multiple_scalers"],training_param["model_type"],
-        plot = training_param["plot"],early_stopping = True,load_path = training_param["load_path"],
-        plot_every = training_param["plot_every"],offsets = training_param["offsets"], save_every = training_param["save_every"])
+    # training.training_loop(training_param["n_epochs"],training_param["batch_size"],
+    #     net,device,train_loader,eval_loader,criterion,criterion,optimizer,data["scalers"],
+    #     data["multiple_scalers"],training_param["model_type"],
+    #     plot = training_param["plot"],early_stopping = True,load_path = training_param["load_path"],
+    #     plot_every = training_param["plot_every"],offsets = training_param["offsets"], save_every = training_param["save_every"])
 
     
 
