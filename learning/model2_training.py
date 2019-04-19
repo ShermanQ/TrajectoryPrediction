@@ -72,6 +72,7 @@ def main():
 
     print(nb_neighbors_max)
     train_dataset = Hdf5Dataset(
+        padding = prepare_param["padding"],
         images_path = data["prepared_images"],
         hdf5_file= data_file,
         scene_list= train_scenes,
@@ -94,6 +95,7 @@ def main():
     
 
     eval_dataset = Hdf5Dataset(
+        padding = prepare_param["padding"],
         images_path = data["prepared_images"],
         hdf5_file= data_file,
         scene_list= train_scenes,
@@ -119,46 +121,49 @@ def main():
     for batch_idx, data in enumerate(train_loader):
         inputs, labels, ids,types = data
 
-    #     inputs = inputs.reshape(-1,inputs.shape[2],inputs.shape[3]).numpy()
-    #     labels = labels.reshape(-1,labels.shape[2],labels.shape[3]).numpy()
 
-    #     # a = (inputs != 0.).astype(int)
-    #     # b = np.sum(a,axis = 2)
-    #     # c = np.sum(b,axis = 1)
+        inputs = inputs.numpy()
+        labels = labels.numpy()
 
-    #     # active_ids = np.argwhere(c > 0)
+        inputs_x = inputs[:,:,:,0].flatten()
+        inputs_y = inputs[:,:,:,1].flatten()
+        labels_x = labels[:,:,:,0].flatten()
+        labels_y = labels[:,:,:,1].flatten()
 
 
-
-    #     # inputs = inputs[active_ids]
-    #     # labels = labels[active_ids]
+        inputs_x = inputs_x[np.argwhere(inputs_x != prepare_param["padding"])]
+        inputs_y = inputs_y[np.argwhere(inputs_y != prepare_param["padding"])]
+        labels_x = labels_x[np.argwhere(labels_x != prepare_param["padding"])]
+        labels_y = labels_y[np.argwhere(labels_y != prepare_param["padding"])]
 
 
        
-    #     las_x.append(labels[:,:,0].flatten())
-    #     las_y.append(labels[:,:,1].flatten())
-    #     ins_x.append(inputs[:,:,0].flatten())
-    #     ins_y.append(inputs[:,:,1].flatten())
+        las_x.append(labels_x)
+        las_y.append(labels_y)
+        ins_x.append(inputs_x)
+        ins_y.append(inputs_y)
 
-    #     # if batch_idx > 100:
-    #     #     break
-    # ins_x = np.concatenate(ins_x)
-    # las_x = np.concatenate(las_x)
-    # ins_y = np.concatenate(ins_y)
-    # las_y = np.concatenate(las_y)
+        
 
-    # fig,axs = plt.subplots(2,2,squeeze = False)
-    # axs[0][0].hist(ins_x,bins = 100)
-    # axs[0][0].set_title("inputs_x")
-    # axs[0][1].hist(las_x,bins = 100)
-    # axs[0][1].set_title("labels_X")
+        # if batch_idx > 100:
+        #     break
+    ins_x = np.concatenate(ins_x)
+    las_x = np.concatenate(las_x)
+    ins_y = np.concatenate(ins_y)
+    las_y = np.concatenate(las_y)
 
-    # axs[1][0].hist(ins_y,bins = 100)
-    # axs[1][0].set_title("inputs_y")
-    # axs[1][1].hist(las_y,bins = 100)
-    # axs[1][1].set_title("labels_y")
+    fig,axs = plt.subplots(2,2,squeeze = False)
+    axs[0][0].hist(ins_x,bins = 100)
+    axs[0][0].set_title("inputs_x")
+    axs[0][1].hist(las_x,bins = 100)
+    axs[0][1].set_title("labels_X")
 
-    # plt.show()
+    axs[1][0].hist(ins_y,bins = 100)
+    axs[1][0].set_title("inputs_y")
+    axs[1][1].hist(las_y,bins = 100)
+    axs[1][1].set_title("labels_y")
+
+    plt.show()
 
 
 

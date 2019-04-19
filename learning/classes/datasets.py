@@ -63,7 +63,7 @@ class CustomDataLoader():
 """
 class Hdf5Dataset():
       'Characterizes a dataset for PyTorch'
-      def __init__(self,images_path,hdf5_file,scene_list,t_obs,t_pred,set_type,use_images,data_type,use_neighbors,augmentation,augmentation_angles,centers,reduce_batches = True,predict_offsets = 0,predict_smooth=0,smooth_suffix = ""):
+      def __init__(self,padding,images_path,hdf5_file,scene_list,t_obs,t_pred,set_type,use_images,data_type,use_neighbors,augmentation,augmentation_angles,centers,reduce_batches = True,predict_offsets = 0,predict_smooth=0,smooth_suffix = ""):
 
             self.images_path = images_path + "{}.jpg"
             self.hdf5_file = hdf5_file
@@ -92,7 +92,7 @@ class Hdf5Dataset():
             self.seq_len = t_obs + t_pred
             self.augmentation = augmentation 
             self.augmentation_angles = augmentation_angles
-            self.padding = 0.
+            self.padding = padding
             
 
             if self.augmentation:
@@ -189,6 +189,26 @@ class Hdf5Dataset():
                         last_points = coord_dset[ids,:max_batch,self.t_obs-1:self.seq_len-1]
 
                   active_mask = (y != self.padding).astype(int)
+                  ####################################################
+
+
+                  # mauvaise selection car un coordonnée peut être égal à 0
+                  # et sera considéré comme du padding
+                  # mettre le padding à -1 pas de conflit pour les valeurs x,y absolues
+                  # après offset -1 est une valeur possible prises par les offsets
+                  # 0 aussi,
+                  # question padding -1 avant dataset --> permet identification facile
+                  # après dataset
+
+
+
+
+
+
+
+
+
+                  #####################################################
                   active_last_points = np.multiply(active_mask,last_points)
                   y = np.subtract(y,active_last_points)
             return X,y,types

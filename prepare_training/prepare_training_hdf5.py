@@ -128,7 +128,11 @@ class PrepareTrainingHdf5():
 
                                 nb_neighbors = len(samples)
                                 if nb_neighbors != 0:
-                                    padding = np.zeros(shape = (max_neighbors-nb_neighbors,data_shape[1],data_shape[2]))
+                                    # padding = np.zeros(shape = (max_neighbors-nb_neighbors,data_shape[1],data_shape[2]))
+
+                                    padding = np.ones(shape = (max_neighbors-nb_neighbors,data_shape[1],data_shape[2]))
+                                    padding = self.padding * padding
+
                                     samples = np.concatenate((samples,padding),axis = 0)
 
                                     padding_types = np.zeros(shape = (max_neighbors-nb_neighbors))
