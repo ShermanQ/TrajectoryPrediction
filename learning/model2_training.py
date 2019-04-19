@@ -72,7 +72,6 @@ def main():
 
     print(nb_neighbors_max)
     train_dataset = Hdf5Dataset(
-        padding = prepare_param["padding"],
         images_path = data["prepared_images"],
         hdf5_file= data_file,
         scene_list= train_scenes,
@@ -82,20 +81,20 @@ def main():
         use_images = False,
         data_type = "trajectories",
         use_neighbors = True,
+        use_masks= 1,
         predict_offsets = training_param["offsets"],
         predict_smooth= training_param["predict_smooth"],
         smooth_suffix= prepare_param["smooth_suffix"],
         centers = json.load(open(data["scene_centers"])),
         augmentation = training_param["augmentation"],
         # augmentation = 0,
-
+        padding = prepare_param["padding"],
         augmentation_angles = training_param["augmentation_angles"]
         )
 
     
 
     eval_dataset = Hdf5Dataset(
-        padding = prepare_param["padding"],
         images_path = data["prepared_images"],
         hdf5_file= data_file,
         scene_list= train_scenes,
@@ -105,65 +104,69 @@ def main():
         use_images = False,
         data_type = "trajectories",
         use_neighbors = True,
+        use_masks= 1,
         predict_offsets = training_param["offsets"],
         predict_smooth= 0,
         smooth_suffix= prepare_param["smooth_suffix"],
         centers = json.load(open(data["scene_centers"])),
         augmentation = 0,
-        augmentation_angles = []
+        augmentation_angles = [],
+        padding = prepare_param["padding"]
+
         )
 
     train_loader = CustomDataLoader( batch_size = training_param["batch_size"],shuffle = True,drop_last = True,dataset = train_dataset,test= training_param["test"])
     eval_loader = CustomDataLoader( batch_size = training_param["batch_size"],shuffle = False,drop_last = False,dataset = eval_dataset,test= training_param["test"])
     
 
-    ins_x,ins_y,las_x,las_y = [],[],[],[]
-    for batch_idx, data in enumerate(train_loader):
-        inputs, labels, ids,types = data
+    # ins_x,ins_y,las_x,las_y = [],[],[],[]
+    # for batch_idx, data in enumerate(train_loader):
+    #     # inputs, labels, ids,types = data
+    #     inputs, labels, ids,types,points_mask, active_mask = data
 
 
-        inputs = inputs.numpy()
-        labels = labels.numpy()
+    #     inputs = inputs.numpy()
+    #     labels = labels.numpy()
 
-        inputs_x = inputs[:,:,:,0].flatten()
-        inputs_y = inputs[:,:,:,1].flatten()
-        labels_x = labels[:,:,:,0].flatten()
-        labels_y = labels[:,:,:,1].flatten()
+    #     inputs_x = inputs[:,:,:,0].flatten()
+    #     inputs_y = inputs[:,:,:,1].flatten()
+    #     labels_x = labels[:,:,:,0].flatten()
+    #     labels_y = labels[:,:,:,1].flatten()
 
 
-        inputs_x = inputs_x[np.argwhere(inputs_x != prepare_param["padding"])]
-        inputs_y = inputs_y[np.argwhere(inputs_y != prepare_param["padding"])]
-        labels_x = labels_x[np.argwhere(labels_x != prepare_param["padding"])]
-        labels_y = labels_y[np.argwhere(labels_y != prepare_param["padding"])]
+    #     inputs_x = inputs_x[np.argwhere(inputs_x != prepare_param["padding"])]
+    #     inputs_y = inputs_y[np.argwhere(inputs_y != prepare_param["padding"])]
+    #     labels_x = labels_x[np.argwhere(labels_x != prepare_param["padding"])]
+    #     labels_y = labels_y[np.argwhere(labels_y != prepare_param["padding"])]
 
 
        
-        las_x.append(labels_x)
-        las_y.append(labels_y)
-        ins_x.append(inputs_x)
-        ins_y.append(inputs_y)
+    #     las_x.append(labels_x)
+    #     las_y.append(labels_y)
+    #     ins_x.append(inputs_x)
+    #     ins_y.append(inputs_y)
 
         
 
-        # if batch_idx > 100:
-        #     break
-    ins_x = np.concatenate(ins_x)
-    las_x = np.concatenate(las_x)
-    ins_y = np.concatenate(ins_y)
-    las_y = np.concatenate(las_y)
+    #     # if batch_idx > 100:
+    #     #     break
+    # ins_x = np.concatenate(ins_x)
+    # las_x = np.concatenate(las_x)
+    # ins_y = np.concatenate(ins_y)
+    # las_y = np.concatenate(las_y)
 
-    fig,axs = plt.subplots(2,2,squeeze = False)
-    axs[0][0].hist(ins_x,bins = 100)
-    axs[0][0].set_title("inputs_x")
-    axs[0][1].hist(las_x,bins = 100)
-    axs[0][1].set_title("labels_X")
+    # fig,axs = plt.subplots(2,2,squeeze = False)
+    # axs[0][0].hist(ins_x,bins = 100)
+    # axs[0][0].set_title("inputs_x")
+    # axs[0][1].hist(las_x,bins = 100)
+    # axs[0][1].set_title("labels_X")
 
-    axs[1][0].hist(ins_y,bins = 100)
-    axs[1][0].set_title("inputs_y")
-    axs[1][1].hist(las_y,bins = 100)
-    axs[1][1].set_title("labels_y")
+    # axs[1][0].hist(ins_y,bins = 100)
+    # axs[1][0].set_title("inputs_y")
+    # axs[1][1].hist(las_y,bins = 100)
+    # axs[1][1].set_title("labels_y")
 
-    plt.show()
+    # plt.show()
 
 
 
@@ -189,47 +192,47 @@ def main():
     # net = Model2a(
     # net = Model2b(
     # net = Model2c(
-    # net = Model2d(
+    net = Model2d(
     
-    #     device = device,
-    #     input_dim = training_param["input_dim"],
-    #     input_length = training_param["obs_length"],
-    #     output_length = training_param["pred_length"],
-    #     kernel_size = training_param["kernel_size"],
-    #     nb_blocks_transformer = training_param["nb_blocks"],
-    #     h = training_param["h"],
-    #     dmodel = training_param["dmodel"],
-    #     d_ff_hidden = 4 * training_param["dmodel"],
-    #     dk = int(training_param["dmodel"]/training_param["h"]),
-    #     dv = int(training_param["dmodel"]/training_param["h"]),
-    #     predictor_layers = training_param["predictor_layers"],
-    #     pred_dim = training_param["pred_length"] * training_param["input_dim"] ,
+        device = device,
+        input_dim = training_param["input_dim"],
+        input_length = training_param["obs_length"],
+        output_length = training_param["pred_length"],
+        kernel_size = training_param["kernel_size"],
+        nb_blocks_transformer = training_param["nb_blocks"],
+        h = training_param["h"],
+        dmodel = training_param["dmodel"],
+        d_ff_hidden = 4 * training_param["dmodel"],
+        dk = int(training_param["dmodel"]/training_param["h"]),
+        dv = int(training_param["dmodel"]/training_param["h"]),
+        predictor_layers = training_param["predictor_layers"],
+        pred_dim = training_param["pred_length"] * training_param["input_dim"] ,
         
-    #     convnet_embedding = training_param["convnet_embedding"],
-    #     convnet_nb_layers = training_param["convnet_nb_layers"],
-    #     use_tcn = training_param["use_tcn"],
-    #     dropout_tcn = training_param["dropout_tcn"],
-    #     dropout_tfr = training_param["dropout_tfr"]
+        convnet_embedding = training_param["convnet_embedding"],
+        convnet_nb_layers = training_param["convnet_nb_layers"],
+        use_tcn = training_param["use_tcn"],
+        dropout_tcn = training_param["dropout_tcn"],
+        dropout_tfr = training_param["dropout_tfr"]
 
-    # )
+    )
 
     
-    # # helpers.plot_params(net.named_parameters(),-1,root="./data/reports/weights/")
+    # helpers.plot_params(net.named_parameters(),-1,root="./data/reports/weights/")
 
 
-    # net = net.to(device)
-    # print(net)
+    net = net.to(device)
+    print(net)
 
-    # optimizer = optim.Adam(net.parameters(),lr = training_param["lr"])
-    # # criterion = mse_loss
-    # criterion = nn.MSELoss(reduction= "mean")
+    optimizer = optim.Adam(net.parameters(),lr = training_param["lr"])
+    # criterion = mse_loss
+    criterion = nn.MSELoss(reduction= "mean")
     
 
-    # training.training_loop(training_param["n_epochs"],training_param["batch_size"],
-    #     net,device,train_loader,eval_loader,criterion,criterion,optimizer,data["scalers"],
-    #     data["multiple_scalers"],training_param["model_type"],
-    #     plot = training_param["plot"],early_stopping = True,load_path = training_param["load_path"],
-    #     plot_every = training_param["plot_every"],offsets = training_param["offsets"], save_every = training_param["save_every"])
+    training.training_loop(training_param["n_epochs"],training_param["batch_size"],
+        net,device,train_loader,eval_loader,criterion,criterion,optimizer,data["scalers"],
+        data["multiple_scalers"],training_param["model_type"],
+        plot = training_param["plot"],early_stopping = True,load_path = training_param["load_path"],
+        plot_every = training_param["plot_every"],offsets = training_param["offsets"], save_every = training_param["save_every"])
 
     
 

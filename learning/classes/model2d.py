@@ -104,9 +104,12 @@ class Model2d(nn.Module):
     def forward(self,x):
 
         types = x[1]
+        active_agents = x[2]
+        points_mask = x[3]
+
         x = x[0]
 
-        active_x = self.__get_active_ids(x)
+        # active_x = self.__get_active_ids(x)
 
         
         x = self.coord_embedding(x)
@@ -123,7 +126,7 @@ class Model2d(nn.Module):
         # send only in the net the active agents
         # set the output values of the active agents to zeros tensor
         
-        active_agents = torch.cat([ i*Nmax + e for i,e in enumerate(active_x)],dim = 0)
+        # active_agents = torch.cat([ i*Nmax + e for i,e in enumerate(active_x)],dim = 0)
         # y = torch.zeros(B*Nmax,self.dmodel,Tobs).to(self.device) # [B*Nmax],Nfeat,Tobs
         y_att = torch.zeros(B*Nmax,self.convnet_embedding,Tobs).to(self.device) # [B*Nmax],Nfeat,Tobs
         y_traj = torch.zeros(B*Nmax,self.convnet_embedding,Tobs).to(self.device) # [B*Nmax],Nfeat,Tobs
@@ -148,7 +151,7 @@ class Model2d(nn.Module):
         x_traj = self.conv_enc_traj(y_traj) # B,Nmax,dmodel
 
         
-        y = self.mha(x_att,x_att,x_att)# B,Nmax,dmodel
+        y = self.mha(x_att,x_att,x_att,points_mask)# B,Nmax,dmodel
 
         y = torch.cat([x_traj,y],dim = 2 ) # B,Nmax,2*dmodel
 

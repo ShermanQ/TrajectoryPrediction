@@ -60,15 +60,20 @@ class ScaledDotProduct(nn.Module):
 
         return att
 
-    def get_mask(self,q,k):
+    def get_mask(self,points_mask):
         # compute mask put one where the dot product conv_features*conv_features.T is 0.
         # and the sum over a given row of the resulting matrice is gt 1
-        Nmax = q.size()[1]
-        dot = torch.bmm(q, torch.transpose(k,2,1))
-        mask = (dot == 0) & (torch.sum(dot,dim = 1) > 0.).unsqueeze(2).repeat(1,1,Nmax)
-        mask = mask.to(self.device)
-        return mask
+        # Nmax = q.size()[1]
+        # dot = torch.bmm(q, torch.transpose(k,2,1))
+        # mask = (dot == 0) & (torch.sum(dot,dim = 1) > 0.).unsqueeze(2).repeat(1,1,Nmax)
+        # mask = mask.to(self.device)
+        # return mask
 
+        sample_sum = (np.sum(points_mask.reshape(points_mask.shape[0],points_mask.shape[1],-1), axis = 2) > 0).astype(int)
+        a = np.repeat(np.expand_dims(sample_sum,axis = 2),max_batch,axis = -1)
+        b = np.transpose(a,axes=(0,2,1))
+        mha_mask = np.logical_and(np.logical_xor(a,b),a).astype(int)
+        return torch.FloatTensor(mha_mask).to(self.device)
         
 
 class AttentionHead(nn.Module):
@@ -81,11 +86,11 @@ class AttentionHead(nn.Module):
         self.v_projection = nn.Linear(dmodel,dv)
         self.dot_attention = ScaledDotProduct(device,dropout)
 
-    def forward(self,q,k,v):
+    def forward(self,q,k,v,points_mask):
         Q = self.q_projection(q)
         K = self.k_projection(k)
         V = self.v_projection(v)
-        att = self.dot_attention(Q,K,V,self.dot_attention.get_mask(Q.detach(),K.detach()))
+        att = self.dot_attention(Q,K,V,self.dot_attention.get_mask(points_mask))
         return att #B,Nmax,dv
 
 class MultiHeadAttention(nn.Module):
@@ -101,11 +106,11 @@ class MultiHeadAttention(nn.Module):
 
         self.multihead_projection = nn.Linear(h*dv,dmodel)
 
-    def forward(self,q,k,v):
+    def forward(self,q,k,v,points_mask ):
 
         atts = [] #H,Nmax,dv
         for head in self.heads:
-            atts.append(head(q,k,v))#B,Nmax,dv
+            atts.append(head(q,k,v,points_mask))#B,Nmax,dv
 
         atts = torch.cat(atts,dim = 2) #B,Nmax,dv * h
         out = self.multihead_projection(atts) #B,Nmax,dmodel

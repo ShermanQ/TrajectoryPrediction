@@ -32,8 +32,10 @@ def train(model, device, train_loader,criterion, optimizer, epoch,batch_size,pri
 
     for batch_idx, data in enumerate(train_loader):
         s = time.time()
-        inputs, labels, ids,types = data
+        inputs, labels, ids,types,points_mask, active_mask = data
         inputs, labels,types = inputs.to(device), labels.to(device), types.to(device)
+        active_mask = active_mask.to(device)
+
 
         # torch.cuda.synchronize()
         # print("data loading {}".format(time.time()-s))
@@ -41,7 +43,7 @@ def train(model, device, train_loader,criterion, optimizer, epoch,batch_size,pri
 
         
         optimizer.zero_grad()
-        outputs = model((inputs,types))
+        outputs = model((inputs,types,active_mask,points_mask))
 
         # torch.cuda.synchronize()
         # print("overall model {}".format(time.time()-s))
@@ -136,11 +138,14 @@ def evaluate(model, device, eval_loader,criterion, epoch, batch_size,scalers_pat
         keep_batch = (i in kept_batches_id )
 
 
-        inputs, labels, ids, types = data
+        inputs, labels, ids,types,points_mask, active_mask = data
         inputs, labels,types = inputs.to(device), labels.to(device), types.to(device)
+        active_mask = active_mask.to(device)
         
         s = time.time()
-        outputs = model((inputs,types))
+        # outputs = model((inputs,types))
+        outputs = model((inputs,types,active_mask,points_mask))
+
 
         #### function takes inputs labels outputs offsets ###
         #### returns labels and outputs in trajectory format ####

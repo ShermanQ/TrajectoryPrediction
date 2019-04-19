@@ -4,7 +4,7 @@
     "t_pred": 12,
     "framerate" : "2.5",
     "samples_frames": 0,
-    "padding":-10e5,
+    "padding":-1,
     "number_digits_meters":2,
     "number_digits_norm":3,
     "center":1,
