@@ -132,7 +132,7 @@ class Model2d(nn.Module):
         y_traj = torch.zeros(B*Nmax,self.convnet_embedding,Tobs).to(self.device) # [B*Nmax],Nfeat,Tobs
 
 
-
+        a = self.tcn_att(x[active_agents])
         y_att[active_agents] = self.tcn_att(x[active_agents]) # [B*Nmax],Nfeat,Tobs
         y_traj[active_agents] = self.tcn_traj(x[active_agents]) # [B*Nmax],Nfeat,Tobs
 

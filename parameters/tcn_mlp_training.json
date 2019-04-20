@@ -22,7 +22,7 @@
     "predict_smooth":1,
     "augmentation":0,
     "augmentation_angles":[90,180,270],
-    "learning_curves":1,
+    "learning_curves":0,
     "learning_props":[0.1,0.2,0.5,1.0]
 
 }

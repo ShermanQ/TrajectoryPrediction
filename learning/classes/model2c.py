@@ -101,9 +101,10 @@ class Model2c(nn.Module):
     def forward(self,x):
 
         types = x[1]
-        x = x[0]
+        active_agents = x[2]
+        points_mask = x[3]
 
-        active_x = self.__get_active_ids(x)
+        x = x[0]
 
         # a = x.view(x.size()[0],x.size()[1],-1)
         traj_embedding = self.trajectory_embedding(x.view(x.size()[0],x.size()[1],-1)) # B,N,Dmodel
@@ -121,7 +122,7 @@ class Model2c(nn.Module):
         # send only in the net the active agents
         # set the output values of the active agents to zeros tensor
         
-        active_agents = torch.cat([ i*Nmax + e for i,e in enumerate(active_x)],dim = 0)
+        # active_agents = torch.cat([ i*Nmax + e for i,e in enumerate(active_x)],dim = 0)
         # y = torch.zeros(B*Nmax,self.dmodel,Tobs).to(self.device) # [B*Nmax],Nfeat,Tobs
         y = torch.zeros(B*Nmax,self.convnet_embedding,Tobs).to(self.device) # [B*Nmax],Nfeat,Tobs
 
@@ -136,8 +137,7 @@ class Model2c(nn.Module):
 
         x = self.conv_enc(conv_features) # B,Nmax,dmodel
         
-        y = self.mha(x,x,x)# B,Nmax,dmodel
-
+        y = self.mha(x,x,x,points_mask)# B,Nmax,dmodel
         y = torch.cat([traj_embedding,y],dim = 2 ) # B,Nmax,2*dmodel
 
    

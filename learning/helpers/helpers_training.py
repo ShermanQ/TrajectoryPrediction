@@ -9,6 +9,21 @@ import matplotlib.cm as cm
 
 from matplotlib.lines import Line2D
 
+class MaskedLoss(nn.Module):
+    def __init__(self,criterion):
+        super(MaskedLoss, self).__init__()
+        self.criterion = criterion
+
+    def forward(self, outputs, targets, mask = None):
+        if mask is not None:
+            loss =  self.criterion(outputs*mask, targets*mask)
+            loss = loss.sum()/(mask.sum()/2.0)
+            return loss
+        else:
+            loss = self.criterion(outputs,targets)
+            loss = torch.mean(loss)
+            return loss 
+
 
 def split_train_eval_test(ids,train_scenes,test_scenes, eval_prop = 0.8):
     test_ids,train_ids,eval_ids = [],[],[]
@@ -33,7 +48,7 @@ def split_train_eval_test(ids,train_scenes,test_scenes, eval_prop = 0.8):
     return train_ids,eval_ids,test_ids
 
 
-def revert_scaling(ids,labels,outputs,scalers_root,multiple_scalers = 1):
+def revert_scaling(ids,labels,outputs,inputs,scalers_root,multiple_scalers = 1):
     if multiple_scalers:
         scaler_ids = ["_".join(id_.split("_")[:-1]) for id_ in ids]
         scalers_path = [scalers_root + id_ +".joblib" for id_ in scaler_ids]
@@ -68,62 +83,109 @@ def revert_scaling(ids,labels,outputs,scalers_root,multiple_scalers = 1):
     else:
 
         scaler = load(scalers_root)
-        torch_labels = labels.contiguous().view(-1,1).cpu().numpy()
-        torch_outputs = outputs.contiguous().view(-1,1).cpu().detach().numpy()
+        torch_labels = labels.contiguous().cpu().numpy()
+        torch_outputs = outputs.contiguous().cpu().detach().numpy()
+        torch_inputs = inputs.contiguous().cpu().detach().numpy()
 
-        non_zeros_labels = np.argwhere(torch_labels.reshape(-1))
-        non_zeros_outputs = np.argwhere(torch_outputs.reshape(-1))
+        torch_labels = np.expand_dims(torch_labels.flatten(),1)
+        torch_outputs = np.expand_dims(torch_outputs.flatten(),1)
+        torch_inputs = np.expand_dims(torch_inputs.flatten(),1)
+
+
+
+        # non_zeros_labels = np.argwhere(torch_labels.reshape(-1))
+        # non_zeros_outputs = np.argwhere(torch_outputs.reshape(-1))
 
          
-        torch_labels[non_zeros_labels] = np.expand_dims( scaler.inverse_transform(torch_labels[non_zeros_labels].squeeze(-1)) ,axis = 1)
+        # torch_labels[non_zeros_labels] = np.expand_dims( scaler.inverse_transform(torch_labels[non_zeros_labels].squeeze(-1)) ,axis = 1)
         
-        torch_outputs[non_zeros_outputs] = np.expand_dims( scaler.inverse_transform(torch_outputs[non_zeros_outputs].squeeze(-1)),axis = 1)
+        # torch_outputs[non_zeros_outputs] = np.expand_dims( scaler.inverse_transform(torch_outputs[non_zeros_outputs].squeeze(-1)),axis = 1)
+        # torch_outputs[non_zeros_outputs] = np.expand_dims( scaler.inverse_transform(torch_outputs[non_zeros_outputs].squeeze(-1)),axis = 1)
+
+
+         
+        torch_labels =  scaler.inverse_transform(torch_labels) 
+
+        torch_outputs = scaler.inverse_transform(torch_outputs)
+        torch_inputs =  scaler.inverse_transform(torch_inputs)
+
+        torch_labels = torch_labels.reshape(labels.size())
+        torch_outputs = torch_outputs.reshape(outputs.size())
+        torch_inputs = torch_inputs.reshape(inputs.size())
+
+
+
 
         inv_labels = torch.FloatTensor(torch_labels).cuda()
         inv_outputs = torch.FloatTensor(torch_outputs).cuda()
+        inv_inputs = torch.FloatTensor(torch_inputs).cuda()
+
 
         inv_labels = inv_labels.view(labels.size())
         inv_outputs = inv_outputs.view(outputs.size())
+        inv_inputs = inv_inputs.view(inputs.size())
 
 
-        return inv_labels,inv_outputs
 
+        return inv_labels,inv_outputs,inv_inputs
+
+
+# def mask_loss(targets):
+#     b,a = targets.shape[0],targets.shape[1]
+#     mask = targets.reshape(b,a,-1)
+#     mask = np.sum(mask,axis = 2)
+#     mask = mask.reshape(-1)
+#     mask = np.argwhere(mask).reshape(-1)
+#     return mask  
 
 def mask_loss(targets):
-    b,a = targets.shape[0],targets.shape[1]
-    mask = targets.reshape(b,a,-1)
-    mask = np.sum(mask,axis = 2)
+    n = targets.shape[0]
+    mask = targets.reshape(n,-1)
+    mask = np.sum(mask,axis = 1)
     mask = mask.reshape(-1)
     mask = np.argwhere(mask).reshape(-1)
-    return mask    
+    return mask  
 
 
-def ade_loss(outputs,targets):
+def ade_loss(outputs,targets,mask = None):
+    if mask is not None:
+        outputs,targets = outputs*mask, targets*mask
 
     
-    outputs = outputs.contiguous().view(-1,2)
-    targets = targets.contiguous().view(-1,2)
+    # outputs = outputs.contiguous().view(-1,2)
+    # targets = targets.contiguous().view(-1,2)
     mse = nn.MSELoss(reduction= "none")
+    
 
     mse_loss = mse(outputs,targets )
-    mse_loss = torch.sum(mse_loss,dim = 1 )
+    mse_loss = torch.sum(mse_loss,dim = 3 )
     mse_loss = torch.sqrt(mse_loss )
-    mse_loss = torch.mean(mse_loss )
+    if mask is not None:
+        mse_loss = mse_loss.sum()/(mask.sum()/2.0)
+    else:
+        mse_loss = torch.mean(mse_loss )
 
     return mse_loss
 
-def fde_loss(outputs,targets):
+def fde_loss(outputs,targets,mask):
+    if mask is not None:
+        outputs,targets = outputs*mask, targets*mask
 
     
 
-    outputs = outputs[:,-1,:]
-    targets = targets[:,-1,:]
+    outputs = outputs[:,:,-1,:]
+    targets = targets[:,:,-1,:]
+    mask = mask[:,:,-1,:]
     mse = nn.MSELoss(reduction= "none")
 
     mse_loss = mse(outputs,targets )
-    mse_loss = torch.sum(mse_loss,dim = 1 )
+    mse_loss = torch.sum(mse_loss,dim = 2 )
     mse_loss = torch.sqrt(mse_loss )
-    mse_loss = torch.mean(mse_loss )
+
+    if mask is not None:
+        mse_loss = mse_loss.sum()/(mask.sum()/2.0)
+    else:
+        mse_loss = torch.mean(mse_loss )
 
     return mse_loss
 

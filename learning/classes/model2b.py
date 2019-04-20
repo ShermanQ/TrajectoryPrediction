@@ -7,7 +7,7 @@ import torchvision
 import imp
 import time
 
-from classes.transformer import Transformer,MultiHeadAttention
+from classes.transformer import Transformer,MultiHeadAttention,EncoderBlock
 from classes.tcn import TemporalConvNet
 
 
@@ -56,7 +56,7 @@ class Model2b(nn.Module):
         self.use_tcn = use_tcn
 
 ############# x/y embedding ###############################
-        self.coord_embedding = nn.Linear(input_dim,convnet_embedding)
+        # self.coord_embedding = nn.Linear(input_dim,convnet_embedding)
 ############# TCN #########################################
         # compute nb temporal blocks
 
@@ -65,15 +65,20 @@ class Model2b(nn.Module):
         self.num_channels = [convnet_embedding for _ in range(self.nb_temporal_blocks)]
 
         # init network
-        self.tcn = TemporalConvNet(device, self.convnet_embedding, self.num_channels, kernel_size, dropout_tcn)
+        # self.tcn = TemporalConvNet(device, self.convnet_embedding, self.num_channels, kernel_size, dropout_tcn)
+        self.tcn = TemporalConvNet(device, 2, self.num_channels, kernel_size, dropout_tcn)
 
 
         # project conv features to dmodel
         self.conv_enc = nn.Linear(input_length*convnet_embedding,dmodel)
+        self.conv_enc = nn.Linear(convnet_embedding,dmodel)
+
 
 ############# Attention #########################################
         # apply multihead attention output d_model
         self.mha = MultiHeadAttention(device,h,dmodel,dk,dv,dropout_tfr)
+        # self.mha = EncoderBlock(device,h,dmodel,d_ff_hidden,dk,dv,dropout_tfr)
+
 
 ############# Predictor #########################################
 
@@ -99,13 +104,16 @@ class Model2b(nn.Module):
     def forward(self,x):
 
         types = x[1]
+        active_agents = x[2]
+        points_mask = x[3]
+
         x = x[0]
 
-        active_x = self.__get_active_ids(x)
+        # active_x = self.__get_active_ids(x)
 
         torch.cuda.synchronize()
         s = time.time()
-        x = self.coord_embedding(x)
+        # x = self.coord_embedding(x)
         # x = f.relu(x)
 
         # permute channels and sequence length
@@ -119,7 +127,7 @@ class Model2b(nn.Module):
         # send only in the net the active agents
         # set the output values of the active agents to zeros tensor
         
-        active_agents = torch.cat([ i*Nmax + e for i,e in enumerate(active_x)],dim = 0)
+        # active_agents = torch.cat([ i*Nmax + e for i,e in enumerate(active_x)],dim = 0)
         # y = torch.zeros(B*Nmax,self.dmodel,Tobs).to(self.device) # [B*Nmax],Nfeat,Tobs
         y = torch.zeros(B*Nmax,self.convnet_embedding,Tobs).to(self.device) # [B*Nmax],Nfeat,Tobs
 
@@ -128,13 +136,16 @@ class Model2b(nn.Module):
 
         y = y.permute(0,2,1) # [B*Nmax],Tobs,Nfeat
         y = y.view(B,Nmax,Tobs,y.size()[2]).contiguous() # B,Nmax,Tobs,Nfeat
-        y = y.view(B,Nmax,-1) # B,Nmax,Tobs*Nfeat
+        y = y[:,:,-1,:]
+        # y = y.view(B,Nmax,-1) # B,Nmax,Tobs*Nfeat
 
         conv_features = y # B,Nmax,Nfeat
 
-        x = self.conv_enc(conv_features) # B,Nmax,dmodel
+        x = f.relu(self.conv_enc(conv_features)) # B,Nmax,dmodel
         
-        y = self.mha(x,x,x)# B,Nmax,dmodel
+        y = self.mha(x,x,x,points_mask)# B,Nmax,dmodel
+        # y = self.mha(x,points_mask)# B,Nmax,dmodel
+
 
 
    

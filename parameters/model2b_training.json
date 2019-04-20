@@ -15,7 +15,7 @@
     "kernel_size":3,
     "dropout_tcn" : 0.2,
     "dropout_tfr" : 0.1,
-    "h":1,
+    "h":4,
     "nb_blocks":1,
     "predictor_layers": [512,256],
     "model_type": 1,

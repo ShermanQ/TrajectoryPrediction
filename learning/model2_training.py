@@ -8,13 +8,14 @@ import time
 
 from classes.datasets import Hdf5Dataset,CustomDataLoader
 # from classes.model2a import Model2a
-# from classes.model2b import Model2b
+from classes.model2b import Model2b
 # from classes.model2c import Model2c
-from classes.model2d import Model2d
+# from classes.model2d import Model2d
 import matplotlib.pyplot as plt
 
 import helpers.net_training as training
-import helpers
+import helpers.helpers_training as helpers
+
 import sys
 import json
 
@@ -42,9 +43,9 @@ def main():
     torch_param = json.load(open("parameters/torch_extractors.json"))
     prepare_param = json.load(open("parameters/prepare_training.json"))
     # training_param = json.load(open("parameters/model2a_training.json"))
-    # training_param = json.load(open("parameters/model2b_training.json"))
+    training_param = json.load(open("parameters/model2b_training.json"))
     # training_param = json.load(open("parameters/model2c_training.json"))
-    training_param = json.load(open("parameters/model2d_training.json"))
+    # training_param = json.load(open("parameters/model2d_training.json"))
 
     preprocessing = json.load(open("parameters/preprocessing.json"))
 
@@ -190,9 +191,9 @@ def main():
 
 
     # net = Model2a(
-    # net = Model2b(
+    net = Model2b(
     # net = Model2c(
-    net = Model2d(
+    # net = Model2d(
     
         device = device,
         input_dim = training_param["input_dim"],
@@ -225,7 +226,8 @@ def main():
 
     optimizer = optim.Adam(net.parameters(),lr = training_param["lr"])
     # criterion = mse_loss
-    criterion = nn.MSELoss(reduction= "mean")
+    # criterion = nn.MSELoss(reduction= "mean")
+    criterion = helpers.MaskedLoss(nn.MSELoss(reduction="none"))
     
 
     training.training_loop(training_param["n_epochs"],training_param["batch_size"],

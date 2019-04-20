@@ -13,12 +13,13 @@ from sklearn.model_selection import train_test_split
 import numpy as np
 import time
 
-from classes.datasets import CustomDataset,Hdf5Dataset,CustomDataLoader
+from classes.datasets import Hdf5Dataset,CustomDataLoader
 from classes.tcn_mlp import TCN_MLP
 from classes.rnn_mlp import custom_mse
 # import helpers.helpers_training as training
 import helpers.net_training as training
-import helpers
+import helpers.helpers_training as helpers
+
 
 
 import sys
@@ -97,12 +98,14 @@ def main():
         set_type = "train",
         use_images = False,
         data_type = "trajectories",
-        use_neighbors_label = False,
-        use_neighbors_sample = False,
+        use_neighbors = False,
+        use_masks = 1,
         predict_offsets = training_param["offsets"],
         predict_smooth= training_param["predict_smooth"],
         smooth_suffix= prepare_param["smooth_suffix"],
         centers = json.load(open(data["scene_centers"])),
+        padding = prepare_param["padding"],
+
         augmentation = 0,
         augmentation_angles = training_param["augmentation_angles"]
         )
@@ -116,12 +119,14 @@ def main():
         set_type = "eval",
         use_images = False,
         data_type = "trajectories",
-        use_neighbors_label = False,
-        use_neighbors_sample = False,
+        use_neighbors = False,
+        use_masks = 1,
         predict_offsets = training_param["offsets"],
         predict_smooth= 0,
         smooth_suffix= prepare_param["smooth_suffix"],
         centers = json.load(open(data["scene_centers"])),
+        padding = prepare_param["padding"],
+
         augmentation = 1,
         augmentation_angles = []
 
@@ -165,7 +170,7 @@ def main():
     # for parameter in net.parameters():
     #     sum_ += torch.flatten(parameter).size()[0]
 
-    # print(sum_)
+    # print(sum_
 
     print(net)
     net = net.to(device)
@@ -173,7 +178,9 @@ def main():
 
     optimizer = optim.Adam(net.parameters(),lr = training_param["lr"])
     # criterion = custom_mse
-    criterion = nn.MSELoss(reduction= "mean")
+    # criterion = nn.MSELoss(reduction= "mean")
+    criterion = helpers.MaskedLoss(nn.MSELoss(reduction="none"))
+
 
     if not training_param["learning_curves"]:
         training.training_loop(training_param["n_epochs"],training_param["batch_size"],

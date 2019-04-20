@@ -252,6 +252,7 @@ class PrepareTrainingHdf5():
     def __add_neighbor(self,ids,id_,current_frame):
         if ids[id_][current_frame:current_frame+self.t_obs][-1] != [self.padding,self.padding]:
             return True
+        
         return False
 
     def __are_frames_continuous(self,frames):

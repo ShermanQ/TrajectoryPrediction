@@ -12,7 +12,7 @@
     "remove_hdf5":0,
     "toy": 1,
     "smooth":1,
-    "normalize":0,
+    "normalize":1,
     "smooth_suffix":"_smooth",
     "types_dic":{
         "bicycle":1,

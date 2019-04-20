@@ -28,7 +28,7 @@ def train(model, device, train_loader,criterion, optimizer, epoch,batch_size,pri
     ids_grads = np.arange(int(train_loader.nb_batches) )
     np.random.shuffle(ids_grads)
     ids_grads = ids_grads[:nb_grad_plots]
-    print(ids_grads)
+    # print(ids_grads)
 
     for batch_idx, data in enumerate(train_loader):
         s = time.time()
@@ -49,19 +49,23 @@ def train(model, device, train_loader,criterion, optimizer, epoch,batch_size,pri
         # print("overall model {}".format(time.time()-s))
         # s = time.time()
 # ####################
-        mask = helpers.mask_loss(labels.detach().cpu().numpy())
-        outputs = outputs.contiguous().view([outputs.size()[0] * outputs.size()[1]] + list(outputs.size()[2:]))
-
-        labels = labels.contiguous().view([labels.size()[0] * labels.size()[1]] + list(labels.size()[2:]))
-
-        outputs = outputs[mask]
-        labels = labels[mask]
+     
 
         # torch.cuda.synchronize()
         # print("masking {}".format(time.time()-s))
         # s = time.time()
 # ###########################
-        loss = criterion(outputs, labels)
+        points_mask = torch.FloatTensor(points_mask).to(device)
+        outputs = torch.mul(points_mask,outputs)
+        labels = torch.mul(points_mask,labels)
+
+        # if there is some padding at the end of the trajectory, we train to predict it
+        # we don't count it at test time
+        mask_loss = (torch.sum(torch.sum(points_mask,dim = 3),dim = 2) > 0).unsqueeze(2).repeat(1,1,labels.size()[2])
+        mask_loss = mask_loss.unsqueeze(3).repeat(1,1,1,2).type(torch.FloatTensor).to(device)
+        loss = criterion(outputs, labels,mask_loss)
+        # print(loss)
+
 
         # torch.cuda.synchronize()
         # print("loss {}".format(time.time()-s))
@@ -149,23 +153,53 @@ def evaluate(model, device, eval_loader,criterion, epoch, batch_size,scalers_pat
 
         #### function takes inputs labels outputs offsets ###
         #### returns labels and outputs in trajectory format ####
+
+        # inv_labels,inv_outputs = labels,outputs
+
+        if normalized:
+            # if model_type == 0:
+            #     inv_labels,inv_outputs = helpers.revert_scaling(ids,labels,outputs,scalers_path,multiple_scalers)
+            #     inv_outputs = inv_outputs.view(inv_labels.size())
+            # elif model_type == 1:
+            #     inv_labels,inv_outputs = helpers.revert_scaling(ids,labels,outputs[:,:,:2],scalers_path,multiple_scalers)
+            _,_,inputs = helpers.revert_scaling(ids,labels,outputs,inputs,scalers_path,multiple_scalers)
+            # labels,outputs = helpers.revert_scaling(ids,labels,outputs,scalers_path,multiple_scalers)
+
+            outputs = outputs.view(labels.size())
         
         inputs,labels,outputs = helpers.offsets_to_trajectories(inputs.detach().cpu().numpy(),
                                                                 labels.detach().cpu().numpy(),
                                                                 outputs.detach().cpu().numpy(),
                                                                 offsets)
 
+
+        
+
         inputs,labels,outputs = torch.FloatTensor(inputs).to(device),torch.FloatTensor(labels).to(device),torch.FloatTensor(outputs).to(device)
+        
+
+        # we don't count the prediction error for end of trajectory padding
+        points_mask = torch.FloatTensor(points_mask).to(device)#
+        outputs = torch.mul(points_mask,outputs)#
+        labels = torch.mul(points_mask,labels)#
+
+
+        loss = criterion(outputs, labels,points_mask)
+
         if keep_batch:
             kept_sample_id = np.random.randint(0,labels.size()[0])
 
             l = labels[kept_sample_id]
             o = outputs[kept_sample_id,:,:,:2]
             ins = inputs[kept_sample_id]
-            if model_type == 0:
+            if model_type == 0: ####
                 ins = inputs[kept_sample_id].unsqueeze(0)
             elif model_type == 1:
-                kept_mask = helpers.mask_loss(l.unsqueeze(0).detach().cpu().numpy())
+
+                sample_mask = points_mask[kept_sample_id]
+                # kept_mask = helpers.mask_loss(l.unsqueeze(0).detach().cpu().numpy())
+                kept_mask = helpers.mask_loss(sample_mask.detach().cpu().numpy())
+
 
             
 
@@ -184,33 +218,24 @@ def evaluate(model, device, eval_loader,criterion, epoch, batch_size,scalers_pat
         
 
 ####################
-        mask = helpers.mask_loss(labels.detach().cpu().numpy())
-        outputs = outputs.contiguous().view([outputs.size()[0] * outputs.size()[1]] + list(outputs.size()[2:]))
+        # mask = helpers.mask_loss(labels.detach().cpu().numpy())
+        # outputs = outputs.contiguous().view([outputs.size()[0] * outputs.size()[1]] + list(outputs.size()[2:]))
 
-        labels = labels.contiguous().view([labels.size()[0] * labels.size()[1]] + list(labels.size()[2:]))
+        # labels = labels.contiguous().view([labels.size()[0] * labels.size()[1]] + list(labels.size()[2:]))
 
-        outputs = outputs[mask]
-        labels = labels[mask]
+        # outputs = outputs[mask]
+        # labels = labels[mask]
 ###########################
         
 
 
 ###########################
-        loss = criterion(outputs, labels)
-        inv_labels,inv_outputs = labels,outputs
-
-        if normalized:
-            # if model_type == 0:
-            #     inv_labels,inv_outputs = helpers.revert_scaling(ids,labels,outputs,scalers_path,multiple_scalers)
-            #     inv_outputs = inv_outputs.view(inv_labels.size())
-            # elif model_type == 1:
-            #     inv_labels,inv_outputs = helpers.revert_scaling(ids,labels,outputs[:,:,:2],scalers_path,multiple_scalers)
-            inv_labels,inv_outputs = helpers.revert_scaling(ids,labels,outputs,scalers_path,multiple_scalers)
-            inv_outputs = inv_outputs.view(inv_labels.size())
+        
+        
         
 
-        ade += helpers.ade_loss(inv_outputs,inv_labels).item()
-        fde += helpers.fde_loss(inv_outputs,inv_labels).item()
+        ade += helpers.ade_loss(outputs,labels,points_mask).item() ######
+        fde += helpers.fde_loss(outputs,labels,points_mask).item()
       
         eval_loss += loss.item()
 

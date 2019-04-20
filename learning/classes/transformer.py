@@ -36,6 +36,7 @@ class ScaledDotProduct(nn.Module):
         # in practice sq = sk = sv
 
         scale_factor = np.sqrt(q.size()[-1])
+
         min_inf = float('-inf')
 
         # dot product
@@ -60,7 +61,7 @@ class ScaledDotProduct(nn.Module):
 
         return att
 
-    def get_mask(self,points_mask):
+    def get_mask(self,points_mask,max_batch):
         # compute mask put one where the dot product conv_features*conv_features.T is 0.
         # and the sum over a given row of the resulting matrice is gt 1
         # Nmax = q.size()[1]
@@ -73,7 +74,7 @@ class ScaledDotProduct(nn.Module):
         a = np.repeat(np.expand_dims(sample_sum,axis = 2),max_batch,axis = -1)
         b = np.transpose(a,axes=(0,2,1))
         mha_mask = np.logical_and(np.logical_xor(a,b),a).astype(int)
-        return torch.FloatTensor(mha_mask).to(self.device)
+        return torch.ByteTensor(mha_mask).to(self.device)
         
 
 class AttentionHead(nn.Module):
@@ -90,7 +91,7 @@ class AttentionHead(nn.Module):
         Q = self.q_projection(q)
         K = self.k_projection(k)
         V = self.v_projection(v)
-        att = self.dot_attention(Q,K,V,self.dot_attention.get_mask(points_mask))
+        att = self.dot_attention(Q,K,V,self.dot_attention.get_mask(points_mask,Q.size()[1]))
         return att #B,Nmax,dv
 
 class MultiHeadAttention(nn.Module):
@@ -127,20 +128,25 @@ class EncoderBlock(nn.Module):
 
 
         self.device = device
-        self.feed_forward = nn.Sequential(
-            nn.Linear(dmodel,d_ff_hidden),
-            nn.ReLU(),
-            nn.Linear(d_ff_hidden,dmodel)
-        )
+        # self.feed_forward = nn.Sequential(
+        #     nn.Linear(dmodel,d_ff_hidden),
+        #     nn.ReLU(),
+        #     nn.Linear(d_ff_hidden,dmodel)
+        # )
         self.dropout = nn.Dropout(dropout)
         self.norm_layer1 = nn.LayerNorm(dmodel)
-        self.norm_layer2 = nn.LayerNorm(dmodel)
+        # self.norm_layer2 = nn.LayerNorm(dmodel)
 
 
-    def forward(self,x):
-        x = self.norm_layer1( x + self.dropout(self.multihead_att(x,x,x)) ) #B,Nmax,dmodel
+    def forward(self,x,mask):
+        # x = self.norm_layer1( x + self.dropout(self.multihead_att(x,x,x,mask)) ) #B,Nmax,dmodel
+        x = self.norm_layer1( self.dropout(self.multihead_att(x,x,x,mask)) ) #B,Nmax,dmodel
+
+        x = self.dropout(self.multihead_att(x,x,x,mask))  #B,Nmax,dmodel
+
+
         
-        x = self.norm_layer2( x + self.dropout( self.feed_forward(x) ) )
+        # x = self.norm_layer2( x + self.dropout( self.feed_forward(x) ) )
 
         # x =  self.multihead_att(x,x,x)  #B,Nmax,dmodel
 

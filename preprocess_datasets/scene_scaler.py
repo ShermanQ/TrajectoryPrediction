@@ -113,7 +113,7 @@ class SceneScalerMultiScene():
 
         self.center = center
         self.temp = data["temp"] + "temp.csv"
-        self.original_file = data["preprocessed_datasets"] + "{}.csv"
+        self.original_file = data["filtered_datasets"] + "{}.csv"
         self.scaler_dest = data["scalers"] 
         self.scene_list = scene_list
         self.scale = scale
@@ -124,11 +124,12 @@ class SceneScalerMultiScene():
             print("done!")
 
     def __get_scaler(self):
-        mms = MinMaxScaler(feature_range=(1e-10,1))
+        mms = MinMaxScaler(feature_range=(0,1))
 
         min_ = 1e30
         max_ = -1e30
         for scene in self.scene_list:
+            print(scene)
 
             min_x,max_x,min_y,max_y = self.__get_boudaries(self.original_file.format(scene))
             
@@ -136,14 +137,17 @@ class SceneScalerMultiScene():
             x_mean = (min_x + max_x)/2.0
             y_mean = (min_y + max_y)/2.0
 
-            min_scene = min(min_x - x_mean,min_y - y_mean) 
-            max_scene = max(max_x - x_mean,max_y  - y_mean)
+            # min_scene = min(min_x - x_mean,min_y - y_mean) 
+            # max_scene = max(max_x - x_mean,max_y  - y_mean)
+
+            min_scene = min(min_x ,min_y ) 
+            max_scene = max(max_x ,max_y )
 
             # print(min_scene,max_scene)
 
             min_ = min(min_scene,min_)
             max_ = max(max_scene,max_)
-        # print(min_,max_)
+        print(min_,max_)
 
         mms = mms.fit([[min_],[max_]])
         # print(mms.data_min_,mms.data_max_)

@@ -7,7 +7,7 @@ import h5py
 import cv2
 import time
 import helpers
-
+from joblib import load
 
 class CustomDataLoader():
       def __init__(self,batch_size,shuffle,drop_last,dataset,test = 0):
@@ -101,6 +101,7 @@ class Hdf5Dataset():
                   self.scene_list = helpers.helpers_training.augment_scene_list(self.scene_list,self.augmentation_angles)
             
             self.images = self.__load_images()
+            self.scaler = load("./data/scalers/scaler.joblib")
 
       def get_len(self):
             with h5py.File(self.hdf5_file,"r") as hdf5_file: 
@@ -141,7 +142,7 @@ class Hdf5Dataset():
                         X,y,types,points_mask = self.__get_x_y(coord_dset,ids,max_batch,types_dset,hdf5_file)                      
 
                   sample_sum = (np.sum(points_mask.reshape(points_mask.shape[0],points_mask.shape[1],-1), axis = 2) > 0).astype(int)
-                  active_mask = np.argwhere(sample_sum)
+                  active_mask = np.argwhere(sample_sum.flatten()).flatten()
 
                  
 
@@ -151,6 +152,22 @@ class Hdf5Dataset():
                   if self.augmentation:
                         X,y = self.__augment_batch(scenes,X,y,m_ids)
                         scenes = [scene if m == 0 else scene +"_{}".format(m) for scene,m in zip(scenes,m_ids)] # B
+
+
+                  x_shape = X.shape 
+                  y_shape = y.shape 
+
+                  X = np.expand_dims(X.flatten(),1)
+                  # y = np.expand_dims(y.flatten(),1)
+
+
+                  # y = self.scaler.transform(y).squeeze()
+                  X = self.scaler.transform(X).squeeze()
+
+                  X = X.reshape(x_shape)
+                  # y = y.reshape(y_shape)
+
+
 
                   out = [
                         torch.FloatTensor(X).contiguous(),
@@ -193,6 +210,7 @@ class Hdf5Dataset():
             y = coord_dset[ids,:max_batch,self.t_obs:self.seq_len] #B,N,tpred,2 load pred for given ids
             types = types_dset[ids,:max_batch] #B,N,tpred,2
 
+            active_mask = (y != self.padding).astype(int)
             
             if self.predict_offsets:
 
@@ -205,7 +223,6 @@ class Hdf5Dataset():
                         # offsets according to preceding point point, take points for tpred shifted 1 timestep left
                         last_points = coord_dset[ids,:max_batch,self.t_obs-1:self.seq_len-1]
 
-                  active_mask = (y != self.padding).astype(int)
                   
                   active_last_points = np.multiply(active_mask,last_points)
                   y = np.subtract(y,active_last_points)
@@ -223,6 +240,8 @@ class Hdf5Dataset():
                   
             y = np.expand_dims( coord_dset[ids,0,self.t_obs:self.seq_len], 1) #B,1,tpred,2 # keep only first neighbors and expand nb_agent dim 
             types =  types_dset[ids,0] #B,1,tpred,2
+            active_mask = (y != self.padding).astype(int)
+
 
             if self.predict_offsets:
 
@@ -233,7 +252,6 @@ class Hdf5Dataset():
                   elif self.predict_offsets == 2: # y shifted left
                         last_points = np.expand_dims( coord_dset[ids,0,self.t_obs-1:self.seq_len-1], 1)
 
-                  active_mask = (y != self.padding).astype(int)
                   active_last_points = np.multiply(active_mask,last_points)
                   y = np.subtract(y,active_last_points)
                   y = np.multiply(y,active_mask) # put padding to 0
