@@ -63,7 +63,7 @@ class CustomDataLoader():
 """
 class Hdf5Dataset():
       'Characterizes a dataset for PyTorch'
-      def __init__(self,padding,images_path,hdf5_file,scene_list,t_obs,t_pred,set_type,use_images,data_type,use_neighbors,augmentation,augmentation_angles,centers,use_masks = False,reduce_batches = True,predict_offsets = 0,predict_smooth=0,smooth_suffix = ""):
+      def __init__(self,padding,images_path,hdf5_file,scene_list,t_obs,t_pred,set_type,normalize,use_images,data_type,use_neighbors,augmentation,augmentation_angles,centers,use_masks = False,reduce_batches = True,predict_offsets = 0,predict_smooth=0,smooth_suffix = ""):
 
             self.images_path = images_path + "{}.jpg"
             self.hdf5_file = hdf5_file
@@ -82,6 +82,7 @@ class Hdf5Dataset():
 
             self.predict_smooth = predict_smooth
             self.smooth_suffix = smooth_suffix
+            self.normalize = normalize
 
 
             self.dset_name = "samples_{}_{}".format(set_type,data_type)
@@ -154,18 +155,24 @@ class Hdf5Dataset():
                         scenes = [scene if m == 0 else scene +"_{}".format(m) for scene,m in zip(scenes,m_ids)] # B
 
 
-                  x_shape = X.shape 
-                  y_shape = y.shape 
+                  if self.normalize:
+                        x_shape = X.shape 
+                        y_shape = y.shape 
 
-                  X = np.expand_dims(X.flatten(),1)
-                  # y = np.expand_dims(y.flatten(),1)
+                        X = np.expand_dims(X.flatten(),1)
 
 
-                  # y = self.scaler.transform(y).squeeze()
-                  X = self.scaler.transform(X).squeeze()
+                        X = self.scaler.transform(X).squeeze()
 
-                  X = X.reshape(x_shape)
-                  # y = y.reshape(y_shape)
+                        X = X.reshape(x_shape)
+
+
+                  #       y = np.expand_dims(y.flatten(),1)
+                  #       y = self.scaler.transform(y).squeeze()
+                  #       y = y.reshape(y_shape)
+
+
+
 
 
 
@@ -176,13 +183,14 @@ class Hdf5Dataset():
                         torch.FloatTensor(types)
                   ]   
 
-                  if self.use_images:
-                        imgs = torch.stack([self.images[img] for img in scenes],dim = 0) 
-                        out.append(imgs)
+                  
 
                   if self.use_masks:
                         out.append(points_mask)
                         out.append(torch.LongTensor(active_mask))
+                  if self.use_images:
+                        imgs = torch.stack([self.images[img] for img in scenes],dim = 0) 
+                        out.append(imgs)
            
                   
                   return tuple(out)
@@ -211,6 +219,8 @@ class Hdf5Dataset():
             types = types_dset[ids,:max_batch] #B,N,tpred,2
 
             active_mask = (y != self.padding).astype(int)
+
+            
             
             if self.predict_offsets:
 
@@ -243,6 +253,7 @@ class Hdf5Dataset():
             active_mask = (y != self.padding).astype(int)
 
 
+            
             if self.predict_offsets:
 
                   if self.predict_offsets == 1 :

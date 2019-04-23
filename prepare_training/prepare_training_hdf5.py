@@ -250,7 +250,9 @@ class PrepareTrainingHdf5():
             True if the neighboor appears during the last time step of the observation time
     """
     def __add_neighbor(self,ids,id_,current_frame):
-        if ids[id_][current_frame:current_frame+self.t_obs][-1] != [self.padding,self.padding]:
+        cond = ids[id_][current_frame:current_frame+self.t_obs][-1] != [self.padding,self.padding]
+        cond1 = ids[id_][current_frame:current_frame+self.t_obs+1][-1] != [self.padding,self.padding]
+        if cond and cond1:
             return True
         
         return False

@@ -24,7 +24,7 @@ def train(model, device, train_loader,criterion, optimizer, epoch,batch_size,pri
 
     start_time = time.time()
 
-    nb_grad_plots = 20
+    nb_grad_plots = 200
     ids_grads = np.arange(int(train_loader.nb_batches) )
     np.random.shuffle(ids_grads)
     ids_grads = ids_grads[:nb_grad_plots]
@@ -32,8 +32,8 @@ def train(model, device, train_loader,criterion, optimizer, epoch,batch_size,pri
 
     for batch_idx, data in enumerate(train_loader):
         s = time.time()
-        inputs, labels, ids,types,points_mask, active_mask = data
-        inputs, labels,types = inputs.to(device), labels.to(device), types.to(device)
+        inputs, labels, ids,types,points_mask, active_mask, imgs = data
+        inputs, labels,types, imgs = inputs.to(device), labels.to(device), types.to(device) , imgs.to(device)
         active_mask = active_mask.to(device)
 
 
@@ -43,7 +43,7 @@ def train(model, device, train_loader,criterion, optimizer, epoch,batch_size,pri
 
         
         optimizer.zero_grad()
-        outputs = model((inputs,types,active_mask,points_mask))
+        outputs = model((inputs,types,active_mask,points_mask,imgs))
 
         # torch.cuda.synchronize()
         # print("overall model {}".format(time.time()-s))
@@ -142,13 +142,13 @@ def evaluate(model, device, eval_loader,criterion, epoch, batch_size,scalers_pat
         keep_batch = (i in kept_batches_id )
 
 
-        inputs, labels, ids,types,points_mask, active_mask = data
-        inputs, labels,types = inputs.to(device), labels.to(device), types.to(device)
+        inputs, labels, ids,types,points_mask, active_mask,img = data
+        inputs, labels,types , img = inputs.to(device), labels.to(device), types.to(device),img.to(device)
         active_mask = active_mask.to(device)
         
         s = time.time()
         # outputs = model((inputs,types))
-        outputs = model((inputs,types,active_mask,points_mask))
+        outputs = model((inputs,types,active_mask,points_mask,img))
 
 
         #### function takes inputs labels outputs offsets ###
@@ -156,21 +156,30 @@ def evaluate(model, device, eval_loader,criterion, epoch, batch_size,scalers_pat
 
         # inv_labels,inv_outputs = labels,outputs
 
+
+        
         if normalized:
             # if model_type == 0:
             #     inv_labels,inv_outputs = helpers.revert_scaling(ids,labels,outputs,scalers_path,multiple_scalers)
             #     inv_outputs = inv_outputs.view(inv_labels.size())
             # elif model_type == 1:
             #     inv_labels,inv_outputs = helpers.revert_scaling(ids,labels,outputs[:,:,:2],scalers_path,multiple_scalers)
+            
+            
             _,_,inputs = helpers.revert_scaling(ids,labels,outputs,inputs,scalers_path,multiple_scalers)
+            # labels,outputs,inputs = helpers.revert_scaling(ids,labels,outputs,inputs,scalers_path,multiple_scalers)
+
             # labels,outputs = helpers.revert_scaling(ids,labels,outputs,scalers_path,multiple_scalers)
 
             outputs = outputs.view(labels.size())
-        
-        inputs,labels,outputs = helpers.offsets_to_trajectories(inputs.detach().cpu().numpy(),
+
+            inputs,labels,outputs = helpers.offsets_to_trajectories(inputs.detach().cpu().numpy(),
                                                                 labels.detach().cpu().numpy(),
                                                                 outputs.detach().cpu().numpy(),
                                                                 offsets)
+                                                                
+        
+        
 
 
         
@@ -206,6 +215,7 @@ def evaluate(model, device, eval_loader,criterion, epoch, batch_size,scalers_pat
                 l = l[kept_mask]
                 o = o[kept_mask]
                 ins = ins[kept_mask]
+
 
 
 

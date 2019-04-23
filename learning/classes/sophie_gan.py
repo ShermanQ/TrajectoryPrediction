@@ -29,7 +29,10 @@ def custom_mse(pred_seq,gt_seq):
 #input shape = (3*224*224)
 class customCNN(nn.Module):
     
-    def __init__(self,device,batch_size,nb_channels_in = 3, nb_channels_out = 512,nb_channels_projection = 128, input_size = 224, output_size = 7, embedding_size = 16,weights_path = "./learning/data/pretrained_models/voc_fc32_state.tar"):
+    # def __init__(self,device,batch_size,nb_channels_in = 3, nb_channels_out = 512,nb_channels_projection = 128, input_size = 224, output_size = 7, embedding_size = 16,weights_path = "./learning/data/pretrained_models/voc_fc32_state.tar"):
+    def __init__(self,device,nb_channels_in = 3, nb_channels_out = 512,nb_channels_projection = 128, input_size = 224, output_size = 7, embedding_size = 16,weights_path = "./learning/data/pretrained_models/voc_fc32_state.tar"):
+    
+        
         super(customCNN,self).__init__()
 
         self.device = device
@@ -37,7 +40,6 @@ class customCNN(nn.Module):
         self.output_size = output_size
 
         self.embedding_size = embedding_size
-        self.batch_size = batch_size
         self.nb_channels_in = nb_channels_in
         self.nb_channels_out = nb_channels_out
         self.weights_path = weights_path
@@ -76,7 +78,7 @@ class customCNN(nn.Module):
         
 
     def forward(self,x):
-        x = x.view(self.batch_size,self.nb_channels_in,self.input_size,self.input_size)
+        # x = x.view(self.batch_size,self.nb_channels_in,self.input_size,self.input_size)
         # torch.cuda.synchronize()
         cnn_features = self.cnn(x)
         
@@ -87,8 +89,8 @@ class customCNN(nn.Module):
         # print("test {}".format(cnn_features.size()))
 
         # cnn_features = cnn_features.view(self.batch_size,-1)
-        projected_features = projected_features.view(self.batch_size,self.nb_channels_projection,self.output_size**2) 
-        projected_features = projected_features.permute(0,2,1)
+        # projected_features = projected_features.view(self.batch_size,self.nb_channels_projection,self.output_size**2) 
+        # projected_features = projected_features.permute(0,2,1)
         # projected_features = self.projection(cnn_features).view(self.batch_size,self.output_size**2) # B * 49
 
         # embedded_features = self.embedding(projected_features).view(self.batch_size,self.embedding_size)

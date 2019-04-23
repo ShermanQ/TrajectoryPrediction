@@ -204,6 +204,7 @@ def plot_samples(kept_samples,epoch,n_columns = 2,n_rows = 2,root = "./data/repo
     n_rows = 2
     n_columns = 1
     
+    print("sample")
     for plot in range(n_plots):
         fig,axs = plt.subplots(n_rows,n_columns,sharex=True,sharey=True,squeeze = False)
 
@@ -219,21 +220,29 @@ def plot_samples(kept_samples,epoch,n_columns = 2,n_rows = 2,root = "./data/repo
                 color = colors[j]
                 agent = agent.reshape(-1,2)
 
-                agent = [e for e in agent if e[0]!=0 and e[1] != 0]
-            
-                x = [e[0] for e in agent]
-                y = [e[1] for e in agent]
                 
-                axs[r][c].plot(x,y,color = color)
+                agent = [e for e in agent if e[0]!=0 and e[1] != 0]
+                
 
-                if j == 0:
-                    axs[r][c].scatter(x,y,marker = "+",color = color,label = "obs")
-                    axs[r][c].scatter(x[0],y[0],marker = ",",color = color,label = "obs_start")
-                    axs[r][c].scatter(x[-1],y[-1],marker = "o",color = color,label = "obs_end")
-                else :
-                    axs[r][c].scatter(x,y,marker = "+",color = color)
-                    axs[r][c].scatter(x[0],y[0],marker = ",",color = color)
-                    axs[r][c].scatter(x[-1],y[-1],marker = "o",color = color)
+                if len(agent) > 0:
+
+            
+                    x = [e[0] for e in agent]
+                    y = [e[1] for e in agent]
+                    
+                    axs[r][c].plot(x,y,color = color)
+
+                    if j == 0:
+                        axs[r][c].scatter(x,y,marker = "+",color = color,label = "obs")
+                        axs[r][c].scatter(x[0],y[0],marker = ",",color = color,label = "obs_start")
+                        axs[r][c].scatter(x[-1],y[-1],marker = "o",color = color,label = "obs_end")
+                    else :
+
+                        axs[r][c].scatter(x,y,marker = "+",color = color)
+                        axs[r][c].scatter(x[0],y[0],marker = ",",color = color)
+                        axs[r][c].scatter(x[-1],y[-1],marker = "o",color = color)
+                else:
+                    print("input agents zeros")
 
                         
                 last_points.append([x[-1],y[-1]])
@@ -244,19 +253,23 @@ def plot_samples(kept_samples,epoch,n_columns = 2,n_rows = 2,root = "./data/repo
                 agent = agent.reshape(-1,2)
                 agent = [e for e in agent if e[0]!=0 and e[1] != 0]
 
-                
-                x = [last_points[j][0]] + [e[0] for e in agent]
-                y = [last_points[j][1]]+[e[1] for e in agent]
-                
-                
-                axs[r][c].plot(x,y,color = color)
-                axs[r][c].scatter(x,y,marker = "+",color = color)
-                
-                if j == 0:
-                    axs[r][c].scatter(x[-1],y[-1],marker = "v",color = color,label = "gt_end")
-                else:
+                if len(agent) > 0:
+                    x = [last_points[j][0]] + [e[0] for e in agent]
+                    y = [last_points[j][1]]+[e[1] for e in agent]
                     
-                    axs[r][c].scatter(x[-1],y[-1],marker = "v",color = color)
+                    
+                    axs[r][c].plot(x,y,color = color)
+                    axs[r][c].scatter(x,y,marker = "+",color = color)
+                    
+                    if j == 0:
+                        axs[r][c].scatter(x[-1],y[-1],marker = "v",color = color,label = "gt_end")
+                    else:
+                        
+                        axs[r][c].scatter(x[-1],y[-1],marker = "v",color = color)
+                else:
+                    print("labels agents zeros")
+
+
 
             axs[r][c].legend(loc='upper center', bbox_to_anchor=(1.45, 1))
 
@@ -269,36 +282,42 @@ def plot_samples(kept_samples,epoch,n_columns = 2,n_rows = 2,root = "./data/repo
                 agent = agent.reshape(-1,2)
                 agent = [e for e in agent if e[0]!=0 and e[1] != 0]
 
-            
-                x = [e[0] for e in agent]
-                y = [e[1] for e in agent]
-                axs[r][c].plot(x,y,color = color)
+                if len(agent) > 0:
 
-                if j == 0:
-                    axs[r][c].scatter(x,y,marker = "+",color = color,label = "obs")
-                    axs[r][c].scatter(x[0],y[0],marker = ",",color = color,label = "obs_start")
-                    axs[r][c].scatter(x[-1],y[-1],marker = "o",color = color,label = "obs_end")
-                else :
-                    axs[r][c].scatter(x,y,marker = "+",color = color)
-                    axs[r][c].scatter(x[0],y[0],marker = ",",color = color)
-                    axs[r][c].scatter(x[-1],y[-1],marker = "o",color = color)
+                    x = [e[0] for e in agent]
+                    y = [e[1] for e in agent]
+                    axs[r][c].plot(x,y,color = color)
+
+                    if j == 0:
+                        axs[r][c].scatter(x,y,marker = "+",color = color,label = "obs")
+                        axs[r][c].scatter(x[0],y[0],marker = ",",color = color,label = "obs_start")
+                        axs[r][c].scatter(x[-1],y[-1],marker = "o",color = color,label = "obs_end")
+                    else :
+                        axs[r][c].scatter(x,y,marker = "+",color = color)
+                        axs[r][c].scatter(x[0],y[0],marker = ",",color = color)
+                        axs[r][c].scatter(x[-1],y[-1],marker = "o",color = color)
+                else:
+                    print("input agents zeros 2")
 
             for j,agent in enumerate(kept_samples[plot][2]):
                 color = colors[j]
                 agent = agent.reshape(-1,2)
                 agent = [e for e in agent if e[0]!=0 and e[1] != 0]
 
+                if len(agent) > 0:
                 
-                x = [e[0] for e in agent]
-                y = [e[1] for e in agent]
-                if j == 0:
-                    axs[r][c].scatter(x,y,label = "pred",marker = "x",color = color)
-                    axs[r][c].scatter(x[0],y[0],marker = "o",color = color,label = "pred_start")
-                    axs[r][c].scatter(x[-1],y[-1],marker = "v",color = color,label = "pred_end")
+                    x = [e[0] for e in agent]
+                    y = [e[1] for e in agent]
+                    if j == 0:
+                        axs[r][c].scatter(x,y,label = "pred",marker = "x",color = color)
+                        axs[r][c].scatter(x[0],y[0],marker = "o",color = color,label = "pred_start")
+                        axs[r][c].scatter(x[-1],y[-1],marker = "v",color = color,label = "pred_end")
+                    else:
+                        axs[r][c].scatter(x,y,marker = "x",color = color)
+                        axs[r][c].scatter(x[0],y[0],marker = "o",color = color)
+                        axs[r][c].scatter(x[-1],y[-1],marker = "v",color = color)
                 else:
-                    axs[r][c].scatter(x,y,marker = "x",color = color)
-                    axs[r][c].scatter(x[0],y[0],marker = "o",color = color)
-                    axs[r][c].scatter(x[-1],y[-1],marker = "v",color = color)
+                    print("pred agents zeros ")
         
             # axs[r][c].legend()
             plt.savefig("{}samples_{}_epoch_{}.jpg".format(root,plot,epoch))
@@ -317,6 +336,7 @@ def plot_grad_flow(named_parameters,epoch,root = "./data/reports/gradients/"):
     layers = []
     for n, p in named_parameters:
         if(p.requires_grad) and ("bias" not in n):
+            print(p,n)
             layers.append(n)
             ave_grads.append(p.grad.abs().mean())
             max_grads.append(p.grad.abs().max())
@@ -347,7 +367,7 @@ def plot_grad_flow(named_parameters,epoch,root = "./data/reports/gradients/"):
 def plot_params(named_parameters,epoch,root="./data/reports/weights/"):
     weights = {}
     for n,p in named_parameters:
-        if(p.requires_grad) and ("bias" not in n):
+        if(p.requires_grad) :
             weights[n] = p.cpu().detach().numpy().flatten()
 
     n_rows = int(np.ceil( np.sqrt(len(weights))) )
@@ -359,7 +379,7 @@ def plot_params(named_parameters,epoch,root="./data/reports/weights/"):
     fig.set_figwidth(30)
 
     layers = list(weights.keys())
-    print(len(layers))
+    
     for i in range(n_rows-1 ):
         for j in range(n_rows):
 
@@ -405,3 +425,30 @@ def offsets_to_trajectories(inputs,labels,outputs,offsets):
     else :
         return inputs,labels,outputs
 
+
+
+import torch.nn.init as init
+
+
+def weight_init(m):
+    '''
+    Usage:
+        model = Model()
+        model.apply(weight_init)
+    '''
+    
+    if isinstance(m, nn.Linear):
+        init.xavier_normal_(m.weight.data,gain=nn.init.calculate_gain('relu'))
+        init.normal_(m.bias.data)
+    elif isinstance(m, nn.Conv1d):
+        init.xavier_normal_(m.weight.data,gain=nn.init.calculate_gain('relu'))
+        init.xavier_normal_(m.weight_g.data,gain=nn.init.calculate_gain('relu'))
+        init.xavier_normal_(m.weight_v.data,gain=nn.init.calculate_gain('relu'))
+
+        init.normal_(m.bias.data)
+        # init.normal_(m.weight.data)
+        # if m.bias is not None:
+        #     init.normal_(m.bias.data)
+    
+    
+    

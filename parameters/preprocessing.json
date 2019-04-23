@@ -40,7 +40,7 @@
         
  
     ],
-    "distance_threshold":3,
+    "distance_threshold":2,
     "acceleration_threshold":5,
     "deceleration_threshold":-8,
     "augmentation_angles":[90,180,270],

@@ -7,12 +7,13 @@ import torchvision
 import imp
 import time
 
-from classes.transformer import Transformer,MultiHeadAttention,EncoderBlock
+from classes.transformer import Transformer,MultiHeadAttention
 from classes.tcn import TemporalConvNet
+from classes.sophie_gan import customCNN
 
 
 
-class Model2b(nn.Module):
+class Model2a1(nn.Module):
     def __init__(self,
         device,
         input_dim,
@@ -32,7 +33,7 @@ class Model2b(nn.Module):
         use_tcn,
         dropout_tcn = 0.2,
         dropout_tfr = 0.1):
-        super(Model2b,self).__init__()
+        super(Model2a1,self).__init__()
 
         self.device = device
         self.input_dim = input_dim
@@ -55,8 +56,11 @@ class Model2b(nn.Module):
         self.convnet_nb_layers = convnet_nb_layers
         self.use_tcn = use_tcn
 
+        self.cnn = customCNN(device,nb_channels_projection = dmodel)
+
+
 ############# x/y embedding ###############################
-        # self.coord_embedding = nn.Linear(input_dim,convnet_embedding)
+        self.coord_embedding = nn.Linear(input_dim,convnet_embedding)
 ############# TCN #########################################
         # compute nb temporal blocks
 
@@ -65,26 +69,29 @@ class Model2b(nn.Module):
         self.num_channels = [convnet_embedding for _ in range(self.nb_temporal_blocks)]
 
         # init network
-        # self.tcn = TemporalConvNet(device, self.convnet_embedding, self.num_channels, kernel_size, dropout_tcn)
-        self.tcn = TemporalConvNet(device, 2, self.num_channels, kernel_size, dropout_tcn)
+        self.tcn = TemporalConvNet(device, self.convnet_embedding, self.num_channels, kernel_size, dropout_tcn)
 
 
         # project conv features to dmodel
-        self.conv_enc = nn.Linear(input_length*convnet_embedding,dmodel)
-        self.conv_enc = nn.Linear(convnet_embedding,dmodel)
+        self.conv2att = nn.Linear(convnet_embedding,dmodel)
+
+        self.conv2pred = nn.Linear(input_length*convnet_embedding,dmodel)
 
 
 ############# Attention #########################################
         # apply multihead attention output d_model
-        # self.mha = MultiHeadAttention(device,h,dmodel,dk,dv,dropout_tfr)
-        self.mha = EncoderBlock(device,h,dmodel,d_ff_hidden,dk,dv,dropout_tfr)
+        self.mha = MultiHeadAttention(device,h,dmodel,dk,dv,dropout_tfr)
 
+        # apply multihead attention output d_model
+        self.mha_s = MultiHeadAttention(device,h,dmodel,dk,dv,dropout_tfr)
 
 ############# Predictor #########################################
 
-        # use only multihead attention to make prediction
+        # concat multihead attention and conv_features to make prediction
         self.predictor = []
-        self.predictor.append(nn.Linear(dmodel,predictor_layers[0]))
+        # self.predictor.append(nn.Linear(dmodel*2,predictor_layers[0]))
+        self.predictor.append(nn.Linear(dmodel*3,predictor_layers[0]))
+
 
 
         self.predictor.append(nn.ReLU())
@@ -106,15 +113,18 @@ class Model2b(nn.Module):
         types = x[1]
         active_agents = x[2]
         points_mask = x[3]
+        imgs = x[4]
 
         x = x[0]
+
+       
 
         # active_x = self.__get_active_ids(x)
 
         torch.cuda.synchronize()
         s = time.time()
-        # x = self.coord_embedding(x)
-        # x = f.relu(x)
+        x = self.coord_embedding(x)
+        x = f.relu(x)
 
         # permute channels and sequence length
         B,Nmax,Tobs,Nfeat = x.size()
@@ -135,17 +145,33 @@ class Model2b(nn.Module):
         y[active_agents] = self.tcn(x[active_agents]) # [B*Nmax],Nfeat,Tobs
 
         y = y.permute(0,2,1) # [B*Nmax],Tobs,Nfeat
-        y = y.view(B,Nmax,Tobs,y.size()[2]).contiguous() # B,Nmax,Tobs,Nfeat
-        y = y[:,:,-1,:]
-        # y = y.view(B,Nmax,-1) # B,Nmax,Tobs*Nfeat
+        conv_features = y.view(B,Nmax,Tobs,y.size()[2]).contiguous() # B,Nmax,Tobs,Nfeat
+        y_last = conv_features[:,:,-1]
+        conv_features = conv_features.view(B,Nmax,-1) # B,Nmax,Tobs*Nfeat
 
-        conv_features = y # B,Nmax,Nfeat
 
-        x = f.relu(self.conv_enc(conv_features)) # B,Nmax,dmodel
-        
-        # y = self.mha(x,x,x,points_mask)# B,Nmax,dmodel
-        y = self.mha(x,points_mask)# B,Nmax,dmodel
+        x = self.conv2att(y_last) # B,Nmax,dmodel    
+        x = f.relu(x)
 
+        att_feat = self.mha(x,x,x,points_mask)# B,Nmax,dmodel
+
+
+
+        cnn_feat = self.cnn(imgs)
+        cnn_feat = cnn_feat.view(cnn_feat.size()[0],cnn_feat.size()[1],-1).permute(0,2,1)
+
+        att_s = self.mha_s(x,cnn_feat,cnn_feat)
+
+
+
+
+
+        conv_features = self.conv2pred(conv_features)
+        conv_features = f.relu(conv_features)
+
+        # y = torch.cat([att_feat,conv_features],dim = 2 ) # B,Nmax,2*dmodel
+
+        y = torch.cat([att_feat,att_s,conv_features],dim = 2 ) # B,Nmax,2*dmodel
 
 
    

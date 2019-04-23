@@ -30,17 +30,17 @@ class Stats():
         tot1 = 0
         tot2 = 0
         for scene in self.scenes:
-            print(scene)
+            # print(scene)
             # nbs = self.__get_nbs(scene)
             # print(nbs)
 
             # stats = self.__get_frames_stats(scene)
             # print(stats)
 
-            # ctr = self.__get_stopped(scene)
+            ctr = self.__get_stopped(scene)
             # print(ctr)
-            # tot1 += ctr[0]
-            # tot2 += ctr[1]
+            tot1 += ctr[0]
+            tot2 += ctr[1]
 
             # ctr = self.__get_outlier_accelerations(scene)
             # print(ctr)

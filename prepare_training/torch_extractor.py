@@ -35,6 +35,8 @@ class TorchExtractor():
 
         self.new_padding = torch_params["new_padding"]
         self.old_padding = torch_params["old_padding"]
+        self.padding = prepare_params["padding"]
+
         self.smooth = torch_params["smooth"]
         self.smooth_suffix = prepare_params["smooth_suffix"]
 
@@ -175,7 +177,8 @@ class TorchExtractor():
                     scenes = np.array([np.string_(key) for _ in range(np.abs(nb_samples))])
                     # print(scenes)
 
-                    padding = np.zeros(shape = (np.abs(nb_samples), max_neighboors-nb_neighbors,self.seq_len,2))
+                    padding = np.ones(shape = (np.abs(nb_samples), max_neighboors-nb_neighbors,self.seq_len,2))
+                    padding = padding * self.padding
                     padding_types = np.zeros(shape = (np.abs(nb_samples), max_neighboors-nb_neighbors,self.nb_types - 1))
 
 

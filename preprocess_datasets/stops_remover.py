@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import helpers
 from scipy.spatial.distance import euclidean
-
+import os
 
 class StopsRemover():
     def __init__(self,preprocessing_params,data,prepare_params):
@@ -31,7 +31,7 @@ class StopsRemover():
         os.rename(self.original_file.format(scene),self.temp)
         helpers.remove_file(self.original_file.format(scene))
 
-        helpers.extract_trajectories(self.original_file.format(scene),self.trajectories_temp,save=True)
+        helpers.extract_trajectories(self.temp,self.trajectories_temp,save=True)
         ctr = 0
         with open(self.trajectories_temp) as trajectories:
             with open(self.original_file.format(scene),"a+") as f:
@@ -50,6 +50,7 @@ class StopsRemover():
                         for row in rows:
                             csv_writer.writerow(row)
 
+        # os.rename(self.temp,self.original_file.format(scene))
         helpers.remove_file(self.temp)
         
         return (ctr,k+1)

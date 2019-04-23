@@ -8,7 +8,9 @@ import time
 
 from classes.datasets import Hdf5Dataset,CustomDataLoader
 # from classes.model2a import Model2a
-from classes.model2b import Model2b
+from classes.model2a1 import Model2a1
+
+# from classes.model2b import Model2b
 # from classes.model2c import Model2c
 # from classes.model2d import Model2d
 import matplotlib.pyplot as plt
@@ -42,8 +44,8 @@ def main():
     data = json.load(open("parameters/data.json"))
     torch_param = json.load(open("parameters/torch_extractors.json"))
     prepare_param = json.load(open("parameters/prepare_training.json"))
-    # training_param = json.load(open("parameters/model2a_training.json"))
-    training_param = json.load(open("parameters/model2b_training.json"))
+    training_param = json.load(open("parameters/model2a_training.json"))
+    # training_param = json.load(open("parameters/model2b_training.json"))
     # training_param = json.load(open("parameters/model2c_training.json"))
     # training_param = json.load(open("parameters/model2d_training.json"))
 
@@ -79,7 +81,8 @@ def main():
         t_obs=prepare_param["t_obs"],
         t_pred=prepare_param["t_pred"],
         set_type = "train",
-        use_images = False,
+        normalize = prepare_param["normalize"],
+        use_images = True,
         data_type = "trajectories",
         use_neighbors = True,
         use_masks= 1,
@@ -102,7 +105,8 @@ def main():
         t_obs=prepare_param["t_obs"],
         t_pred=prepare_param["t_pred"],
         set_type = "eval", ##############
-        use_images = False,
+        normalize = prepare_param["normalize"],
+        use_images = True,
         data_type = "trajectories",
         use_neighbors = True,
         use_masks= 1,
@@ -190,8 +194,9 @@ def main():
     # print("nb of kept batches {}".format(eval_loader.nb_batches))
 
 
+    net = Model2a1(
     # net = Model2a(
-    net = Model2b(
+    # net = Model2b(
     # net = Model2c(
     # net = Model2d(
     
@@ -217,6 +222,8 @@ def main():
 
     )
 
+    net.apply(helpers.weight_init)
+
     
     # helpers.plot_params(net.named_parameters(),-1,root="./data/reports/weights/")
 
@@ -225,6 +232,7 @@ def main():
     print(net)
 
     optimizer = optim.Adam(net.parameters(),lr = training_param["lr"])
+    # optimizer = torch.optim.SGD(net.parameters(),lr = training_param["lr"] ,momentum = 0.9,nesterov= True )
     # criterion = mse_loss
     # criterion = nn.MSELoss(reduction= "mean")
     criterion = helpers.MaskedLoss(nn.MSELoss(reduction="none"))
@@ -234,6 +242,7 @@ def main():
         net,device,train_loader,eval_loader,criterion,criterion,optimizer,data["scalers"],
         data["multiple_scalers"],training_param["model_type"],
         plot = training_param["plot"],early_stopping = True,load_path = training_param["load_path"],
+        normalized = prepare_param["normalize"],
         plot_every = training_param["plot_every"],offsets = training_param["offsets"], save_every = training_param["save_every"])
 
     

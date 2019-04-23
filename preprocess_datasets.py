@@ -57,60 +57,69 @@ def main():
     #     t.daemon = True 
     #     t.start()
 
-    # s = time.time()
+    s = time.time()
 
-    # print("Managing framerate")
-    # rate_manager = FramerateManager(args[2],new_rate)
-    # # threads = []
-    # for scene in scene_list:
-    #     print(scene)
-    #     # q.put((rate_manager,scene))
-    #     # t = threading.Thread(target=worker,args = (rate_manager,scene,))
-    #     # threads.append(t)
-    #     rate_manager.change_rate(scene)
+    print("Managing framerate")
+    rate_manager = FramerateManager(args[2],new_rate)
+    # threads = []
+    for scene in scene_list:
+        print(scene)
+        # q.put((rate_manager,scene))
+        # t = threading.Thread(target=worker,args = (rate_manager,scene,))
+        # threads.append(t)
+        rate_manager.change_rate(scene)
     
 
-    # # q.join()
-    # print("DOne!")
+    # q.join()
+    print("DOne!")
 
-    # print(time.time() - s)
+    print(time.time() - s)
 
-
-    
-
-
-    # # ##################### conversion ###############
-    # pix2met = Pixel2Meters(args[2],1)
-    # for scene in scene_list:
-    #     print(scene)
-    #     pix2met.convert(scene)
-    # # ################################################
 
     
 
-    # print("Managing decimal number")
-    # nb_digits = int(prepare_training_params["number_digits_meters"])
-    # digit_man = DigitManager(args[2],nb_digits)
-    # for scene in scene_list:
-    #     print(scene)
-    #     digit_man.change_digit_number(scene)
-    # print("DOne!")
 
-    # print(time.time() - s)
+    # ##################### conversion ###############
+    pix2met = Pixel2Meters(args[2],1)
+    for scene in scene_list:
+        print(scene)
+        pix2met.convert(scene)
+    # ################################################
+
+    
+
+    print("Managing decimal number")
+    nb_digits = int(prepare_training_params["number_digits_meters"])
+    digit_man = DigitManager(args[2],nb_digits)
+    for scene in scene_list:
+        print(scene)
+        digit_man.change_digit_number(scene)
+    print("DOne!")
+
+    print(time.time() - s)
+
+    stats = Stats(args[1],args[2],args[3])
+    stats.get_stats()
+
+    print("removing full standing trajectories")
+    stops = StopsRemover(args[1],args[2],args[3])
+    for scene in scene_list:
+        print(scene)
+        stops.remove_stopped(scene)
 
     
     
 
-    # print("augmenting scenes")
-    # data_augmenter = DataAugmenter(args[1],args[2],args[3])
-    # for scene in scene_list:
-    #     print(scene)
-    #     # data_augmenter.augment_scene(scene)
-    #     data_augmenter.augment_scene_images(scene)
+    print("augmenting scenes")
+    data_augmenter = DataAugmenter(args[1],args[2],args[3])
+    for scene in scene_list:
+        print(scene)
+        # data_augmenter.augment_scene(scene)
+        data_augmenter.augment_scene_images(scene)
 
-    # center = SceneCenters(args[1],args[2],args[3])
+    center = SceneCenters(args[1],args[2],args[3])
     
-    # center.get_centers(scene_list)
+    center.get_centers(scene_list)
     
     scaler = scene_scaler.SceneScalerMultiScene(args[2],False,scene_list,prepare_training_params["normalize"])
 
@@ -119,11 +128,7 @@ if __name__ == "__main__":
 
 
 
-# print("removing full standing trajectories")
-    # stops = StopsRemover(args[1],args[2],args[3])
-    # for scene in scene_list:
-    #     print(scene)
-    #     stops.remove_stopped(scene)
+
 
 # stats = Stats(args[1],args[2],args[3])
     # stats.get_stats()

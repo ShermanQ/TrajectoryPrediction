@@ -74,6 +74,10 @@ class ScaledDotProduct(nn.Module):
         a = np.repeat(np.expand_dims(sample_sum,axis = 2),max_batch,axis = -1)
         b = np.transpose(a,axes=(0,2,1))
         mha_mask = np.logical_and(np.logical_xor(a,b),a).astype(int)
+        # eyes = np.expand_dims(np.eye(mha_mask.shape[-1]),0)
+        # eyes = eyes.repeat(mha_mask.shape[0],0)
+
+        # mha_mask = np.logical_or(mha_mask,eyes).astype(int)
         return torch.ByteTensor(mha_mask).to(self.device)
         
 
@@ -87,11 +91,16 @@ class AttentionHead(nn.Module):
         self.v_projection = nn.Linear(dmodel,dv)
         self.dot_attention = ScaledDotProduct(device,dropout)
 
-    def forward(self,q,k,v,points_mask):
+    def forward(self,q,k,v,points_mask = None):
         Q = self.q_projection(q)
         K = self.k_projection(k)
         V = self.v_projection(v)
-        att = self.dot_attention(Q,K,V,self.dot_attention.get_mask(points_mask,Q.size()[1]))
+        if points_mask is not None:
+            att = self.dot_attention(Q,K,V,self.dot_attention.get_mask(points_mask,Q.size()[1]))
+        else:
+            att = self.dot_attention(Q,K,V)
+
+
         return att #B,Nmax,dv
 
 class MultiHeadAttention(nn.Module):
@@ -107,7 +116,7 @@ class MultiHeadAttention(nn.Module):
 
         self.multihead_projection = nn.Linear(h*dv,dmodel)
 
-    def forward(self,q,k,v,points_mask ):
+    def forward(self,q,k,v,points_mask = None ):
 
         atts = [] #H,Nmax,dv
         for head in self.heads:
@@ -142,7 +151,7 @@ class EncoderBlock(nn.Module):
         # x = self.norm_layer1( x + self.dropout(self.multihead_att(x,x,x,mask)) ) #B,Nmax,dmodel
         x = self.norm_layer1( self.dropout(self.multihead_att(x,x,x,mask)) ) #B,Nmax,dmodel
 
-        x = self.dropout(self.multihead_att(x,x,x,mask))  #B,Nmax,dmodel
+        # x = self.dropout(self.multihead_att(x,x,x,mask))  #B,Nmax,dmodel
 
 
         

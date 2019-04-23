@@ -107,7 +107,8 @@ def main():
         padding = prepare_param["padding"],
 
         augmentation = 0,
-        augmentation_angles = training_param["augmentation_angles"]
+        augmentation_angles = training_param["augmentation_angles"],
+        normalize =prepare_param["normalize"]
         )
 
     eval_dataset = Hdf5Dataset(
@@ -128,7 +129,8 @@ def main():
         padding = prepare_param["padding"],
 
         augmentation = 1,
-        augmentation_angles = []
+        augmentation_angles = [],
+        normalize =prepare_param["normalize"]
 
 
         )
@@ -159,8 +161,8 @@ def main():
         nb_conv_feat = training_param["nb_conv_feat"],
         mlp_layers = training_param["mlp_layers"],
         output_size = training_param["output_size"],
-        nb_cat= len(prepare_param["types_dic"]),
-        # nb_cat= 0,
+        # nb_cat= len(prepare_param["types_dic"]),
+        nb_cat= 0,
 
         kernel_size= training_param["kernel_size"],
         dropout = training_param["dropout"]
