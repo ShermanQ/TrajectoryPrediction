@@ -56,6 +56,7 @@ class Model2a1(nn.Module):
         self.convnet_nb_layers = convnet_nb_layers
         self.use_tcn = use_tcn
 
+        self.cnn = customCNN(device,nb_channels_projection = dmodel)
 
 
 ############# x/y embedding ###############################
@@ -81,11 +82,15 @@ class Model2a1(nn.Module):
         # apply multihead attention output d_model
         self.mha = MultiHeadAttention(device,h,dmodel,dk,dv,dropout_tfr)
 
+        # apply multihead attention output d_model
+        self.mha_s = MultiHeadAttention(device,h,dmodel,dk,dv,dropout_tfr)
+
 ############# Predictor #########################################
 
         # concat multihead attention and conv_features to make prediction
         self.predictor = []
-        self.predictor.append(nn.Linear(dmodel*2,predictor_layers[0]))
+        # self.predictor.append(nn.Linear(dmodel*2,predictor_layers[0]))
+        self.predictor.append(nn.Linear(dmodel*3,predictor_layers[0]))
 
 
 
@@ -152,6 +157,10 @@ class Model2a1(nn.Module):
 
 
 
+        cnn_feat = self.cnn(imgs)
+        cnn_feat = cnn_feat.view(cnn_feat.size()[0],cnn_feat.size()[1],-1).permute(0,2,1)
+
+        att_s = self.mha_s(x,cnn_feat,cnn_feat)
 
 
 
@@ -160,8 +169,9 @@ class Model2a1(nn.Module):
         conv_features = self.conv2pred(conv_features)
         conv_features = f.relu(conv_features)
 
-        y = torch.cat([att_feat,conv_features],dim = 2 ) # B,Nmax,2*dmodel
+        # y = torch.cat([att_feat,conv_features],dim = 2 ) # B,Nmax,2*dmodel
 
+        y = torch.cat([att_feat,att_s,conv_features],dim = 2 ) # B,Nmax,2*dmodel
 
 
    

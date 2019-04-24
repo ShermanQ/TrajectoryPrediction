@@ -17,7 +17,9 @@ class MaskedLoss(nn.Module):
     def forward(self, outputs, targets, mask = None):
         if mask is not None:
             loss =  self.criterion(outputs*mask, targets*mask)
-            loss = loss.sum()/(mask.sum()/2.0)
+            # loss = loss.sum()/(mask.sum()/2.0)
+            loss = loss.sum()/(mask.sum())
+
             return loss
         else:
             loss = self.criterion(outputs,targets)
@@ -336,7 +338,7 @@ def plot_grad_flow(named_parameters,epoch,root = "./data/reports/gradients/"):
     layers = []
     for n, p in named_parameters:
         if(p.requires_grad) and ("bias" not in n):
-            print(p,n)
+            
             layers.append(n)
             ave_grads.append(p.grad.abs().mean())
             max_grads.append(p.grad.abs().max())

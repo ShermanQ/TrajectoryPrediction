@@ -8,6 +8,7 @@ import cv2
 import time
 import helpers
 from joblib import load
+import sys
 
 class CustomDataLoader():
       def __init__(self,batch_size,shuffle,drop_last,dataset,test = 0):
@@ -35,7 +36,7 @@ class CustomDataLoader():
             self.nb_batches = len(self.batches)
             print(self.nb_batches)
             if self.test :
-                  self.nb_batches = 10
+                  self.nb_batches = 50
 
             
 
@@ -66,7 +67,7 @@ class Hdf5Dataset():
       def __init__(self,padding,images_path,hdf5_file,scene_list,t_obs,t_pred,set_type,normalize,use_images,data_type,use_neighbors,augmentation,augmentation_angles,centers,use_masks = False,reduce_batches = True,predict_offsets = 0,predict_smooth=0,smooth_suffix = ""):
 
             self.images_path = images_path + "{}.jpg"
-            self.hdf5_file = hdf5_file
+            
             self.set_type = set_type
             self.scene_list = scene_list
 
@@ -103,135 +104,161 @@ class Hdf5Dataset():
             
             self.images = self.__load_images()
             self.scaler = load("./data/scalers/scaler.joblib")
+            # self.hdf5_file = hdf5_file
+            self.hdf5_file = h5py.File(hdf5_file,"r")
 
+            self.coord_dset = self.hdf5_file[self.dset_name]
+            self.coord_dset_smooth = self.hdf5_file[self.dset_name+self.smooth_suffix]
+
+            self.scenes_dset = self.hdf5_file[self.dset_img_name]   
+            self.types_dset = self.hdf5_file[self.dset_types]  
+
+            self.shape = self.coord_dset.shape
+            
+      def __del__(self):
+            self.hdf5_file.close()
+            print("closed")
+      # def get_len(self):
+      #       with h5py.File(self.hdf5_file,"r") as hdf5_file: 
+      #             if self.augmentation:
+      #                   return hdf5_file[self.dset_name].shape[0]  * (len(self.augmentation_angles) + 1)
+      #             return hdf5_file[self.dset_name].shape[0]
       def get_len(self):
-            with h5py.File(self.hdf5_file,"r") as hdf5_file: 
-                  if self.augmentation:
-                        return hdf5_file[self.dset_name].shape[0]  * (len(self.augmentation_angles) + 1)
-                  return hdf5_file[self.dset_name].shape[0]
+            
+            if self.augmentation:
+                  return self.shape[0]  * (len(self.augmentation_angles) + 1)
+            return self.shape[0]
 
       
 
 
       def get_ids(self,ids):
-            with h5py.File(self.hdf5_file,"r") as hdf5_file: 
-                  coord_dset = hdf5_file[self.dset_name]
-                  scenes_dset = hdf5_file[self.dset_img_name]   
-                  types_dset = hdf5_file[self.dset_types]   
+            s = time.time()
+
+            types,m_ids,X,y,seq = [],[],[],[],[]
+            max_batch = self.coord_dset.shape[1]
+
+            if self.augmentation:
+                  ids,m_ids = self.__augmentation_ids(ids)            
+            scenes = [img.decode('UTF-8') for img in self.scenes_dset[ids]] # B
+
+            
+            # load sequence once and for all to limit hdf5 access
+            if self.predict_smooth:
+                  X = self.coord_dset[ids,:,:self.t_obs]
+                  y = self.coord_dset_smooth[ids,:,self.t_obs:self.seq_len]   
+                  seq = np.concatenate([X,y],axis = 2)              
+
+            else:
+                  seq = self.coord_dset[ids]
+                  X = seq[:,:,:self.t_obs]
+                  y = seq[:,:,self.t_obs:self.seq_len]
+
+            # compute max nb of agents in a frame
+            if self.reduce_batches:
+                  max_batch = self.__get_batch_max_neighbors(X)
+
+            X = X[:,:max_batch]
+            y = y[:,:max_batch]
+            seq = seq[:,:max_batch]
+
+            if self.use_neighbors:
+                  types = self.types_dset[ids,:max_batch] #B,N,tpred,2
+            else:
+                  types =  self.types_dset[ids,0] #B,1,tpred,2
 
 
-                  X,y,types,m_ids = [],[],[],[]
-                  max_batch = coord_dset.shape[1]
+            points_mask = []
+            if self.use_neighbors:
+                  X,y,points_mask = self.__get_x_y_neighbors(X,y,seq)
 
 
-
-                  if self.augmentation:
-                        ids,m_ids = self.__augmentation_ids(ids,coord_dset)
-                  
-                  scenes = [img.decode('UTF-8') for img in scenes_dset[ids]] # B
-                  
-                        
-
-                  if self.reduce_batches:
-                        max_batch = self.__get_batch_max_neighbors(ids,coord_dset)
-
-                  points_mask = []
-                  if self.use_neighbors:
-                        X,y,types,points_mask = self.__get_x_y_neighbors(coord_dset,ids,max_batch,types_dset,hdf5_file)
-
-                  else:
-                        X,y,types,points_mask = self.__get_x_y(coord_dset,ids,max_batch,types_dset,hdf5_file)                      
-
-                  sample_sum = (np.sum(points_mask.reshape(points_mask.shape[0],points_mask.shape[1],-1), axis = 2) > 0).astype(int)
-                  active_mask = np.argwhere(sample_sum.flatten()).flatten()
-
-                 
+            else:       
+                  X,y,points_mask = self.__get_x_y(X,y,seq)                      
 
 
+            sample_sum = (np.sum(points_mask.reshape(points_mask.shape[0],points_mask.shape[1],-1), axis = 2) > 0).astype(int)
+            active_mask = np.argwhere(sample_sum.flatten()).flatten()
 
 
-                  if self.augmentation:
-                        X,y = self.__augment_batch(scenes,X,y,m_ids)
-                        scenes = [scene if m == 0 else scene +"_{}".format(m) for scene,m in zip(scenes,m_ids)] # B
+            if self.augmentation:
+                  X,y = self.__augment_batch(scenes,X,y,m_ids)
+                  scenes = [scene if m == 0 else scene +"_{}".format(m) for scene,m in zip(scenes,m_ids)] # B
 
 
-                  if self.normalize:
-                        x_shape = X.shape 
-                        y_shape = y.shape 
+            if self.normalize:
+                  x_shape = X.shape 
+                  y_shape = y.shape 
 
-                        X = np.expand_dims(X.flatten(),1)
-
-
-                        X = self.scaler.transform(X).squeeze()
-
-                        X = X.reshape(x_shape)
+                  X = np.expand_dims(X.flatten(),1)
 
 
-                  #       y = np.expand_dims(y.flatten(),1)
-                  #       y = self.scaler.transform(y).squeeze()
-                  #       y = y.reshape(y_shape)
+                  X = self.scaler.transform(X).squeeze()
+
+                  X = X.reshape(x_shape)
+
+                  # print("normalize {}".format(time.time()-s))
+                  # s = time.time()
+
+
+            #       y = np.expand_dims(y.flatten(),1)
+            #       y = self.scaler.transform(y).squeeze()
+            #       y = y.reshape(y_shape)
 
 
 
 
 
 
-                  out = [
-                        torch.FloatTensor(X).contiguous(),
-                        torch.FloatTensor(y).contiguous(),
-                        scenes,
-                        torch.FloatTensor(types)
-                  ]   
+            out = [
+                  torch.FloatTensor(X).contiguous(),
+                  torch.FloatTensor(y).contiguous(),
+                  scenes,
+                  torch.FloatTensor(types)
+            ]   
 
-                  
+            
 
-                  if self.use_masks:
-                        out.append(points_mask)
-                        out.append(torch.LongTensor(active_mask))
-                  if self.use_images:
-                        imgs = torch.stack([self.images[img] for img in scenes],dim = 0) 
-                        out.append(imgs)
+            if self.use_masks:
+                  out.append(points_mask)
+                  out.append(torch.LongTensor(active_mask))
+            if self.use_images:
+                  imgs = torch.stack([self.images[img] for img in scenes],dim = 0) 
+                  out.append(imgs)
+      
+            print("data loading {}".format(time.time()-s))
+            return tuple(out)
+
+
+      def __get_batch_max_neighbors(self,X):
            
-                  
-                  return tuple(out)
-
-
-      def __get_batch_max_neighbors(self,ids,coord_dset):
-            b,n,s,i = coord_dset.shape
-
-            active_mask = (coord_dset[ids,:,:self.t_obs] == self.padding).astype(int)
+            active_mask = (X == self.padding).astype(int)
             a = np.sum(active_mask,axis = 3)
             b = np.sum( a, axis = 2)
             nb_padding_traj = b/float(2.0*self.t_obs) #prop of padded points per traj
             active_traj = nb_padding_traj < 1.0 # if less than 100% of the points are padding points then its an active trajectory
             nb_agents = np.sum(active_traj.astype(int),axis = 1)                      
             max_batch = np.max(nb_agents)
+
             return max_batch
 
+           
 
-      def __get_x_y_neighbors(self,coord_dset,ids,max_batch,types_dset,hdf5_file):
-            X = coord_dset[ids,:max_batch,:self.t_obs] # load obs for given ids
+           
 
-            if self.predict_smooth:
-                  coord_dset = hdf5_file[self.dset_name+self.smooth_suffix] # if using smoothed trajectories for prediction, switch dataset
-            
-            y = coord_dset[ids,:max_batch,self.t_obs:self.seq_len] #B,N,tpred,2 load pred for given ids
-            types = types_dset[ids,:max_batch] #B,N,tpred,2
 
-            active_mask = (y != self.padding).astype(int)
-
-            
-            
+      # def __get_x_y_neighbors(self,coord_dset,ids,max_batch,types_dset,hdf5_file):
+      def __get_x_y_neighbors(self,X,y,seq):
+            active_mask = (y != self.padding).astype(int)            
             if self.predict_offsets:
-
-
                   if self.predict_offsets == 1:
                         # offsets according to last obs point, take last point for each obs traj and make it an array of dimension y
                         last_points = np.repeat(  np.expand_dims(X[:,:,-1],2),  self.t_pred, axis=2)#B,N,tpred,2
                   elif self.predict_offsets == 2:# y shifted left
 
                         # offsets according to preceding point point, take points for tpred shifted 1 timestep left
-                        last_points = coord_dset[ids,:max_batch,self.t_obs-1:self.seq_len-1]
+                        last_points = seq[:,:,self.t_obs-1:self.seq_len-1]
+
 
                   
                   active_last_points = np.multiply(active_mask,last_points)
@@ -240,20 +267,14 @@ class Hdf5Dataset():
                   y = np.multiply(y,active_mask) # put padding to 0
                   X = np.multiply(X,(X != self.padding).astype(int)) # put padding to 0
 
-            return X,y,types,active_mask
+            return X,y,active_mask
 
-      def __get_x_y(self,coord_dset,ids,max_batch,types_dset,hdf5_file):
-            X = np.expand_dims( coord_dset[ids,0,:self.t_obs] ,1) # keep only first neighbors and expand nb_agent dim 
+      # def __get_x_y(self,coord_dset,ids,max_batch,types_dset,hdf5_file):
+      def __get_x_y(self,X,y,seq):
 
-            if self.predict_smooth: # if predict smoothed target change dataset
-                  coord_dset = hdf5_file[self.dset_name+self.smooth_suffix]   
-                  
-            y = np.expand_dims( coord_dset[ids,0,self.t_obs:self.seq_len], 1) #B,1,tpred,2 # keep only first neighbors and expand nb_agent dim 
-            types =  types_dset[ids,0] #B,1,tpred,2
+            X = np.expand_dims( X[:,0] ,1) # keep only first neighbors and expand nb_agent dim 
+            y = np.expand_dims( y[:,0], 1) #B,1,tpred,2 # keep only first neighbors and expand nb_agent dim 
             active_mask = (y != self.padding).astype(int)
-
-
-            
             if self.predict_offsets:
 
                   if self.predict_offsets == 1 :
@@ -269,11 +290,11 @@ class Hdf5Dataset():
                   X = np.multiply(X,(X != self.padding).astype(int)) # put padding to 0
 
 
-            return X,y,types,active_mask
+            return X,y,active_mask
 
-      def __augmentation_ids(self,ids,coord_dset):
-            red_ids = sorted(np.array(ids) % coord_dset.shape[0])
-            m_ids = (np.array(ids) / float(coord_dset.shape[0]) ).astype(int)*90
+      def __augmentation_ids(self,ids):
+            red_ids = sorted(np.array(ids) % self.shape[0])
+            m_ids = (np.array(ids) / float(self.shape[0]) ).astype(int)*90
             ids,matrix_indexes = [],[]
 
             for i in range(len(red_ids)):                              

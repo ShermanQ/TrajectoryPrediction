@@ -16,7 +16,7 @@ import os
     THen averaged batch losses are averaged
     over the number of batches
 """
-def train(model, device, train_loader,criterion, optimizer, epoch,batch_size,print_every = 10):
+def train(model, device, train_loader,criterion, optimizer, epoch,batch_size,print_every = 1):
     model.train()
     epoch_loss = 0.
     batches_loss = []
@@ -24,14 +24,17 @@ def train(model, device, train_loader,criterion, optimizer, epoch,batch_size,pri
 
     start_time = time.time()
 
-    nb_grad_plots = 200
+    nb_grad_plots = 2
     ids_grads = np.arange(int(train_loader.nb_batches) )
     np.random.shuffle(ids_grads)
     ids_grads = ids_grads[:nb_grad_plots]
     # print(ids_grads)
 
+    torch.cuda.synchronize()
+    s = time.time()
     for batch_idx, data in enumerate(train_loader):
-        s = time.time()
+        
+#         s = time.time()
         inputs, labels, ids,types,points_mask, active_mask, imgs = data
         inputs, labels,types, imgs = inputs.to(device), labels.to(device), types.to(device) , imgs.to(device)
         active_mask = active_mask.to(device)
@@ -96,9 +99,13 @@ def train(model, device, train_loader,criterion, optimizer, epoch,batch_size,pri
             print(batch_idx,loss.item(),time.time()-start_time)  
             # print(batch_idx,time.time()-start_time)  
             # print(time.time()-start_time)
+        
+
             
     # epoch_loss /= float(len(train_loader))   
-    epoch_loss /= float(train_loader.nb_batches)        
+    # epoch_loss /= float(train_loader.nb_batches)   
+    epoch_loss = np.median(batches_loss)  
+
 
     print('Epoch n {} Loss: {}'.format(epoch,epoch_loss))
 
@@ -127,6 +134,7 @@ def evaluate(model, device, eval_loader,criterion, epoch, batch_size,scalers_pat
     ade = 0.
     eval_loader_len =   float(eval_loader.nb_batches)
     nb_sample = eval_loader_len*batch_size
+    batch_losses = []
     
     start_time = time.time()
 
@@ -194,6 +202,7 @@ def evaluate(model, device, eval_loader,criterion, epoch, batch_size,scalers_pat
 
 
         loss = criterion(outputs, labels,points_mask)
+        batch_losses.append(loss.item())
 
         if keep_batch:
             kept_sample_id = np.random.randint(0,labels.size()[0])
@@ -253,7 +262,9 @@ def evaluate(model, device, eval_loader,criterion, epoch, batch_size,scalers_pat
     helpers.plot_samples(kept_samples,epoch,1,1) #### retrieve 
 
             
-    eval_loss /= eval_loader_len 
+    # eval_loss /= eval_loader_len 
+    eval_loss = np.median(batch_losses)
+
     ade /= eval_loader_len      
     fde /= eval_loader_len        
 
