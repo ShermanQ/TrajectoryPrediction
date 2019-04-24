@@ -16,7 +16,7 @@ import os
     THen averaged batch losses are averaged
     over the number of batches
 """
-def train(model, device, train_loader,criterion, optimizer, epoch,batch_size,print_every = 1):
+def train(model, device, train_loader,criterion, optimizer, epoch,batch_size,print_every = 10):
     model.train()
     epoch_loss = 0.
     batches_loss = []

@@ -108,6 +108,8 @@ class Hdf5Dataset():
             self.hdf5_file = h5py.File(hdf5_file,"r")
 
             self.coord_dset = self.hdf5_file[self.dset_name]
+
+            print(self.coord_dset.chunks)
             self.coord_dset_smooth = self.hdf5_file[self.dset_name+self.smooth_suffix]
 
             self.scenes_dset = self.hdf5_file[self.dset_img_name]   
@@ -133,6 +135,7 @@ class Hdf5Dataset():
 
 
       def get_ids(self,ids):
+            torch.cuda.synchronize()
             s = time.time()
 
             types,m_ids,X,y,seq = [],[],[],[],[]
