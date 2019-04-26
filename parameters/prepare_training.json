@@ -102,6 +102,16 @@
         "hyang8"
         
     ],
+    "eval_scenes":
+    [
+        "deathCircle2",
+        "deathCircle4",
+        "gates5",
+        "hyang4",
+        "hyang2"
+
+    ],
+
     "test_scenes":[
         
         "bookstore2",
