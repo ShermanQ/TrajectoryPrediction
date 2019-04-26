@@ -229,7 +229,7 @@ class Hdf5Dataset():
                   imgs = torch.stack([self.images[img] for img in scenes],dim = 0) 
                   out.append(imgs)
       
-            print("data loading {}".format(time.time()-s))
+            # print("data loading {}".format(time.time()-s))
             return tuple(out)
 
 

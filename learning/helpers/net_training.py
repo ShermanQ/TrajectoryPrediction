@@ -24,7 +24,7 @@ def train(model, device, train_loader,criterion, optimizer, epoch,batch_size,pri
 
     start_time = time.time()
 
-    nb_grad_plots = 2
+    nb_grad_plots = 0
     ids_grads = np.arange(int(train_loader.nb_batches) )
     np.random.shuffle(ids_grads)
     ids_grads = ids_grads[:nb_grad_plots]
@@ -62,11 +62,15 @@ def train(model, device, train_loader,criterion, optimizer, epoch,batch_size,pri
         outputs = torch.mul(points_mask,outputs)
         labels = torch.mul(points_mask,labels)
 
-        # if there is some padding at the end of the trajectory, we train to predict it
-        # we don't count it at test time
-        mask_loss = (torch.sum(torch.sum(points_mask,dim = 3),dim = 2) > 0).unsqueeze(2).repeat(1,1,labels.size()[2])
-        mask_loss = mask_loss.unsqueeze(3).repeat(1,1,1,2).type(torch.FloatTensor).to(device)
-        loss = criterion(outputs, labels,mask_loss)
+        # # if there is some padding at the end of the trajectory, we train to predict it
+        # # we don't count it at test time
+        # mask_loss = (torch.sum(torch.sum(points_mask,dim = 3),dim = 2) > 0).unsqueeze(2).repeat(1,1,labels.size()[2])
+        # mask_loss = mask_loss.unsqueeze(3).repeat(1,1,1,2).type(torch.FloatTensor).to(device)
+        # loss = criterion(outputs, labels,mask_loss)
+
+        #padding not used for prediction, no gradients
+        loss = criterion(outputs, labels,points_mask)
+
         # print(loss)
 
 

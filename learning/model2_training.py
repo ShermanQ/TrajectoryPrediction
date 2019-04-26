@@ -101,10 +101,10 @@ def main():
     eval_dataset = Hdf5Dataset(
         images_path = data["prepared_images"],
         hdf5_file= data_file,
-        scene_list= train_scenes,
+        scene_list= test_scenes,
         t_obs=prepare_param["t_obs"],
         t_pred=prepare_param["t_pred"],
-        set_type = "eval", ##############
+        set_type = "test", ##############
         normalize = prepare_param["normalize"],
         use_images = True,
         data_type = "trajectories",

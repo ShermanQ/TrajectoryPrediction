@@ -173,23 +173,77 @@ def fde_loss(outputs,targets,mask):
     if mask is not None:
         outputs,targets = outputs*mask, targets*mask
 
-    
+    b,n,s,i = outputs.size()
 
-    outputs = outputs[:,:,-1,:]
-    targets = targets[:,:,-1,:]
-    mask = mask[:,:,-1,:]
+    outputs = outputs.view(b*n,s,i)
+    targets = targets.view(b*n,s,i)
+    mask = mask.view(b*n,s,i)
+
+
+
+
+    ids = (mask.sum(dim = -1) > 0).sum(dim = -1)
+
+    points_o = []
+    points_t = []
+    mask_n = []
+
+    for seq_o,seq_t,m,id in zip(outputs,targets,mask,ids):
+        if id == 0 or id == s:
+            points_o.append(seq_o[-1])
+            points_t.append(seq_t[-1])
+            mask_n.append(m[-1])
+
+
+
+        else:
+            points_o.append(seq_o[id-1])
+            points_t.append(seq_t[id-1])
+            mask_n.append(m[id-1])
+
+    points_o = torch.stack([po for po in points_o],dim = 0)
+    points_t = torch.stack([pt for pt in points_t], dim = 0)
+    mask_n = torch.stack([m for m in mask_n], dim = 0)
+
+
+
+
     mse = nn.MSELoss(reduction= "none")
 
-    mse_loss = mse(outputs,targets )
-    mse_loss = torch.sum(mse_loss,dim = 2 )
+    mse_loss = mse(points_o,points_t )
+    mse_loss = torch.sum(mse_loss,dim = 1 )
     mse_loss = torch.sqrt(mse_loss )
 
     if mask is not None:
+        mask = mask[:,-1]
         mse_loss = mse_loss.sum()/(mask.sum()/2.0)
     else:
         mse_loss = torch.mean(mse_loss )
 
     return mse_loss
+
+
+# def fde_loss(outputs,targets,mask):
+#     if mask is not None:
+#         outputs,targets = outputs*mask, targets*mask
+
+    
+
+#     outputs = outputs[:,:,-1,:]
+#     targets = targets[:,:,-1,:]
+#     mask = mask[:,:,-1,:]
+#     mse = nn.MSELoss(reduction= "none")
+
+#     mse_loss = mse(outputs,targets )
+#     mse_loss = torch.sum(mse_loss,dim = 2 )
+#     mse_loss = torch.sqrt(mse_loss )
+
+#     if mask is not None:
+#         mse_loss = mse_loss.sum()/(mask.sum()/2.0)
+#     else:
+#         mse_loss = torch.mean(mse_loss )
+
+#     return mse_loss
 
 def get_colors(nb_colors,nb_colors_per_map = 20,maps = [cm.tab20,cm.tab20b,cm.tab20c,cm.gist_rainbow,cm.gist_ncar] ):
     max_colors = len(maps) * nb_colors_per_map
