@@ -6,6 +6,7 @@ import torch.nn as nn
 import numpy as np
 from joblib import load
 import matplotlib.cm as cm
+import json
 
 from matplotlib.lines import Line2D
 
@@ -378,6 +379,15 @@ def plot_samples(kept_samples,epoch,n_columns = 2,n_rows = 2,root = "./data/repo
             # axs[r][c].legend()
             plt.savefig("{}samples_{}_epoch_{}.jpg".format(root,plot,epoch))
             plt.close()
+
+            tensor = {
+                "inputs": kept_samples[plot][0].tolist(),
+                "predictions": kept_samples[plot][2].tolist(),
+                "outputs": kept_samples[plot][1].tolist()
+
+            }
+
+            json.dump(tensor,open("{}samples_{}_epoch_{}.json".format(root,plot,epoch),"w"))
 
 
 
