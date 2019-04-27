@@ -22,7 +22,8 @@
     "scene_centers":"./data/prepared_datasets/scene_centers.json",
 
     "hdf5_file":"./data/prepared_datasets/data.hdf5",
-    "hdf5_toy":"./data/prepared_datasets/toy.hdf5"
+    "hdf5_toy":"./data/prepared_datasets/toy.hdf5",
+    "models_evaluation": "./evaluation/models/"
 
     
 

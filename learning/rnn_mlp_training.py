@@ -13,11 +13,11 @@ from sklearn.model_selection import train_test_split
 import numpy as np
 import time
 
-from classes.datasets import CustomDataset,Hdf5Dataset,CustomDataLoader
+from classes.datasets import Hdf5Dataset,CustomDataLoader
 from classes.rnn_mlp import RNN_MLP,custom_mse
 # import helpers.helpers_training as training
 import helpers.net_training as training
-import helpers
+import helpers.helpers_training as helpers
 
 
 import sys
@@ -73,7 +73,12 @@ def main():
     toy = prepare_param["toy"]
 
     data_file = torch_param["split_hdf5"]
-    train_scenes = prepare_param["train_scenes"]
+  
+
+    eval_scenes = prepare_param["eval_scenes"]
+
+    train_eval_scenes = prepare_param["train_scenes"]
+    train_scenes = [scene for scene in train_eval_scenes if scene not in eval_scenes]
     test_scenes = prepare_param["test_scenes"]
 
 
@@ -82,47 +87,54 @@ def main():
         data_file = torch_param["toy_hdf5"]
         train_scenes = prepare_param["toy_train_scenes"]
         test_scenes = prepare_param["toy_test_scenes"] 
-    # else:
-    #     train_scenes = helpers.helpers_training.augment_scene_list(train_scenes,preprocessing["augmentation_angles"])
-    #     test_scenes = helpers.helpers_training.augment_scene_list(test_scenes,preprocessing["augmentation_angles"])
+        eval_scenes = test_scenes
+        train_eval_scenes = train_scenes
 
-
+        
     train_dataset = Hdf5Dataset(
         images_path = data["prepared_images"],
         hdf5_file= data_file,
         scene_list= train_scenes,
         t_obs=prepare_param["t_obs"],
         t_pred=prepare_param["t_pred"],
-        set_type = "train",
-        use_images = False,
+        set_type = "train", # train
+        use_images = True,
         data_type = "trajectories",
-        use_neighbors_label = False,
-        use_neighbors_sample = False,
+        use_neighbors = False,
+        use_masks = 1,
         predict_offsets = training_param["offsets"],
         predict_smooth= training_param["predict_smooth"],
         smooth_suffix= prepare_param["smooth_suffix"],
         centers = json.load(open(data["scene_centers"])),
-        augmentation = training_param["augmentation"],
-        augmentation_angles = training_param["augmentation_angles"]
+        padding = prepare_param["padding"],
+
+        augmentation = 0,
+        augmentation_angles = training_param["augmentation_angles"],
+        normalize =prepare_param["normalize"]
         )
 
     eval_dataset = Hdf5Dataset(
         images_path = data["prepared_images"],
         hdf5_file= data_file,
-        scene_list= train_scenes,
+        scene_list= eval_scenes, #eval_scenes
         t_obs=prepare_param["t_obs"],
         t_pred=prepare_param["t_pred"],
-        set_type = "eval",
-        use_images = False,
+        set_type = "eval", #eval
+        use_images = True,
         data_type = "trajectories",
-        use_neighbors_label = False,
-        use_neighbors_sample = False,
+        use_neighbors = False,
+        use_masks = 1,
         predict_offsets = training_param["offsets"],
         predict_smooth= 0,
         smooth_suffix= prepare_param["smooth_suffix"],
         centers = json.load(open(data["scene_centers"])),
-        augmentation = 0,
-        augmentation_angles = []
+        padding = prepare_param["padding"],
+
+        augmentation = 1,
+        augmentation_angles = [],
+        normalize =prepare_param["normalize"]
+
+
         )
 
     # print("n_train_samples: {}".format(train_dataset.get_len()))
@@ -132,17 +144,20 @@ def main():
     eval_loader = CustomDataLoader( batch_size = training_param["batch_size"],shuffle = False,drop_last = True,dataset = eval_dataset)
     
 
-    net = RNN_MLP(
-        device = device,
-        batch_size = training_param["batch_size"],
-        input_dim = training_param["input_dim"],
-        hidden_size = training_param["hidden_size"],
-        recurrent_layer = training_param["recurrent_layer"],
-        mlp_layers = training_param["mlp_layers"],
-        output_size = training_param["output_size"],
-        # nb_cat= len(prepare_param["types_dic"]),
-        nb_cat= 0,
-    )
+    args = {
+        "device" : device,
+        "batch_size" : training_param["batch_size"],
+        "input_dim" : training_param["input_dim"],
+        "hidden_size" : training_param["hidden_size"],
+        "recurrent_layer" : training_param["recurrent_layer"],
+        "mlp_layers" : training_param["mlp_layers"],
+        "output_size" : training_param["output_size"],
+        # nb_cat: len(prepare_param["types_dic"]),
+        "nb_cat": 0
+
+    }
+
+    net = RNN_MLP(args)
 
     # sum_ = 0
     # for parameter in net.parameters():
@@ -156,7 +171,9 @@ def main():
 
     optimizer = optim.Adam(net.parameters(),lr = training_param["lr"])
     # criterion = custom_mse
-    criterion = nn.MSELoss(reduction= "mean")
+    # criterion = nn.MSELoss(reduction= "mean")
+    criterion = helpers.MaskedLoss(nn.MSELoss(reduction="none"))
+
 
 
     training.training_loop(training_param["n_epochs"],training_param["batch_size"],

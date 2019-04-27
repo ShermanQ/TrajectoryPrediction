@@ -55,7 +55,7 @@ class CustomDataLoader():
 
 
 """
-      set_type:  train eval  test
+      set_type:  train eval  test train_eval
       use_images: True False
       use_neighbors: True False
       predict_offsets: 0: none, 1: based on last obs point, 2: based on previous point
@@ -142,7 +142,8 @@ class Hdf5Dataset():
             max_batch = self.coord_dset.shape[1]
 
             if self.augmentation:
-                  ids,m_ids = self.__augmentation_ids(ids)            
+                  ids,m_ids = self.__augmentation_ids(ids)   
+                  print(ids)         
             scenes = [img.decode('UTF-8') for img in self.scenes_dset[ids]] # B
 
             
@@ -285,7 +286,7 @@ class Hdf5Dataset():
                         last_points = np.repeat(  np.expand_dims(X[:,:,-1],2),  self.t_pred, axis=2) #B,1,tpred,2
                   
                   elif self.predict_offsets == 2: # y shifted left
-                        last_points = np.expand_dims( coord_dset[ids,0,self.t_obs-1:self.seq_len-1], 1)
+                        last_points = np.expand_dims( X[:,:,self.t_obs-1:self.seq_len-1], 1)
 
                   active_last_points = np.multiply(active_mask,last_points)
                   y = np.subtract(y,active_last_points)
@@ -300,12 +301,17 @@ class Hdf5Dataset():
             m_ids = (np.array(ids) / float(self.shape[0]) ).astype(int)*90
             ids,matrix_indexes = [],[]
 
-            for i in range(len(red_ids)):                              
-                  if i > 0 and  red_ids[i] == ids[-1]:
-                        ids.append(red_ids[i]+1)
-                  else:
-                        ids.append(red_ids[i])
-            return ids,m_ids
+            for i,j in zip(red_ids,m_ids):
+                  if i not in ids:
+                        ids.append(i)
+                        matrix_indexes.append(j)
+
+            # for i in range(len(red_ids)):                              
+            #       if i > 0 and  red_ids[i] == ids[-1]:
+            #             ids.append(red_ids[i]+1)
+            #       else:
+            #             ids.append(red_ids[i])
+            return ids,matrix_indexes
 
       def __augment_batch(self,scenes,X,y,m_ids):
             centers = np.array([self.centers[scene] for scene in scenes]) # B,2

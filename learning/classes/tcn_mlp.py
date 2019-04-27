@@ -10,41 +10,43 @@ import collections
 from classes.tcn import TemporalConvNet
 
 class TCN_MLP(nn.Module):
-    def __init__(self,device,batch_size,input_length,output_length, num_inputs,nb_conv_feat,mlp_layers,output_size,nb_cat = 0, kernel_size=2, dropout=0.2):
+    def __init__(self,args):
         super(TCN_MLP, self).__init__()
 
-        self.device = device
-        self.batch_size = batch_size
-        self.num_inputs = num_inputs
-        self.mlp_layers = mlp_layers
-        self.output_size = output_size
-        self.kernel_size = kernel_size
-        self.dropout = dropout
-        self.input_length = input_length
-        self.output_length = output_length
+        self.device = args["device"]
+        self.batch_size = args["batch_size"]
+        self.num_inputs = args["num_inputs"]
+        self.mlp_layers = args["mlp_layers"]
+        self.output_size = args["output_size"]
+        self.kernel_size = args["kernel_size"]
+        self.dropout = args["dropout"]
+        self.input_length = args["input_length"]
+        self.output_length = args["output_length"]
+        self.nb_conv_feat = args["nb_conv_feat"]
+        self.nb_cat = args["nb_cat"]
 
-        self.nb_temporal_blocks = self.__get_nb_blocks(input_length,kernel_size)        
-        self.num_channels = [nb_conv_feat for _ in range(self.nb_temporal_blocks)]
+
+        self.nb_temporal_blocks = self.__get_nb_blocks(self.input_length,self.kernel_size)        
+        self.num_channels = [self.nb_conv_feat for _ in range(self.nb_temporal_blocks)]
 
 
-        self.tcn = TemporalConvNet(device, num_inputs, self.num_channels, kernel_size, dropout)
+        self.tcn = TemporalConvNet(self.device, self.num_inputs, self.num_channels, self.kernel_size, self.dropout)
 
       
 
 
         self.mlp = nn.Sequential()
-        self.mlp.add_module("layer0",nn.Linear(self.input_length* self.num_channels[-1] ,mlp_layers[0]))
+        self.mlp.add_module("layer0",nn.Linear(self.input_length* self.num_channels[-1] ,self.mlp_layers[0]))
         self.mlp.add_module("relu0",  nn.ReLU())
-        for i in range(1,len(mlp_layers)):
+        for i in range(1,len(self.mlp_layers)):
             self.mlp.add_module("layer{}".format(i),nn.Linear(self.mlp_layers[i-1],self.mlp_layers[i]))
             self.mlp.add_module("relu{}".format(i), nn.ReLU())
         
 
 
         # self.mlp.add_module("layer{}".format(len(mlp_layers)), nn.Linear(mlp_layers[-1],self.output_size* self.output_length) )
-        self.predictor =  nn.Linear(mlp_layers[-1] + nb_cat,self.output_size* self.output_length) 
+        self.predictor =  nn.Linear(self.mlp_layers[-1] + self.nb_cat,self.output_size* self.output_length) 
 
-        self.nb_cat = nb_cat
 
     def forward(self,x): # x: B,Tobs,I
         

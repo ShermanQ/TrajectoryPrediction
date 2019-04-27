@@ -58,18 +58,25 @@ def main():
 
 
     data_file = torch_param["split_hdf5"]
-    train_scenes = prepare_param["train_scenes"]
+
+
+
+    eval_scenes = prepare_param["eval_scenes"]
+
+    train_eval_scenes = prepare_param["train_scenes"]
+    train_scenes = [scene for scene in train_eval_scenes if scene not in eval_scenes]
     test_scenes = prepare_param["test_scenes"]
+
 
     if toy:
         print("toy dataset")
         data_file = torch_param["toy_hdf5"]
         train_scenes = prepare_param["toy_train_scenes"]
         test_scenes = prepare_param["toy_test_scenes"] 
+        eval_scenes = test_scenes
+        train_eval_scenes = train_scenes
         nb_neighbors_max = np.array(json.load(open(torch_param["toy_nb_neighboors_path"]))["max_neighbors"])
-    # else:
-    #     train_scenes = helpers.helpers_training.augment_scene_list(train_scenes,preprocessing["augmentation_angles"])
-    #     test_scenes = helpers.helpers_training.augment_scene_list(test_scenes,preprocessing["augmentation_angles"])
+
 
     
 
@@ -101,10 +108,10 @@ def main():
     eval_dataset = Hdf5Dataset(
         images_path = data["prepared_images"],
         hdf5_file= data_file,
-        scene_list= test_scenes,
+        scene_list= eval_scenes,
         t_obs=prepare_param["t_obs"],
         t_pred=prepare_param["t_pred"],
-        set_type = "test", ##############
+        set_type = "eval", ##############
         normalize = prepare_param["normalize"],
         use_images = True,
         data_type = "trajectories",
@@ -194,33 +201,57 @@ def main():
     # print("nb of kept batches {}".format(eval_loader.nb_batches))
 
 
-    net = Model2a1(
-    # net = Model2a(
-    # net = Model2b(
-    # net = Model2c(
-    # net = Model2d(
-    
-        device = device,
-        input_dim = training_param["input_dim"],
-        input_length = training_param["obs_length"],
-        output_length = training_param["pred_length"],
-        kernel_size = training_param["kernel_size"],
-        nb_blocks_transformer = training_param["nb_blocks"],
-        h = training_param["h"],
-        dmodel = training_param["dmodel"],
-        d_ff_hidden = 4 * training_param["dmodel"],
-        dk = int(training_param["dmodel"]/training_param["h"]),
-        dv = int(training_param["dmodel"]/training_param["h"]),
-        predictor_layers = training_param["predictor_layers"],
-        pred_dim = training_param["pred_length"] * training_param["input_dim"] ,
+    args = {
+        "device" : device,
+        "input_dim" : training_param["input_dim"],
+        "input_length" : training_param["obs_length"],
+        "output_length" : training_param["pred_length"],
+        "kernel_size" : training_param["kernel_size"],
+        "nb_blocks_transformer" : training_param["nb_blocks"],
+        "h" : training_param["h"],
+        "dmodel" : training_param["dmodel"],
+        "d_ff_hidden" : 4 * training_param["dmodel"],
+        "dk" : int(training_param["dmodel"]/training_param["h"]),
+        "dv" : int(training_param["dmodel"]/training_param["h"]),
+        "predictor_layers" : training_param["predictor_layers"],
+        "pred_dim" : training_param["pred_length"] * training_param["input_dim"] ,
         
-        convnet_embedding = training_param["convnet_embedding"],
-        convnet_nb_layers = training_param["convnet_nb_layers"],
-        use_tcn = training_param["use_tcn"],
-        dropout_tcn = training_param["dropout_tcn"],
-        dropout_tfr = training_param["dropout_tfr"]
+        "convnet_embedding" : training_param["convnet_embedding"],
+        "convnet_nb_layers" : training_param["convnet_nb_layers"],
+        "use_tcn" : training_param["use_tcn"],
+        "dropout_tcn" : training_param["dropout_tcn"],
+        "dropout_tfr" : training_param["dropout_tfr"]
 
-    )
+    }
+
+    net = Model2a1(args)
+    # net = Model2a1(
+    # # net = Model2a(
+    # # net = Model2b(
+    # # net = Model2c(
+    # # net = Model2d(
+    
+    #     device = device,
+    #     input_dim = training_param["input_dim"],
+    #     input_length = training_param["obs_length"],
+    #     output_length = training_param["pred_length"],
+    #     kernel_size = training_param["kernel_size"],
+    #     nb_blocks_transformer = training_param["nb_blocks"],
+    #     h = training_param["h"],
+    #     dmodel = training_param["dmodel"],
+    #     d_ff_hidden = 4 * training_param["dmodel"],
+    #     dk = int(training_param["dmodel"]/training_param["h"]),
+    #     dv = int(training_param["dmodel"]/training_param["h"]),
+    #     predictor_layers = training_param["predictor_layers"],
+    #     pred_dim = training_param["pred_length"] * training_param["input_dim"] ,
+        
+    #     convnet_embedding = training_param["convnet_embedding"],
+    #     convnet_nb_layers = training_param["convnet_nb_layers"],
+    #     use_tcn = training_param["use_tcn"],
+    #     dropout_tcn = training_param["dropout_tcn"],
+    #     dropout_tfr = training_param["dropout_tfr"]
+
+    # )
 
     net.apply(helpers.weight_init)
 

@@ -47,18 +47,22 @@ def main():
 
 
     data_file = torch_param["split_hdf5"]
-    train_scenes = prepare_param["train_scenes"]
+    
+    eval_scenes = prepare_param["eval_scenes"]
+
+    train_eval_scenes = prepare_param["train_scenes"]
+    train_scenes = [scene for scene in train_eval_scenes if scene not in eval_scenes]
     test_scenes = prepare_param["test_scenes"]
+
 
     if toy:
         print("toy dataset")
         data_file = torch_param["toy_hdf5"]
         train_scenes = prepare_param["toy_train_scenes"]
         test_scenes = prepare_param["toy_test_scenes"] 
+        eval_scenes = test_scenes
+        train_eval_scenes = train_scenes
         nb_neighbors_max = np.array(json.load(open(torch_param["toy_nb_neighboors_path"]))["max_neighbors"])
-    # else:
-    #     train_scenes = helpers.helpers_training.augment_scene_list(train_scenes,preprocessing["augmentation_angles"])
-    #     test_scenes = helpers.helpers_training.augment_scene_list(test_scenes,preprocessing["augmentation_angles"])
 
     
 
@@ -89,7 +93,7 @@ def main():
     eval_dataset = Hdf5Dataset(
         images_path = data["prepared_images"],
         hdf5_file= data_file,
-        scene_list= train_scenes,
+        scene_list= eval_scenes,
         t_obs=prepare_param["t_obs"],
         t_pred=prepare_param["t_pred"],
         set_type = "eval", ##############

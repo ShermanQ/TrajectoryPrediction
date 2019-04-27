@@ -51,13 +51,17 @@ class TorchExtractor():
             self.split_hdf5 = torch_params["toy_hdf5"]
             self.max_neighbor_path = torch_params["toy_nb_neighboors_path"]
             self.test_scenes = list(prepare_params["toy_test_scenes"])
-            self.train_scenes = list(prepare_params["toy_train_scenes"])
+            self.train_eval_scenes = list(prepare_params["toy_train_scenes"])
+            self.eval_scenes = list(prepare_params["toy_test_scenes"])
+            self.train_scenes = [ scene for scene in self.train_eval_scenes if scene not in self.eval_scenes]
         else:
             self.original_hdf5 = data["hdf5_file"]
             self.split_hdf5 = torch_params["split_hdf5"]
             self.max_neighbor_path = torch_params["nb_neighboors_path"]
             self.test_scenes = list(prepare_params["test_scenes"])
-            self.train_scenes = list(prepare_params["train_scenes"])
+            self.train_eval_scenes = list(prepare_params["train_scenes"])
+            self.eval_scenes = list(prepare_params["eval_scenes"])
+            self.train_scenes = [ scene for scene in self.train_eval_scenes if scene not in self.eval_scenes]
             # self.train_scenes = augment_scene_list(self.train_scenes,preprocessing["augmentation_angles"])
             # self.test_scenes = augment_scene_list(self.test_scenes,preprocessing["augmentation_angles"])
 
@@ -90,10 +94,13 @@ class TorchExtractor():
             os.remove(self.split_hdf5)
  
         self.split_dset("test_trajectories",max_neighboors,"trajectories",self.test_scenes,1.0)
-        self.split_dset("train_trajectories",max_neighboors,"trajectories",self.train_scenes,self.eval_prop)
+        self.split_dset("train_eval_trajectories",max_neighboors,"trajectories",self.train_eval_scenes,1.0)
+        self.split_dset("train_trajectories",max_neighboors,"trajectories",self.train_scenes,1.0)
+        self.split_dset("eval_trajectories",max_neighboors,"trajectories",self.eval_scenes,1.0)
 
 
-        self.split_dset("eval_trajectories",max_neighboors,"trajectories",self.train_scenes,self.eval_prop -1)
+
+
 
         # self.split_dset("test_frames",max_neighboors,"frames",self.test_scenes,1.0)
         # self.split_dset("eval_frames",max_neighboors,"frames",self.train_scenes,self.eval_prop -1)
@@ -105,10 +112,20 @@ class TorchExtractor():
 
             self.test_scenes = self.__smooth_scenes(self.test_scenes)
             self.train_scenes = self.__smooth_scenes(self.train_scenes)
+            self.train_eval_scenes = self.__smooth_scenes(self.train_eval_scenes)
+            self.eval_scenes = self.__smooth_scenes(self.eval_scenes)
+
 
             self.split_dset("test_trajectories"+self.smooth_suffix,max_neighboors,"trajectories",self.test_scenes,1.0)
-            self.split_dset("train_trajectories"+self.smooth_suffix,max_neighboors,"trajectories",self.train_scenes,self.eval_prop)
-            self.split_dset("eval_trajectories"+self.smooth_suffix,max_neighboors,"trajectories",self.train_scenes,self.eval_prop -1)
+            self.split_dset("train_eval_trajectories"+self.smooth_suffix,max_neighboors,"trajectories",self.train_eval_scenes,1.0)
+            self.split_dset("train_trajectories"+self.smooth_suffix,max_neighboors,"trajectories",self.train_scenes,1.0)
+            self.split_dset("eval_trajectories"+self.smooth_suffix,max_neighboors,"trajectories",self.eval_scenes,1.0)
+
+            
+
+            # self.split_dset("test_trajectories"+self.smooth_suffix,max_neighboors,"trajectories",self.test_scenes,1.0)
+            # self.split_dset("train_trajectories"+self.smooth_suffix,max_neighboors,"trajectories",self.train_scenes,self.eval_prop)
+            # self.split_dset("eval_trajectories"+self.smooth_suffix,max_neighboors,"trajectories",self.train_scenes,self.eval_prop -1)
 
             # self.split_dset("test_frames"+self.smooth_suffix,max_neighboors,"frames",self.test_scenes,1.0)
             # self.split_dset("train_frames"+self.smooth_suffix,max_neighboors,"frames",self.train_scenes,self.eval_prop)
@@ -161,7 +178,7 @@ class TorchExtractor():
 
 
 
-                samples = dest_file.create_dataset("samples_{}".format(name),shape=(0,max_neighboors,self.seq_len,2),maxshape = (None,max_neighboors,self.seq_len,2),dtype='float32',chunks=(10,max_neighboors,self.seq_len,2))
+                samples = dest_file.create_dataset("samples_{}".format(name),shape=(0,max_neighboors,self.seq_len,2),maxshape = (None,max_neighboors,self.seq_len,2),dtype='float32',chunks=(15,max_neighboors,self.seq_len,2))
                 images = dest_file.create_dataset("images_{}".format(name),shape=(0,),maxshape = (None,),dtype="S20")
                 types = dest_file.create_dataset("types_{}".format(name),shape=(0,max_neighboors,self.nb_types-1),maxshape = (None,max_neighboors,self.nb_types-1),dtype='float32')
 

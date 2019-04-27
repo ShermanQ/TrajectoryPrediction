@@ -23,29 +23,31 @@ def custom_mse(pred_seq,gt_seq):
     return mse_loss
 
 class RNN_MLP(nn.Module):
-    def __init__(self,device,batch_size,input_dim,hidden_size,recurrent_layer,mlp_layers,output_size,nb_cat = 0,):
+    def __init__(self,args):
         super(RNN_MLP, self).__init__()
 
-        self.device = device
-        self.batch_size = batch_size
-        self.input_dim = input_dim
+        self.device = args["device"]
+        self.batch_size = args["batch_size"]
+        self.input_dim = args["input_dim"]
 
-        self.hidden_size = hidden_size
-        self.recurrent_layer = recurrent_layer
-        self.mlp_layers = mlp_layers
-        self.output_size = output_size
+        self.hidden_size = args["hidden_size"]
+        self.recurrent_layer = args["recurrent_layer"]
+        self.mlp_layers = args["mlp_layers"]
+        self.output_size = args["output_size"]
+
+        self.nb_cat = args["nb_cat"]
+
 
         self.encoder = nn.LSTM(input_size = self.input_dim,hidden_size = self.hidden_size,num_layers = self.recurrent_layer,batch_first = True)
 
         self.mlp = nn.Sequential()
-        self.mlp.add_module("layer0",nn.Linear(self.hidden_size + nb_cat,mlp_layers[0]))
+        self.mlp.add_module("layer0",nn.Linear(self.hidden_size + self.nb_cat,self.mlp_layers[0]))
         self.mlp.add_module("relu0",  nn.ReLU())
-        for i in range(1,len(mlp_layers)):
+        for i in range(1,len(self.mlp_layers)):
             self.mlp.add_module("layer{}".format(i),nn.Linear(self.mlp_layers[i-1],self.mlp_layers[i]))
             self.mlp.add_module("relu{}".format(i), nn.ReLU())
 
-        self.mlp.add_module("layer{}".format(len(mlp_layers)), nn.Linear(mlp_layers[-1],self.output_size) )
-        self.nb_cat = nb_cat
+        self.mlp.add_module("layer{}".format(len(self.mlp_layers)), nn.Linear(self.mlp_layers[-1],self.output_size) )
 
         
 
@@ -55,6 +57,8 @@ class RNN_MLP(nn.Module):
         types = x[1]
         x = x[0]
         x = x.squeeze(1)
+
+        
 
         h = self.init_hidden_state()
         output,h = self.encoder(x,h)

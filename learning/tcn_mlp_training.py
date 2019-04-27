@@ -74,7 +74,10 @@ def main():
     toy = prepare_param["toy"]
 
     data_file = torch_param["split_hdf5"]
-    train_scenes = prepare_param["train_scenes"]
+    eval_scenes = prepare_param["eval_scenes"]
+
+    train_eval_scenes = prepare_param["train_scenes"]
+    train_scenes = [scene for scene in train_eval_scenes if scene not in eval_scenes]
     test_scenes = prepare_param["test_scenes"]
 
 
@@ -83,6 +86,8 @@ def main():
         data_file = torch_param["toy_hdf5"]
         train_scenes = prepare_param["toy_train_scenes"]
         test_scenes = prepare_param["toy_test_scenes"] 
+        eval_scenes = test_scenes
+        train_eval_scenes = train_scenes
     # else:
     #     train_scenes = helpers.helpers_training.augment_scene_list(train_scenes,preprocessing["augmentation_angles"])
     #     test_scenes = helpers.helpers_training.augment_scene_list(test_scenes,preprocessing["augmentation_angles"])
@@ -95,7 +100,7 @@ def main():
         scene_list= train_scenes,
         t_obs=prepare_param["t_obs"],
         t_pred=prepare_param["t_pred"],
-        set_type = "train",
+        set_type = "train", # train
         use_images = True,
         data_type = "trajectories",
         use_neighbors = False,
@@ -114,10 +119,10 @@ def main():
     eval_dataset = Hdf5Dataset(
         images_path = data["prepared_images"],
         hdf5_file= data_file,
-        scene_list= test_scenes,
+        scene_list= eval_scenes, #eval_scenes
         t_obs=prepare_param["t_obs"],
         t_pred=prepare_param["t_pred"],
-        set_type = "test",
+        set_type = "eval", #eval
         use_images = True,
         data_type = "trajectories",
         use_neighbors = False,
@@ -152,22 +157,23 @@ def main():
     #     output_size = training_param["output_size"]
     # )
 
-    net = TCN_MLP(
-        device = device,
-        batch_size = training_param["batch_size"],
-        input_length = training_param["obs_length"],
-        output_length = training_param["pred_length"],
-        num_inputs = training_param["input_dim"],
-        nb_conv_feat = training_param["nb_conv_feat"],
-        mlp_layers = training_param["mlp_layers"],
-        output_size = training_param["output_size"],
-        # nb_cat= len(prepare_param["types_dic"]),
-        nb_cat= 0,
+    args = {
+        "device" : device,
+        "batch_size" : training_param["batch_size"],
+        "input_length" : training_param["obs_length"],
+        "output_length" : training_param["pred_length"],
+        "num_inputs" : training_param["input_dim"],
+        "nb_conv_feat" : training_param["nb_conv_feat"],
+        "mlp_layers" : training_param["mlp_layers"],
+        "output_size" : training_param["output_size"],
+        # nb_cat: len(prepare_param["types_dic"]),
+        "nb_cat": 0,
 
-        kernel_size= training_param["kernel_size"],
-        dropout = training_param["dropout"]
+        "kernel_size": training_param["kernel_size"],
+        "dropout" : training_param["dropout"]
 
-    )
+    }
+    net = TCN_MLP(args)
     # sum_ = 0
     # for parameter in net.parameters():
     #     sum_ += torch.flatten(parameter).size()[0]
