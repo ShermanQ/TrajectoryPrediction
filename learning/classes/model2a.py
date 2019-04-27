@@ -13,82 +13,65 @@ from classes.tcn import TemporalConvNet
 
 
 class Model2a(nn.Module):
-    def __init__(self,
-        device,
-        input_dim,
-        input_length,
-        output_length,
-        kernel_size, 
-        nb_blocks_transformer,
-        h,
-        dmodel,
-        d_ff_hidden,
-        dk,
-        dv,
-        predictor_layers,
-        pred_dim,
-        convnet_embedding,
-        convnet_nb_layers,
-        use_tcn,
-        dropout_tcn = 0.2,
-        dropout_tfr = 0.1):
+    def __init__(self,args):
         super(Model2a,self).__init__()
 
-        self.device = device
-        self.input_dim = input_dim
-        self.input_length = input_length
-        self.output_length = output_length
+        self.args = args
+        self.device = args["device"]
+        self.input_dim =  args["input_dim"]
+        self.input_length =  args["input_length"]
+        self.output_length =  args["output_length"]
 
-        self.kernel_size = kernel_size
-        self.nb_blocks_transformer = nb_blocks_transformer
-        self.h = h
-        self.dmodel = dmodel
-        self.d_ff_hidden = d_ff_hidden
-        self.dk = dk
-        self.dv = dv
-        self.predictor_layers = predictor_layers
-        self.pred_dim = pred_dim
-        self.dropout_tcn = dropout_tcn
-        self.dropout_tfr = dropout_tfr
+        self.kernel_size =  args["kernel_size"]
+        self.nb_blocks_transformer =  args["nb_blocks_transformer"]
+        self.h =  args["h"]
+        self.dmodel =  args["dmodel"]
+        self.d_ff_hidden =  args["d_ff_hidden"]
+        self.dk =  args["dk"]
+        self.dv =  args["dv"]
+        self.predictor_layers =  args["predictor_layers"]
+        self.pred_dim =  args["pred_dim"]
+        self.dropout_tcn =  args["dropout_tcn"]
+        self.dropout_tfr =  args["dropout_tfr"]
 
-        self.convnet_embedding = convnet_embedding
-        self.convnet_nb_layers = convnet_nb_layers
-        self.use_tcn = use_tcn
+        self.convnet_embedding =  args["convnet_embedding"]
+        self.convnet_nb_layers =  args["convnet_nb_layers"]
+        self.use_tcn =  args["use_tcn"]
 
 ############# x/y embedding ###############################
-        self.coord_embedding = nn.Linear(input_dim,convnet_embedding)
+        self.coord_embedding = nn.Linear(self.input_dim,self.convnet_embedding)
 ############# TCN #########################################
         # compute nb temporal blocks
 
        
-        self.nb_temporal_blocks = self.__get_nb_blocks(input_length,kernel_size)        
-        self.num_channels = [convnet_embedding for _ in range(self.nb_temporal_blocks)]
+        self.nb_temporal_blocks = self.__get_nb_blocks(self.input_length,self.kernel_size)        
+        self.num_channels = [self.convnet_embedding for _ in range(self.nb_temporal_blocks)]
 
         # init network
-        self.tcn = TemporalConvNet(device, self.convnet_embedding, self.num_channels, kernel_size, dropout_tcn)
+        self.tcn = TemporalConvNet(self.device, self.convnet_embedding, self.num_channels, self.kernel_size, self.dropout_tcn)
 
 
         # project conv features to dmodel
-        self.conv_enc = nn.Linear(input_length*convnet_embedding,dmodel)
+        self.conv_enc = nn.Linear(self.input_length*self.convnet_embedding,self.dmodel)
 
 ############# Attention #########################################
         # apply multihead attention output d_model
-        self.mha = MultiHeadAttention(device,h,dmodel,dk,dv,dropout_tfr)
+        self.mha = MultiHeadAttention(self.device,self.h,self.dmodel,self.dk,self.dv,self.dropout_tfr)
 
 ############# Predictor #########################################
 
         # concat multihead attention and conv_features to make prediction
         self.predictor = []
-        self.predictor.append(nn.Linear(dmodel*2,predictor_layers[0]))
+        self.predictor.append(nn.Linear(self.dmodel*2,self.predictor_layers[0]))
 
 
         self.predictor.append(nn.ReLU())
 
-        for i in range(1,len(predictor_layers)):
-            self.predictor.append(nn.Linear(predictor_layers[i-1], predictor_layers[i]))
+        for i in range(1,len(self.predictor_layers)):
+            self.predictor.append(nn.Linear(self.predictor_layers[i-1], self.predictor_layers[i]))
             self.predictor.append(nn.ReLU())
 
-        self.predictor.append(nn.Linear(predictor_layers[-1], pred_dim))
+        self.predictor.append(nn.Linear(self.predictor_layers[-1], self.pred_dim))
 
         self.predictor = nn.Sequential(*self.predictor)
 

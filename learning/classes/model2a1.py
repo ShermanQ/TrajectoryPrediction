@@ -17,6 +17,8 @@ class Model2a1(nn.Module):
     def __init__(self,args):
         super(Model2a1,self).__init__()
 
+        self.args = args
+
         self.device = args["device"]
         self.input_dim =  args["input_dim"]
         self.input_length =  args["input_length"]

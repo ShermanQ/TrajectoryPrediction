@@ -26,6 +26,8 @@ class RNN_MLP(nn.Module):
     def __init__(self,args):
         super(RNN_MLP, self).__init__()
 
+        self.args = args
+
         self.device = args["device"]
         self.batch_size = args["batch_size"]
         self.input_dim = args["input_dim"]

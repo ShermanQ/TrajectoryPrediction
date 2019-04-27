@@ -389,12 +389,13 @@ def save_model(epoch,net,optimizer,losses,save_root = "./learning/data/models/" 
 
     save_path = save_root + "model_{}_{}.tar".format(epoch,time.time())
 
-
+    print("args {}".format(net.args))
     state = {
         'epoch': epoch,
         'state_dict': net.state_dict(),
         'optimizer': optimizer.state_dict(),             
-        'losses': losses
+        'losses': losses,
+        'args': net.args
         }
     # state = {
     #     'state_dict': net.state_dict(),

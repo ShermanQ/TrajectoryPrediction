@@ -143,7 +143,7 @@ class Hdf5Dataset():
 
             if self.augmentation:
                   ids,m_ids = self.__augmentation_ids(ids)   
-                  print(ids)         
+                     
             scenes = [img.decode('UTF-8') for img in self.scenes_dset[ids]] # B
 
             
