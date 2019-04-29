@@ -39,10 +39,17 @@ def main():
         eval_scenes = test_scenes
         train_eval_scenes = train_scenes
 
- 
-    criterion = helpers.MaskedLoss(nn.MSELoss(reduction="none"))
-    eval_ = Evaluation(args[1],args[2],args[3])
-    eval_.evaluate(Model2a1,train_eval_scenes,criterion,device)
+    criterions = {
+        "loss":helpers.MaskedLoss(nn.MSELoss(reduction="none")),
+        "ade":helpers.ade_loss,
+        "fde":helpers.fde_loss
+    }
+    # criterion = helpers.MaskedLoss(nn.MSELoss(reduction="none"))
+    
+    # eval_ = Evaluation(args[1],args[2],args[3])
+    eval_ = Evaluation("parameters/data.json","parameters/prepare_training.json","parameters/model_evaluation.json")
+
+    eval_.evaluate(Model2a1,eval_scenes,criterions,device)
     print("done!")
 
 

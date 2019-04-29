@@ -3,6 +3,7 @@ import h5py
 import matplotlib.pyplot as plt 
 import json 
 import torch
+import sys
 
 from evaluation.classes.datasets_eval import Hdf5Dataset,CustomDataLoader
 import learning.helpers.helpers_training as helpers
@@ -64,18 +65,25 @@ class Evaluation():
         
 
     # 0: train_eval 1: train 2: eval 3: test
-    def evaluate(self,model_class,scenes,criterion,device,print_every = 500):
+    def evaluate(self,model_class,scenes,criterions,device,print_every = 500):
         model = self.load_model(self.eval_params["model_name"],model_class,device)
         
         for scene in scenes:
             print(scene)
+            scene_dict = {}
+            losses_dict = {}
+
             data_loader = self.get_data_loader(scene)
             sample_id = 0
             for data in data_loader:
+                
+
                 inputs, labels,types,points_mask, active_mask, imgs = data
                 inputs, labels,types, imgs = inputs.to(device), labels.to(device), types.to(device) , imgs.to(device)
 
                 for i,l,t,p,a,img in zip(inputs,labels,types,points_mask,active_mask,imgs):
+                    scene_dict[sample_id] = {}
+                    losses_dict[sample_id] = {}
 
                     if sample_id % print_every == 0:
                         print("sample n {}".format(sample_id))
@@ -97,9 +105,36 @@ class Evaluation():
                                                                         self.eval_params["offsets"])
 
                     i,l,o = torch.FloatTensor(i).to(device),torch.FloatTensor(l).to(device),torch.FloatTensor(o).to(device)
-                    loss = criterion(o, l,p)
-                    # print(loss)
+                    losses = {}
+                    for c in criterions:
+                        criterion = criterions[c]
+                        loss = criterion(o, l,p)
+                        losses[c] = loss.item()
+                    
+
+                    losses_dict[sample_id] = losses
+                    
+
+                    scene_dict[sample_id]["inputs"] = i.cpu().numpy()
+                    scene_dict[sample_id]["labels"] = l.cpu().numpy()
+                    scene_dict[sample_id]["outputs"] = o.cpu().numpy()
+                    scene_dict[sample_id]["active_mask"] = a.cpu().numpy()
+                    scene_dict[sample_id]["types"] = t.cpu().numpy()
+                    scene_dict[sample_id]["points_mask"] = p.cpu().numpy()
+
+
+                    
+
+
+
+
                     sample_id += 1
+            print(losses_dict)
+                # print(scene_dict)
+
+                    
+
+        
 
 
         
