@@ -4,6 +4,10 @@ import matplotlib.pyplot as plt
 import json 
 import torch
 
+from evaluation.classes.datasets_eval import Hdf5Dataset,CustomDataLoader
+import learning.helpers.helpers_training as helpers
+
+
 
 
 
@@ -13,7 +17,6 @@ class Evaluation():
         self.prepare_params = json.load(open(prepare_params))
         self.eval_params = json.load(open(eval_params))
 
-        data_file = self.data_params["hdf5_file"]
 
         self.models_path = self.data_params["models_evaluation"] + "{}.tar"
 
@@ -34,10 +37,10 @@ class Evaluation():
     def get_data_loader(self,scene):
         dataset = Hdf5Dataset(
             images_path = self.data_params["prepared_images"],
-            hdf5_file= self.data_file,
+            hdf5_file= self.data_params["hdf5_file"],
             scene= scene,
-            t_obs=self.prepare_param["t_obs"],
-            t_pred=self.prepare_param["t_pred"],
+            t_obs=self.prepare_params["t_obs"],
+            t_pred=self.prepare_params["t_pred"],
             use_images = True,
             data_type = "trajectories",
             # use_neighbors = False,
@@ -46,13 +49,13 @@ class Evaluation():
             use_masks = 1,
             predict_offsets = self.eval_params["offsets"],
             predict_smooth= self.eval_params["predict_smooth"],
-            smooth_suffix= self.prepare_param["smooth_suffix"],
+            smooth_suffix= self.prepare_params["smooth_suffix"],
             centers = json.load(open(self.data_params["scene_centers"])),
-            padding = self.prepare_param["padding"],
+            padding = self.prepare_params["padding"],
 
             augmentation = 0,
             augmentation_angles = self.eval_params["augmentation_angles"],
-            normalize = self.prepare_param["normalize"]
+            normalize = self.prepare_params["normalize"]
             )
         train_loader = CustomDataLoader( batch_size = self.eval_params["batch_size"],shuffle = False,drop_last = True,dataset = dataset)
 
@@ -61,19 +64,21 @@ class Evaluation():
         
 
     # 0: train_eval 1: train 2: eval 3: test
-    def evaluate(self,model_name,model_class,scenes,criterion):
-        model = self.load_model(model_name,model_class)
+    def evaluate(self,model_class,scenes,criterion,device,print_every = 500):
+        model = self.load_model(self.eval_params["model_name"],model_class,device)
         
         for scene in scenes:
             print(scene)
             data_loader = self.get_data_loader(scene)
             sample_id = 0
-            for data in train_loader:
+            for data in data_loader:
                 inputs, labels,types,points_mask, active_mask, imgs = data
                 inputs, labels,types, imgs = inputs.to(device), labels.to(device), types.to(device) , imgs.to(device)
 
                 for i,l,t,p,a,img in zip(inputs,labels,types,points_mask,active_mask,imgs):
-                    print("sample n {}".format(sample_id))
+
+                    if sample_id % print_every == 0:
+                        print("sample n {}".format(sample_id))
                     a = a.to(device)
                     o = model((i,t,a,p,img))
 
@@ -82,18 +87,18 @@ class Evaluation():
                     l = torch.mul(p,l)
 
 
-                    if prepare_param["normalize"]:
-                        _,_,i = helpers.revert_scaling(l,o,i,data_params["scalers"])
+                    if self.prepare_params["normalize"]:
+                        _,_,i = helpers.revert_scaling(l,o,i,self.data_params["scalers"])
 
                     o = o.view(l.size())
                     i,l,o = helpers.offsets_to_trajectories(i.detach().cpu().numpy(),
                                                                         l.detach().cpu().numpy(),
                                                                         o.detach().cpu().numpy(),
-                                                                        eval_params["offsets"])
+                                                                        self.eval_params["offsets"])
 
                     i,l,o = torch.FloatTensor(i).to(device),torch.FloatTensor(l).to(device),torch.FloatTensor(o).to(device)
                     loss = criterion(o, l,p)
-                    print(loss)
+                    # print(loss)
                     sample_id += 1
 
 
