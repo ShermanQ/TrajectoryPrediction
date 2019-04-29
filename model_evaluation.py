@@ -72,13 +72,13 @@ def main():
     train_loader = CustomDataLoader( batch_size = eval_params["batch_size"],shuffle = False,drop_last = True,dataset = dataset)
 
     # model_name = "tcn"
-    model_name = "mha"
+    model_name = eval_params["model_name"]
 
     checkpoint = torch.load(data_params["models_evaluation"] + "{}.tar".format(model_name))
 
     args = checkpoint["args"]
-    # model_class = TCN_MLP
-    model_class = Model2a1
+    model_class = TCN_MLP
+    # model_class = Model2a1
 
     model = model_class(args)
     model.load_state_dict(checkpoint['state_dict'])
@@ -88,10 +88,10 @@ def main():
     criterion = helpers.MaskedLoss(nn.MSELoss(reduction="none"))
 
     for data in train_loader:
-        inputs, labels, scenes,types,points_mask, active_mask, imgs = data
+        inputs, labels,types,points_mask, active_mask, imgs = data
         inputs, labels,types, imgs = inputs.to(device), labels.to(device), types.to(device) , imgs.to(device)
 
-        for i,l,t,p,s,a,img in zip(inputs,labels,types,points_mask,scenes,active_mask,imgs):
+        for i,l,t,p,a,img in zip(inputs,labels,types,points_mask,active_mask,imgs):
             a = a.to(device)
 
             o = model((i,t,a,p,img))
@@ -102,7 +102,7 @@ def main():
 
 
             if prepare_param["normalize"]:
-                _,_,i = helpers.revert_scaling(s,l,o,i,data_params["scalers"])
+                _,_,i = helpers.revert_scaling(l,o,i,data_params["scalers"])
 
             o = o.view(l.size())
 

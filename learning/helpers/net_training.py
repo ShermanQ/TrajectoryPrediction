@@ -35,7 +35,7 @@ def train(model, device, train_loader,criterion, optimizer, epoch,batch_size,pri
     for batch_idx, data in enumerate(train_loader):
         
 #         s = time.time()
-        inputs, labels, ids,types,points_mask, active_mask, imgs = data
+        inputs, labels,types,points_mask, active_mask, imgs = data
         inputs, labels,types, imgs = inputs.to(device), labels.to(device), types.to(device) , imgs.to(device)
         active_mask = active_mask.to(device)
 
@@ -154,7 +154,7 @@ def evaluate(model, device, eval_loader,criterion, epoch, batch_size,scalers_pat
         keep_batch = (i in kept_batches_id )
 
 
-        inputs, labels, ids,types,points_mask, active_mask,img = data
+        inputs, labels,types,points_mask, active_mask,img = data
         inputs, labels,types , img = inputs.to(device), labels.to(device), types.to(device),img.to(device)
         active_mask = active_mask.to(device)
         
@@ -178,7 +178,7 @@ def evaluate(model, device, eval_loader,criterion, epoch, batch_size,scalers_pat
             #     inv_labels,inv_outputs = helpers.revert_scaling(ids,labels,outputs[:,:,:2],scalers_path,multiple_scalers)
             
             
-            _,_,inputs = helpers.revert_scaling(ids,labels,outputs,inputs,scalers_path,multiple_scalers)
+            _,_,inputs = helpers.revert_scaling(labels,outputs,inputs,scalers_path)
             # labels,outputs,inputs = helpers.revert_scaling(ids,labels,outputs,inputs,scalers_path,multiple_scalers)
 
             # labels,outputs = helpers.revert_scaling(ids,labels,outputs,scalers_path,multiple_scalers)

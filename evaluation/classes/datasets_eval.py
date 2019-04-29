@@ -219,15 +219,19 @@ class Hdf5Dataset():
                   X = np.expand_dims(X, axis = 2)
                   y = np.expand_dims(y, axis = 2)
                   points_mask = np.expand_dims(points_mask, axis = 2)
+                  types = np.expand_dims(types, axis = 2)
+
 
                   
             else:
                   X = np.expand_dims(X, axis = 1)
                   y = np.expand_dims(y, axis = 1)
                   points_mask = np.expand_dims(points_mask, axis = 1)
+                  types = np.expand_dims(types, axis = 1)
+
 
             
-            sample_sum = (np.sum(points_mask.reshape(points_mask.shape[0],1,points_mask.shape[1],-1), axis = 3) > 0).astype(int)
+            sample_sum = (np.sum(points_mask.reshape(list(points_mask.shape[:3])+[-1]), axis = 3) > 0).astype(int)
 
             active_mask = []
             for b in sample_sum:
@@ -242,7 +246,6 @@ class Hdf5Dataset():
             out = [
                   torch.FloatTensor(X).contiguous(),
                   torch.FloatTensor(y).contiguous(),
-                  scenes,
                   torch.FloatTensor(types)
             ]   
 
@@ -255,6 +258,11 @@ class Hdf5Dataset():
 
             if self.use_images:
                   imgs = torch.stack([self.images[img] for img in scenes],dim = 0) 
+                  if not self.use_neighbors:
+                        imgs = imgs.unsqueeze(2)
+                  else:
+                        imgs = imgs.unsqueeze(1)
+
                   out.append(imgs)
       
             # print("data loading {}".format(time.time()-s))

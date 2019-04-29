@@ -51,7 +51,9 @@ def split_train_eval_test(ids,train_scenes,test_scenes, eval_prop = 0.8):
     return train_ids,eval_ids,test_ids
 
 
-def revert_scaling(ids,labels,outputs,inputs,scalers_root,multiple_scalers = 0):
+# def revert_scaling(ids,labels,outputs,inputs,scalers_root,multiple_scalers = 0):
+def revert_scaling(labels,outputs,inputs,scalers_root):
+
     # if multiple_scalers:
     #     scaler_ids = ["_".join(id_.split("_")[:-1]) for id_ in ids]
     #     scalers_path = [scalers_root + id_ +".joblib" for id_ in scaler_ids]
