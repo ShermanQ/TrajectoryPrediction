@@ -165,19 +165,24 @@ class Hdf5Dataset():
             y = y[:,:max_batch]
             seq = seq[:,:max_batch]
 
-            if self.use_neighbors:
-                  types = self.types_dset[ids,:max_batch] #B,N,tpred,2
-            else:
-                  types =  self.types_dset[ids,0] #B,1,tpred,2
+            # if self.use_neighbors:
+            #       types = self.types_dset[ids,:max_batch] #B,N,tpred,2
+            # else:
+            #       types =  self.types_dset[ids,0] #B,1,tpred,2
+
+            types = self.types_dset[ids,:max_batch] #B,N,tpred,2
+            X,y,points_mask = self.__get_x_y_neighbors(X,y,seq)
 
 
-            points_mask = []
-            if self.use_neighbors:
-                  X,y,points_mask = self.__get_x_y_neighbors(X,y,seq)
 
 
-            else:       
-                  X,y,points_mask = self.__get_x_y(X,y,seq)                      
+            # points_mask = []
+            # if self.use_neighbors:
+            #       X,y,points_mask = self.__get_x_y_neighbors(X,y,seq)
+
+
+            # else:       
+            #       X,y,points_mask = self.__get_x_y(X,y,seq)                      
 
 
             sample_sum = (np.sum(points_mask.reshape(points_mask.shape[0],points_mask.shape[1],-1), axis = 2) > 0).astype(int)
@@ -210,6 +215,16 @@ class Hdf5Dataset():
 
 
 
+
+            if not self.use_neighbors:
+                  X = np.expand_dims(X, axis = 2)
+                  y = np.expand_dims(y, axis = 2)
+                  points_mask = np.expand_dims(points_mask, axis = 2)
+
+                  
+            else:
+                  X = np.expand_dims(X, axis = 1)
+                  y = np.expand_dims(y, axis = 1)
 
 
 

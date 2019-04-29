@@ -54,6 +54,7 @@ class TCN_MLP(nn.Module):
         
         types = x[1]
         x = x[0]
+        b,n,s,i = x.size()
         x = x.squeeze(1)
         x = x.permute(0,2,1) # x: B,I,Tobs
         
@@ -72,7 +73,7 @@ class TCN_MLP(nn.Module):
 
         y = self.predictor(y)
         
-        y = y.view(self.batch_size, self.output_length,self.output_size).unsqueeze(1)     
+        y = y.view(b, self.output_length,self.output_size).unsqueeze(1)     
         return y # B,1, T_pred, I
 
     def __get_nb_blocks(self,receptieve_field,kernel_size):
