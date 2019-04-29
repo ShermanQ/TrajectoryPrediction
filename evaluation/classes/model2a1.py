@@ -7,9 +7,9 @@ import torchvision
 import imp
 import time
 
-from classes.transformer import Transformer,MultiHeadAttention
-from classes.tcn import TemporalConvNet
-from classes.sophie_gan import customCNN
+from evaluation.classes.transformer import Transformer,MultiHeadAttention
+from evaluation.classes.tcn import TemporalConvNet
+from evaluation.classes.sophie_gan import customCNN
 
 
 

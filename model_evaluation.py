@@ -1,6 +1,8 @@
 
 from evaluation.evaluation import Evaluation
 from evaluation.classes.tcn_mlp import TCN_MLP
+from evaluation.classes.model2a1 import Model2a1
+
 import json
 from evaluation.classes.datasets_eval import Hdf5Dataset,CustomDataLoader
 import torch
@@ -51,7 +53,9 @@ def main():
         t_pred=prepare_param["t_pred"],
         use_images = True,
         data_type = "trajectories",
-        use_neighbors = False,
+        # use_neighbors = False,
+        use_neighbors = eval_params["use_neighbors"],
+
         use_masks = 1,
         predict_offsets = eval_params["offsets"],
         predict_smooth= eval_params["predict_smooth"],
@@ -67,11 +71,15 @@ def main():
     #initialize dataloader
     train_loader = CustomDataLoader( batch_size = eval_params["batch_size"],shuffle = False,drop_last = True,dataset = dataset)
 
-    model_name = "tcn"
+    # model_name = "tcn"
+    model_name = "mha"
+
     checkpoint = torch.load(data_params["models_evaluation"] + "{}.tar".format(model_name))
 
     args = checkpoint["args"]
-    model_class = TCN_MLP
+    # model_class = TCN_MLP
+    model_class = Model2a1
+
     model = model_class(args)
     model.load_state_dict(checkpoint['state_dict'])
     model = model.to(device)
@@ -80,32 +88,33 @@ def main():
     criterion = helpers.MaskedLoss(nn.MSELoss(reduction="none"))
 
     for data in train_loader:
-        inputs, labels, ids,types,points_mask, active_mask, imgs = data
+        inputs, labels, scenes,types,points_mask, active_mask, imgs = data
         inputs, labels,types, imgs = inputs.to(device), labels.to(device), types.to(device) , imgs.to(device)
-        active_mask = active_mask.to(device)
 
-        for input_,label_,type_,points_mask_,ids_ in zip(inputs,labels,types,points_mask,ids):
-            outputs = model((input_,type_,active_mask,points_mask,imgs))
+        for i,l,t,p,s,a,img in zip(inputs,labels,types,points_mask,scenes,active_mask,imgs):
+            a = a.to(device)
 
-            points_mask_ = torch.FloatTensor(points_mask_).to(device)
-            outputs = torch.mul(points_mask_,outputs)
-            label_ = torch.mul(points_mask_,label_)
+            o = model((i,t,a,p,img))
+
+            p = torch.FloatTensor(p).to(device)
+            o = torch.mul(p,o)
+            l = torch.mul(p,l)
 
 
             if prepare_param["normalize"]:
-                _,_,input_ = helpers.revert_scaling(ids_,label_,outputs,input_,data_params["scalers"])
+                _,_,i = helpers.revert_scaling(s,l,o,i,data_params["scalers"])
 
-            outputs = outputs.view(label_.size())
+            o = o.view(l.size())
 
-            input_,label_,outputs = helpers.offsets_to_trajectories(input_.detach().cpu().numpy(),
-                                                                label_.detach().cpu().numpy(),
-                                                                outputs.detach().cpu().numpy(),
+            i,l,o = helpers.offsets_to_trajectories(i.detach().cpu().numpy(),
+                                                                l.detach().cpu().numpy(),
+                                                                o.detach().cpu().numpy(),
                                                                 eval_params["offsets"])
 
-            input_,label_,outputs = torch.FloatTensor(input_).to(device),torch.FloatTensor(label_).to(device),torch.FloatTensor(outputs).to(device)
+            i,l,o = torch.FloatTensor(i).to(device),torch.FloatTensor(l).to(device),torch.FloatTensor(o).to(device)
             
 
-            loss = criterion(outputs, label_,points_mask_)
+            loss = criterion(o, l,p)
             print(loss)
 
 

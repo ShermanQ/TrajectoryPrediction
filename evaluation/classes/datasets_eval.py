@@ -185,8 +185,7 @@ class Hdf5Dataset():
             #       X,y,points_mask = self.__get_x_y(X,y,seq)                      
 
 
-            sample_sum = (np.sum(points_mask.reshape(points_mask.shape[0],points_mask.shape[1],-1), axis = 2) > 0).astype(int)
-            active_mask = np.argwhere(sample_sum.flatten()).flatten()
+            
 
 
             if self.augmentation:
@@ -225,6 +224,18 @@ class Hdf5Dataset():
             else:
                   X = np.expand_dims(X, axis = 1)
                   y = np.expand_dims(y, axis = 1)
+                  points_mask = np.expand_dims(points_mask, axis = 1)
+
+            
+            sample_sum = (np.sum(points_mask.reshape(points_mask.shape[0],1,points_mask.shape[1],-1), axis = 3) > 0).astype(int)
+
+            active_mask = []
+            for b in sample_sum:
+                  ids = np.argwhere(b.flatten()).flatten()
+                  active_mask.append(torch.LongTensor(ids))
+
+            # active_mask = np.argwhere(sample_sum.flatten()).flatten()
+
 
 
 
@@ -239,7 +250,9 @@ class Hdf5Dataset():
 
             if self.use_masks:
                   out.append(points_mask)
-                  out.append(torch.LongTensor(active_mask))
+                  # out.append(torch.LongTensor(active_mask))
+                  out.append(active_mask)
+
             if self.use_images:
                   imgs = torch.stack([self.images[img] for img in scenes],dim = 0) 
                   out.append(imgs)
