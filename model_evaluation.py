@@ -77,8 +77,8 @@ def main():
     checkpoint = torch.load(data_params["models_evaluation"] + "{}.tar".format(model_name))
 
     args = checkpoint["args"]
-    model_class = TCN_MLP
-    # model_class = Model2a1
+    # model_class = TCN_MLP
+    model_class = Model2a1
 
     model = model_class(args)
     model.load_state_dict(checkpoint['state_dict'])
@@ -113,6 +113,11 @@ def main():
 
             i,l,o = torch.FloatTensor(i).to(device),torch.FloatTensor(l).to(device),torch.FloatTensor(o).to(device)
             
+            print(i)
+            print(l)
+            print(o)
+            print(p)
+
 
             loss = criterion(o, l,p)
             print(loss)
