@@ -5,6 +5,7 @@ import json
 import torch
 import sys
 import os
+from scipy.spatial import distance_matrix
 
 
 from evaluation.classes.datasets_eval import Hdf5Dataset,CustomDataLoader
@@ -165,14 +166,14 @@ class Evaluation():
                     losses_dict[sample_id] = losses
                     
 
-                    scene_dict[sample_id]["inputs"] = i.cpu().numpy().tolist()
-                    scene_dict[sample_id]["labels"] = l.cpu().numpy().tolist()
-                    scene_dict[sample_id]["outputs"] = o.cpu().numpy().tolist()
+                    scene_dict[sample_id]["inputs"] = i.squeeze(1).cpu().numpy().tolist()
+                    scene_dict[sample_id]["labels"] = l.squeeze(1).cpu().numpy().tolist()
+                    scene_dict[sample_id]["outputs"] = o.squeeze(1).cpu().numpy().tolist()
                     scene_dict[sample_id]["active_mask"] = a.cpu().numpy().tolist()
-                    scene_dict[sample_id]["types"] = t.cpu().numpy().tolist()
-                    scene_dict[sample_id]["points_mask"] = p.cpu().numpy().tolist()
+                    scene_dict[sample_id]["types"] = t.squeeze(1).cpu().numpy().tolist()
+                    scene_dict[sample_id]["points_mask"] = p.squeeze(1).cpu().numpy().tolist()
 
-
+                    self.conflicts(o.squeeze(1).cpu().numpy())
                     
 
 
@@ -200,7 +201,27 @@ class Evaluation():
         }
         json.dump(timer, open(dir_name + "time.json","w"),indent= 0)
 
-        
+
+#
+#    COnsiders each pair of agent as an interaction
+#    Counts the number of problematic interaction
+#  
+    def conflicts(self,output,threshold = 0.5):
+        timesteps = []
+        for t in range(output.shape[1]):
+            points = output[:,t]
+            d = distance_matrix(points,points)
+
+            m = (d < 0.5).astype(int) - np.eye(len(points))
+
+            nb_agents_in_conflict = m.sum() / 2.0 # matrix is symmetric
+            nb_agents = len(points)**2
+
+            conflict_prop = nb_agents_in_conflict / float(nb_agents) * 100
+
+            timesteps.append(conflict_prop)
+
+        return timesteps
 
 
                     
