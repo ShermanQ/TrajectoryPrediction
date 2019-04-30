@@ -69,6 +69,8 @@ class ScaledDotProduct(nn.Module):
         # mask = (dot == 0) & (torch.sum(dot,dim = 1) > 0.).unsqueeze(2).repeat(1,1,Nmax)
         # mask = mask.to(self.device)
         # return mask
+        if max_batch == 1:
+            points_mask = np.expand_dims(points_mask, axis = 1)
 
         sample_sum = (np.sum(points_mask.reshape(points_mask.shape[0],points_mask.shape[1],-1), axis = 2) > 0).astype(int)
         a = np.repeat(np.expand_dims(sample_sum,axis = 2),max_batch,axis = -1)

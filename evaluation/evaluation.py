@@ -6,9 +6,11 @@ import torch
 import sys
 import os
 
+
 from evaluation.classes.datasets_eval import Hdf5Dataset,CustomDataLoader
 import learning.helpers.helpers_training as helpers
 
+import time
 
 
 
@@ -80,7 +82,10 @@ class Evaluation():
         nb_criterions = len(criterions)
 
         losses_scenes = {}
-        
+        times = 0
+        nb = 0
+
+
         for scene in scenes:
             print(scene)
             scene_dict = {}
@@ -97,13 +102,39 @@ class Evaluation():
                 inputs, labels,types, imgs = inputs.to(device), labels.to(device), types.to(device) , imgs.to(device)
 
                 for i,l,t,p,a,img in zip(inputs,labels,types,points_mask,active_mask,imgs):
+
+
+                    i = i[a]
+                    l = l[a]
+                    t = t[a]
+                    p = p[a]
+
+
+
+
                     scene_dict[sample_id] = {}
                     losses_dict[sample_id] = {}
 
                     if sample_id % print_every == 0:
                         print("sample n {}".format(sample_id))
+
+                    
                     a = a.to(device)
+                    
+
+                    # print(a)
+                    # print(len(a))
+
+
+                    torch.cuda.synchronize()
+                    start = time.time()
                     o = model((i,t,a,p,img))
+
+                    torch.cuda.synchronize()
+                    end = time.time() - start
+
+                    times += end 
+                    nb += len(a)
 
                     p = torch.FloatTensor(p).to(device)
                     o = torch.mul(p,o)
@@ -161,6 +192,15 @@ class Evaluation():
                     losses_scenes[scene][l] = np.mean(losses_scenes[scene][l])
 
         json.dump(losses_scenes, open(dir_name + "losses.json","w"),indent= 0)
+
+        timer = {
+            "total_time":times,
+            "nb_trajectories":nb,
+            "time_per_trajectory":times/nb
+        }
+        json.dump(timer, open(dir_name + "time.json","w"),indent= 0)
+
+        
 
 
                     

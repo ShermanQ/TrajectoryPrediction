@@ -70,6 +70,9 @@ class ScaledDotProduct(nn.Module):
         # mask = mask.to(self.device)
         # return mask
 
+        if max_batch == 1:
+            points_mask = np.expand_dims(points_mask, axis = 1)
+
         sample_sum = (np.sum(points_mask.reshape(points_mask.shape[0],points_mask.shape[1],-1), axis = 2) > 0).astype(int)
         a = np.repeat(np.expand_dims(sample_sum,axis = 2),max_batch,axis = -1)
         b = np.transpose(a,axes=(0,2,1))
