@@ -10,7 +10,7 @@ __pycache__/
 *.jpg
 # C extensions
 *.so
-
+*reports*
 # Distribution / packaging
 .Python
 build/

@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import json 
 import torch
 import sys
+import os
 
 from evaluation.classes.datasets_eval import Hdf5Dataset,CustomDataLoader
 import learning.helpers.helpers_training as helpers
@@ -20,6 +21,7 @@ class Evaluation():
 
 
         self.models_path = self.data_params["models_evaluation"] + "{}.tar"
+        self.reports_dir = self.data_params["reports_evaluation"] + "{}/"
 
 
     def load_model(self,model_name,model_class,device):
@@ -65,13 +67,26 @@ class Evaluation():
         
 
     # 0: train_eval 1: train 2: eval 3: test
-    def evaluate(self,model_class,scenes,criterions,device,print_every = 500):
+    def evaluate(self,model_class,scenes,criterions,device,report_name,print_every = 500):
+
+        dir_name = self.reports_dir.format(report_name) 
+        
+        if os.path.exists(dir_name):
+            os.system("rm -r {}".format(dir_name))
+        os.system("mkdir {}".format(dir_name))
+
         model = self.load_model(self.eval_params["model_name"],model_class,device)
+
+        nb_criterions = len(criterions)
+
+        losses_scenes = {}
         
         for scene in scenes:
             print(scene)
             scene_dict = {}
             losses_dict = {}
+
+            losses_scenes[scene] = {}
 
             data_loader = self.get_data_loader(scene)
             sample_id = 0
@@ -106,21 +121,25 @@ class Evaluation():
 
                     i,l,o = torch.FloatTensor(i).to(device),torch.FloatTensor(l).to(device),torch.FloatTensor(o).to(device)
                     losses = {}
-                    for c in criterions:
+                    for j,c in enumerate(criterions):
                         criterion = criterions[c]
                         loss = criterion(o, l,p)
                         losses[c] = loss.item()
+                        if c not in losses_scenes[scene]:
+                            losses_scenes[scene][c] = []
+                        losses_scenes[scene][c].append(loss.item())
+
                     
 
                     losses_dict[sample_id] = losses
                     
 
-                    scene_dict[sample_id]["inputs"] = i.cpu().numpy()
-                    scene_dict[sample_id]["labels"] = l.cpu().numpy()
-                    scene_dict[sample_id]["outputs"] = o.cpu().numpy()
-                    scene_dict[sample_id]["active_mask"] = a.cpu().numpy()
-                    scene_dict[sample_id]["types"] = t.cpu().numpy()
-                    scene_dict[sample_id]["points_mask"] = p.cpu().numpy()
+                    scene_dict[sample_id]["inputs"] = i.cpu().numpy().tolist()
+                    scene_dict[sample_id]["labels"] = l.cpu().numpy().tolist()
+                    scene_dict[sample_id]["outputs"] = o.cpu().numpy().tolist()
+                    scene_dict[sample_id]["active_mask"] = a.cpu().numpy().tolist()
+                    scene_dict[sample_id]["types"] = t.cpu().numpy().tolist()
+                    scene_dict[sample_id]["points_mask"] = p.cpu().numpy().tolist()
 
 
                     
@@ -129,8 +148,20 @@ class Evaluation():
 
 
                     sample_id += 1
-            print(losses_dict)
+
+            
+            json.dump(scene_dict, open(dir_name + "{}_samples.json".format(scene),"w"),indent= 0)
+            json.dump(losses_dict, open(dir_name + "{}_losses.json".format(scene),"w"), indent = 0)
+
+            # print(losses_dict)
                 # print(scene_dict)
+        
+        for scene in losses_scenes:
+                for l in losses_scenes[scene]:
+                    losses_scenes[scene][l] = np.mean(losses_scenes[scene][l])
+
+        json.dump(losses_scenes, open(dir_name + "losses.json","w"),indent= 0)
+
 
                     
 
