@@ -7,6 +7,31 @@ from scipy.interpolate import splev, splrep
 import numpy as np
 from scipy.spatial.distance import euclidean
 
+
+
+def get_speed(point1,point2,deltat):
+    d = euclidean(point1,point2)
+    v = d/deltat
+    return v
+def get_speeds(coordinates,framerate):
+    speeds = []
+    for i in range(1,len(coordinates)):
+        speed = get_speed(coordinates[i-1],coordinates[i],framerate)
+        speeds.append(speed)
+    return speeds
+
+def get_acceleration(v1,v2,deltat):
+    a = (v2-v1)/deltat
+    return a
+
+def get_accelerations(speeds,framerate):
+    accelerations = []
+    for i in range(1,len(speeds)):
+        acceleration = get_acceleration(speeds[i-1],speeds[i],framerate)
+        accelerations.append(acceleration)
+    return accelerations
+
+
 """
     Get the directories/files contained in a directory
     path: directory path
