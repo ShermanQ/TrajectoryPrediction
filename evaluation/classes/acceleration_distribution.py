@@ -33,24 +33,58 @@ class Accelerations():
                     ctr += 1           
                     trajectory = json.loads(trajectory)
                     coordinates = trajectory["coordinates"]
+                    type_ = trajectory["user_type"]
+
+                    if type_ not in types_dict:
+                        types_dict[type_] = []
+                    
                     trajectory_len.append(len(coordinates))
                     accelerations = get_accelerations(get_speeds(coordinates,self.delta_t),self.delta_t)
-
-                    scene_accelerations.append(accelerations)
-            scene_accelerations = np.concatenate(scene_accelerations)
+                    
+                    types_dict[type_].append(accelerations)
+                    # scene_accelerations.append(accelerations)
+            # scene_accelerations = np.concatenate(scene_accelerations)
 
             # plt.hist(scene_accelerations,bins = 100)
             # plt.show()
 
             dataset_accelerations.append(scene_accelerations)
         
-        dataset_accelerations = np.concatenate(dataset_accelerations)
-        percentile = np.percentile(dataset_accelerations,[1,99])
-        print(percentile)
-        print(np.mean(trajectory_len),ctr)
-        plt.hist(dataset_accelerations,bins = 100,label= "acceleration distribution")
-        plt.legend()
-        plt.show()
+        for key in types_dict:
+            types_dict[key] = np.concatenate(types_dict[key])
+        thresholds = {}
+        for key in types_dict:
+            p = np.max(np.abs(np.percentile(types_dict[key],[5,95])))
+            
+            thresholds[key] = {"lower_boud": -1* p, "upper_bound": p}
+            # val = np.abs(np.mean(types_dict[key])-np.std(types_dict[key]))
+            # thresholds[key] = {"lower_boud": -1* val, "upper_bound": val}
+
+        json.dump(thresholds,open(self.report_path,"w"))
+        
+        # print(thresholds)
+
+        # nb_types = len(list(types_dict.keys()))
+        # fig,axs = plt.subplots(nb_types)
+
+        # ctr = 0
+        # for i, key in enumerate(types_dict):
+            
+        #     axs[i].hist(types_dict[key])
+        #     axs[i].set_title(key)
+
+        # plt.show()
+
+
+
+
+        # dataset_accelerations = np.concatenate(dataset_accelerations)
+        # percentile = np.percentile(dataset_accelerations,[1,99])
+        # print(percentile)
+        # print(np.mean(trajectory_len),ctr)
+        # plt.hist(dataset_accelerations,bins = 100,label= "acceleration distribution")
+        # plt.legend()
+        # plt.show()
 
         return dataset_accelerations
 
