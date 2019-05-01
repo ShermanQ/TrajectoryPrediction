@@ -161,9 +161,18 @@ class Evaluation():
                             losses_scenes[scene][c] = []
                         losses_scenes[scene][c].append(loss.item())
 
-                    
+                    # social loss
+                    social_loss,conflict_points = self.conflicts(o.squeeze(1).cpu().numpy())
+
+                    if "social" not in losses_scenes[scene]:
+                        losses_scenes[scene]["social"] = []
+                    losses_scenes[scene]["social"].append(social_loss)
+                    losses["social"] = social_loss
+
 
                     losses_dict[sample_id] = losses
+
+
                     
 
                     scene_dict[sample_id]["inputs"] = i.squeeze(1).cpu().numpy().tolist()
@@ -172,8 +181,11 @@ class Evaluation():
                     scene_dict[sample_id]["active_mask"] = a.cpu().numpy().tolist()
                     scene_dict[sample_id]["types"] = t.squeeze(1).cpu().numpy().tolist()
                     scene_dict[sample_id]["points_mask"] = p.squeeze(1).cpu().numpy().tolist()
+                    scene_dict[sample_id]["conflict_points"] = conflict_points
 
-                    self.conflicts(o.squeeze(1).cpu().numpy())
+
+
+                    
                     
 
 
@@ -205,11 +217,13 @@ class Evaluation():
 #
 #    COnsiders each pair of agent as an interaction
 #    Counts the number of problematic interaction
-#  
+#    averages the percentage over all timesteps
+#    returns conflicts coordinates without specifying their timestep
     def conflicts(self,output,threshold = 0.5):
         timesteps = []
+        conflict_points = np.array([])
         for t in range(output.shape[1]):
-            points = output[:,t]
+            points = np.array(output[:,t])
             d = distance_matrix(points,points)
 
             m = (d < 0.5).astype(int) - np.eye(len(points))
@@ -221,7 +235,18 @@ class Evaluation():
 
             timesteps.append(conflict_prop)
 
-        return timesteps
+            # select points where conflict happens
+            ids = np.unique( np.argwhere(m)[:,0] ) 
+            if len(ids) > 0:
+                points = points[ids]
+                if len(conflict_points) > 0:
+                    conflict_points = np.concatenate([conflict_points,points], axis = 0)
+                else:
+                    conflict_points = points
+
+
+
+        return np.mean(timesteps),conflict_points.tolist()
 
 
                     
