@@ -9,7 +9,8 @@ from scipy.spatial import distance_matrix
 
 
 from evaluation.classes.datasets_eval import Hdf5Dataset,CustomDataLoader
-import learning.helpers.helpers_training as helpers
+import learning.helpers.helpers_training as helpers_training
+from helpers import get_speeds,get_accelerations
 
 import time
 
@@ -25,6 +26,13 @@ class Evaluation():
 
         self.models_path = self.data_params["models_evaluation"] + "{}.tar"
         self.reports_dir = self.data_params["reports_evaluation"] + "{}/"
+
+        self.dynamics = json.load(open(self.data_params["dynamics"]))
+        self.delta_t = 1.0/float(self.prepare_params["framerate"])
+
+        self.types_dic = self.prepare_params["types_dic_rev"]
+
+
 
 
     def load_model(self,model_name,model_class,device):
@@ -143,10 +151,10 @@ class Evaluation():
 
 
                     if self.prepare_params["normalize"]:
-                        _,_,i = helpers.revert_scaling(l,o,i,self.data_params["scalers"])
+                        _,_,i = helpers_training.revert_scaling(l,o,i,self.data_params["scalers"])
 
                     o = o.view(l.size())
-                    i,l,o = helpers.offsets_to_trajectories(i.detach().cpu().numpy(),
+                    i,l,o = helpers_training.offsets_to_trajectories(i.detach().cpu().numpy(),
                                                                         l.detach().cpu().numpy(),
                                                                         o.detach().cpu().numpy(),
                                                                         self.eval_params["offsets"])
@@ -163,6 +171,8 @@ class Evaluation():
 
                     # social loss
                     social_loss,conflict_points = self.conflicts(o.squeeze(1).cpu().numpy())
+
+                    self.dynamic_eval(l.squeeze(1).cpu().numpy(),t.squeeze(1).cpu().numpy())
 
                     if "social" not in losses_scenes[scene]:
                         losses_scenes[scene]["social"] = []
@@ -247,6 +257,38 @@ class Evaluation():
 
 
         return np.mean(timesteps),conflict_points.tolist()
+
+# for each agent type, compute accelerations distribution
+# over every scenes and trajectories 
+# for each type use 5th and 95th percentile as lower and upper bound
+# respectively. Every point outside the given range for a given type
+# is an outlier.
+# for a trajectory of n points, we get m<n accelerations
+# we report the proportion of outlier acceleration for a trajectory
+# we average on all trajectories
+    def dynamic_eval(self,output,types):
+        count_per_traj = []
+        for a in range(output.shape[0]):
+            coordinates = output[a]
+            type_ = types[a]
+            type_ = self.types_dic[str(int(type_))]
+
+            accelerations = get_accelerations(get_speeds(coordinates,self.delta_t),self.delta_t)
+
+
+            dynamic_type = self.dynamics[type_]
+            nb_outliers = 0
+            for e in accelerations:
+                if e < dynamic_type["lower_bound"] or e > dynamic_type["upper_bound"]:
+                    nb_outliers += 1
+            
+            percentage_outlier_points = nb_outliers/len(accelerations) * 100
+            count_per_traj.append(percentage_outlier_points)
+
+        # print(np.mean(count_per_traj))
+        
+        
+
 
 
                     

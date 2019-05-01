@@ -56,10 +56,10 @@ class Accelerations():
         for key in types_dict:
             p = np.max(np.abs(np.percentile(types_dict[key],[5,95])))
             
-            thresholds[key] = {"lower_boud": -1* p, "upper_bound": p}
+            thresholds[key] = {"lower_bound": -1* p, "upper_bound": p}
             # val = np.abs(np.mean(types_dict[key])-np.std(types_dict[key]))
             # thresholds[key] = {"lower_boud": -1* val, "upper_bound": val}
-
+        remove_file(self.report_path)
         json.dump(thresholds,open(self.report_path,"w"))
         
         # print(thresholds)

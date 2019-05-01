@@ -22,6 +22,14 @@
         "cart":5,
         "bus":6
     },
+    "types_dic_rev":{
+        "1":"bicycle",
+        "2":"pedestrian",
+        "3":"car",
+        "4":"skate",
+        "5":"cart",
+        "6":"bus"
+    },
     "toy_scenes":[
         "little3",
         "little0"
