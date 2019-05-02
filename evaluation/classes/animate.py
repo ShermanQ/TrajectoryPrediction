@@ -1,13 +1,6 @@
-import numpy as np
-import pandas as pd
-import seaborn as sns
-import matplotlib
-import matplotlib.pyplot as plt
-import matplotlib.animation as animation
-
 
 class Animate():
-    def __init__(self,data_pred,data_gt,scene = "",id = "", plot_ = True, save = True):
+    def __init__(self,data_pred,data_gt,colors,gif_name = "test.gif", plot_ = True, save = True):
         self.xs_pred = data_pred[:,:,0]
         self.ys_pred = data_pred[:,:,1]
 
@@ -19,12 +12,12 @@ class Animate():
         self.margin = 10
 
         self.nb_frames = self.xs_pred.shape[1]
-        self.gif_name = "test.gif"
+        self.gif_name = gif_name
         self.plot_ = plot_
         self.save = save
 
         self.fps = 10
-        self.colors = ["r","b"]
+        self.colors = colors
 
         self.get_plots()
 
