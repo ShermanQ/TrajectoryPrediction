@@ -10,7 +10,7 @@ import sys
 import learning.helpers.helpers_training as helpers
 import torch.nn as nn
 
-# python model_evaluation.py parameters/data.json parameters/prepare_training.json parameters/model_evaluation.json report_name
+# python model_evaluation.py parameters/data.json parameters/prepare_training.json parameters/model_evaluation.json 
 def main():
     args = sys.argv
 
@@ -24,7 +24,7 @@ def main():
     prepare_param = json.load(open("parameters/prepare_training.json"))
 
     # report_name = args[4]
-    report_name = "report_name"
+    report_name = eval_params["report_name"]
 
     # load scenes
     eval_scenes = prepare_param["eval_scenes"]

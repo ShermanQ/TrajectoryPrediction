@@ -172,12 +172,19 @@ class Evaluation():
                     # social loss
                     social_loss,conflict_points = self.conflicts(o.squeeze(1).cpu().numpy())
 
-                    self.dynamic_eval(l.squeeze(1).cpu().numpy(),t.squeeze(1).cpu().numpy())
+                    dynamic_loss = self.dynamic_eval(l.squeeze(1).cpu().numpy(),t.squeeze(1).cpu().numpy())
+                    # dynamic_loss = self.dynamic_eval(o.squeeze(1).cpu().numpy(),t.squeeze(1).cpu().numpy())
+
 
                     if "social" not in losses_scenes[scene]:
                         losses_scenes[scene]["social"] = []
                     losses_scenes[scene]["social"].append(social_loss)
                     losses["social"] = social_loss
+
+                    if "dynamic" not in losses_scenes[scene]:
+                        losses_scenes[scene]["dynamic"] = []
+                    losses_scenes[scene]["dynamic"].append(dynamic_loss)
+                    losses["dynamic"] = dynamic_loss
 
 
                     losses_dict[sample_id] = losses
@@ -285,7 +292,7 @@ class Evaluation():
             percentage_outlier_points = nb_outliers/len(accelerations) * 100
             count_per_traj.append(percentage_outlier_points)
 
-        # print(np.mean(count_per_traj))
+        return np.mean(count_per_traj)
         
         
 

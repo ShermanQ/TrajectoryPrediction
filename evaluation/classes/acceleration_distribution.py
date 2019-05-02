@@ -10,10 +10,14 @@ class Accelerations():
         self.eval_params = json.load(open(eval_params))
 
         self.scenes = self.prepare_params["selected_scenes"]
+        # self.scenes = self.prepare_params["toy_scenes"]
+
         self.scene_paths = self.data_params["filtered_datasets"] + "{}.csv"
         self.report_path = self.data_params["dynamics"]
         self.trajectories_temp = self.data_params["temp"] + "trajectories.txt"
         self.delta_t = 1.0/float(self.prepare_params["framerate"])
+
+        print(self.delta_t)
 
 
     def get_distribs(self):
@@ -40,6 +44,11 @@ class Accelerations():
                     
                     trajectory_len.append(len(coordinates))
                     accelerations = get_accelerations(get_speeds(coordinates,self.delta_t),self.delta_t)
+
+                    # print(coordinates)
+
+                    # print(accelerations)
+                    # print("------")
                     
                     types_dict[type_].append(accelerations)
                     # scene_accelerations.append(accelerations)
@@ -64,16 +73,16 @@ class Accelerations():
         
         # print(thresholds)
 
-        # nb_types = len(list(types_dict.keys()))
-        # fig,axs = plt.subplots(nb_types)
+        nb_types = len(list(types_dict.keys()))
+        fig,axs = plt.subplots(nb_types)
 
-        # ctr = 0
-        # for i, key in enumerate(types_dict):
+        ctr = 0
+        for i, key in enumerate(types_dict):
             
-        #     axs[i].hist(types_dict[key])
-        #     axs[i].set_title(key)
+            axs[i].hist(types_dict[key])
+            axs[i].set_title(key)
 
-        # plt.show()
+        plt.show()
 
 
 
