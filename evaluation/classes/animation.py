@@ -67,7 +67,7 @@ class Animate():
         self.fps = 1
         self.colors = colors
 
-        self.history = 8
+        self.history = 4
 
         self.get_plots()
 
@@ -82,13 +82,17 @@ class Animate():
         for i in range(self.nb_agents):
             tup = (
                 # self.ax[0][0].plot([], [], self.colors[i])[0],
-                self.ax[0][0].plot([], [], self.colors[i],marker = 'o')[0]
+                self.ax[0][0].plot([], [], self.colors[i],marker = 'o',markersize = 1.5,linewidth = 0.5)[0],
+                # self.ax[0][0].plot([], [], self.colors[i],marker = 'x',markersize = 1.5,linewidth = 0.5)[0],
+
+
+                # ,linestyle = ""
             )
             self.plots1.append(tup)
 
             tup = (
                 # self.ax[1][0].plot([], [], self.colors[i])[0],
-                self.ax[1][0].plot([], [], self.colors[i],marker = 'o')[0]
+                self.ax[1][0].plot([], [], self.colors[i],marker = 'o',markersize = 1.5,linewidth = 0.5)[0]
             )
             self.plots2.append(tup)
         
@@ -103,24 +107,61 @@ class Animate():
         self.ax[1][0].set_xlim(np.min(self.xs_gt)-self.margin, np.max(self.xs_gt)+self.margin)
         self.ax[1][0].set_ylim(np.min(self.ys_gt)-self.margin, np.max(self.ys_gt)+self.margin)
 
+
+        self.ax[1][0].set_title("groundtruth",loc = "right")
+        self.ax[0][0].set_title("predictions",loc = "right")
+
+        plt.tight_layout()
+
         ani = matplotlib.animation.FuncAnimation(self.fig, self.update, frames=self.nb_frames,repeat=True)
 
         if self.plot_:
             plt.show()
         if self.save:
-            ani.save(self.gif_name, writer='imagemagick', fps=self.fps)
+            ani.save(self.gif_name, writer='imagemagick', fps=self.fps,dpi = 200)
 
 
 
     def update(self,frame):
         frame = int(frame)
-        start = max(0,frame-self.history)
+        end = frame + 1
+        start = max(0,end-self.history)
+
+        # if frame < 8:
+        #     self.fig.suptitle('Observations', fontsize=16)
+        # else:
+        #     self.fig.suptitle('Predictions', fontsize=16)
+
+        self.fig.suptitle("timestep: {}".format(frame+1), fontsize=8)
+
+        
         for i,p in enumerate(self.plots1):
-            p.set_data(self.xs_pred[i,start:frame], self.ys_pred[i,start:frame])
+
+            # if frame < 8:
+            p[0].set_data(self.xs_pred[i,start:end], self.ys_pred[i,start:end])
+            p[0].set_color(self.colors[i])
+
+            if frame > 7 :
+                p[0].set_marker("+")
+                p[0].set_markersize(2)
+
+            
+            #     p[1].set_data([], [])
+
+            # else:
+            #     p[0].set_data([], [])
+            #     p[1].set_data(self.xs_pred[i,start:end], self.ys_pred[i,start:end])
+
             # p[1].set_data(self.xs_pred[i,:frame], self.ys_pred[i,:frame])
 
         for i,p in enumerate(self.plots2):
-            p.set_data(self.xs_gt[i,start:frame], self.ys_gt[i,start:frame])
+            p.set_data(self.xs_gt[i,start:end], self.ys_gt[i,start:end])
+            p.set_color(self.colors[i])
+
+            if frame > 7 :
+                p.set_marker("+")
+                p.set_markersize(2)
+
             # p[1].set_data(self.xs_gt[i,:frame], self.ys_gt[i,:frame])
 
 
@@ -142,7 +183,7 @@ def main():
     # eval_ = Animation(args[1],args[2],args[3])
     animate = Animation("parameters/data.json","parameters/prepare_training.json","parameters/model_evaluation.json")
 
-    animate.animate_sample(eval_scenes[0],1)
+    animate.animate_sample(eval_scenes[0],20)
 
     
 
