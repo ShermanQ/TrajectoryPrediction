@@ -29,11 +29,17 @@ class PrepareTrainingHdf5():
         self.smooth_suffix = param["smooth_suffix"]
 
         self.original_file = data["preprocessed_datasets"] + "{}.csv"
+        self.pedestrian_only = param["pedestrian_only"]
         
         if toy:
             self.hdf5_dest = data["hdf5_toy"]
         else:
             self.hdf5_dest = data["hdf5_file"]
+
+        if self.pedestrian_only:
+            self.hdf5_dest = data["hdf5_ped"]
+
+        
 
                  
         with h5py.File(self.hdf5_dest,"a") as f: 
@@ -46,6 +52,7 @@ class PrepareTrainingHdf5():
 
         self.padding = param["padding"]
         self.types_dic = param["types_dic"]
+
 
 
 
@@ -67,7 +74,14 @@ class PrepareTrainingHdf5():
     """
     def extract_data(self,scene):
 
-        max_neighbors = self.__nb_max_neighbors(scene)
+        max_neighbors = 0
+        if self.pedestrian_only:
+            print("pedestrian only")
+            max_neighbors = self.__nb_max_pedestrians(scene)
+        else:
+            max_neighbors = self.__nb_max_neighbors(scene)
+
+
         print("max_neighbors {}".format(max_neighbors))
 
         if self.smooth:
@@ -103,49 +117,61 @@ class PrepareTrainingHdf5():
             with open(self.trajectories_temp) as trajectories:
                 with open(self.frames_temp) as file_frames:
                     for k,trajectory in enumerate(trajectories):
+                        
 
                         
                         trajectory = json.loads(trajectory)
 
-                        file_frames,child_iterator = tee(file_frames)
-                        
-                        frames = trajectory["frames"]
-                        current_id = int(trajectory["id"])
+                        if (not self.pedestrian_only) or (self.pedestrian_only and trajectory["user_type"] == "pedestrian"):
 
-                        continuous = self.__are_frames_continuous(frames)
+                            file_frames,child_iterator = tee(file_frames)
+                            
+                            frames = trajectory["frames"]
+                            current_id = int(trajectory["id"])
 
-                        if continuous:
-                            start,stop = frames[0],frames[-1] + 1             
+                            continuous = self.__are_frames_continuous(frames)
 
-                            ids,n_types = self.__get_neighbors(islice(child_iterator,start,stop))
-                            len_traj = len(ids[current_id])
+                            if continuous:
+                                start,stop = frames[0],frames[-1] + 1             
 
-                            for i in range(0,len_traj,self.shift):
+                                ids,n_types = None,None
 
-                                samples,types =  self.__samples(len_traj,current_id,ids,i,n_types) 
-                                samples,types = np.array(samples),np.array(types)
+                                if self.pedestrian_only:
+                                    ids,n_types = self.__get_pedestrians(islice(child_iterator,start,stop))
+                                else:
+                                    ids,n_types = self.__get_neighbors(islice(child_iterator,start,stop))
                                 
 
-                                nb_neighbors = len(samples)
-                                if nb_neighbors != 0:
-                                    # padding = np.zeros(shape = (max_neighbors-nb_neighbors,data_shape[1],data_shape[2]))
 
-                                    padding = np.ones(shape = (max_neighbors-nb_neighbors,data_shape[1],data_shape[2]))
-                                    padding = self.padding * padding
+                                
+                                len_traj = len(ids[current_id])
 
-                                    samples = np.concatenate((samples,padding),axis = 0)
+                                for i in range(0,len_traj,self.shift):
 
-                                    padding_types = np.zeros(shape = (max_neighbors-nb_neighbors))
-                                    types = np.concatenate((types,padding_types),axis = 0)
+                                    samples,types =  self.__samples(len_traj,current_id,ids,i,n_types) 
+                                    samples,types = np.array(samples),np.array(types)
+                                    
 
-                                    dset.resize(dset.shape[0]+1,axis=0)
-                                    dset[-1] = samples
+                                    nb_neighbors = len(samples)
+                                    if nb_neighbors != 0:
+                                        # padding = np.zeros(shape = (max_neighbors-nb_neighbors,data_shape[1],data_shape[2]))
 
-                                    dset_types.resize(dset_types.shape[0]+1,axis=0)
-                                    dset_types[-1] = types
-                           
-                        else:
-                            print("trajectory {} discarded".format(current_id))
+                                        padding = np.ones(shape = (max_neighbors-nb_neighbors,data_shape[1],data_shape[2]))
+                                        padding = self.padding * padding
+
+                                        samples = np.concatenate((samples,padding),axis = 0)
+
+                                        padding_types = np.zeros(shape = (max_neighbors-nb_neighbors))
+                                        types = np.concatenate((types,padding_types),axis = 0)
+
+                                        dset.resize(dset.shape[0]+1,axis=0)
+                                        dset[-1] = samples
+
+                                        dset_types.resize(dset_types.shape[0]+1,axis=0)
+                                        dset_types[-1] = types
+                            
+                            else:
+                                print("trajectory {} discarded".format(current_id))
        
         os.remove(self.frames_temp)
         os.remove(self.trajectories_temp)
@@ -180,6 +206,22 @@ class PrepareTrainingHdf5():
                 # print(frame["ids"])
                 frame = json.loads(frame)
                 nb_agents = len(frame["ids"].keys())
+                nb_agents_scene.append(nb_agents)
+        os.remove(self.frames_temp)
+        return np.max(nb_agents_scene)
+
+    def __nb_max_pedestrians(self,scene):
+        helpers.extract_frames(self.original_file.format(scene),self.frames_temp,save = True)
+        nb_agents_scene = []
+
+        with open(self.frames_temp) as frames:
+            for i,frame in enumerate(frames):
+                # print(frame["ids"])
+                frame = json.loads(frame)
+                nb_agents = 0
+                for id_ in frame["ids"]:
+                    if frame["ids"][str(id_)]["type"] == "pedestrian":
+                        nb_agents += 1
                 nb_agents_scene.append(nb_agents)
         os.remove(self.frames_temp)
         return np.max(nb_agents_scene)
@@ -231,6 +273,29 @@ class PrepareTrainingHdf5():
                     types[int(id_)] = self.types_dic[frame[str(id_)]["type"]]
             
             for id_ in ids:
+                if str(id_) in frame:
+                    ids[id_].append(frame[str(id_)]["coordinates"])
+                else:
+                    ids[id_].append([self.padding,self.padding])
+        return ids,types
+
+    def __get_pedestrians(self,frames):
+        ids = {}
+        types = {}
+
+        for i,frame in enumerate(frames):
+            frame = json.loads(frame)
+            frame = frame["ids"]
+
+            for id_ in frame:
+                if frame[str(id_)]["type"] == "pedestrian":
+                    if int(id_) not in ids:
+                        ids[int(id_)] = [[self.padding,self.padding] for j in range(i)]
+                    if int(id_) not in types:
+                        types[int(id_)] = self.types_dic[frame[str(id_)]["type"]]
+            
+            for id_ in ids:
+                # if frame[str(id_)]["type"] == "pedestrian":
                 if str(id_) in frame:
                     ids[id_].append(frame[str(id_)]["coordinates"])
                 else:

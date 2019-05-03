@@ -74,6 +74,9 @@ def main():
     toy = prepare_param["toy"]
 
     data_file = torch_param["split_hdf5"]
+    if prepare_param["pedestrian_only"]:
+        data_file = torch_param["ped_hdf5"]
+        
     eval_scenes = prepare_param["eval_scenes"]
 
     train_eval_scenes = prepare_param["train_scenes"]

@@ -1,7 +1,11 @@
 {
     "nb_neighboors_path": "./learning/data/neighbors.json",
+    "nb_pedestrians_path": "./learning/data/pedestrians.json",
+
     "split_hdf5":"./learning/data/data.hdf5",
     "toy_hdf5":"./learning/data/toy.hdf5",
+    "ped_hdf5":"./learning/data/pedestrian.hdf5",
+
     "toy_nb_neighboors_path": "./learning/data/toy_neighbors.json",
 
 
@@ -9,6 +13,6 @@
     "stopped_prop" : 1.0,
     "new_padding":0.0,
     "old_padding":0.0,
-    "smooth":1
+    "smooth":0
 
 }

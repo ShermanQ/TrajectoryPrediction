@@ -32,7 +32,9 @@ def main():
 
     scene_list,train_list,test_list = None, None, None
 
-    prepare_training_params = json.load(open(args[3]))
+    # prepare_training_params = json.load(open(args[3]))
+    prepare_training_params = json.load(open("parameters/prepare_training.json"))
+
 
 
     prep_toy = prepare_training_params["toy"]
@@ -60,7 +62,9 @@ def main():
     s = time.time()
 
     print("Managing framerate")
-    rate_manager = FramerateManager(args[2],new_rate)
+    # rate_manager = FramerateManager(args[2],new_rate)
+    rate_manager = FramerateManager("parameters/data.json",new_rate)
+
     # threads = []
     for scene in scene_list:
         print(scene)
@@ -98,30 +102,30 @@ def main():
 
     print(time.time() - s)
 
-    # stats = Stats(args[1],args[2],args[3])
-    # stats.get_stats()
+    stats = Stats(args[1],args[2],args[3])
+    stats.get_stats()
 
-    # print("removing full standing trajectories")
-    # stops = StopsRemover(args[1],args[2],args[3])
-    # for scene in scene_list:
-    #     print(scene)
-    #     stops.remove_stopped(scene)
+    print("removing full standing trajectories")
+    stops = StopsRemover(args[1],args[2],args[3])
+    for scene in scene_list:
+        print(scene)
+        stops.remove_stopped(scene)
 
     
     
 
-    # print("augmenting scenes")
-    # data_augmenter = DataAugmenter(args[1],args[2],args[3])
-    # for scene in scene_list:
-    #     print(scene)
-    #     # data_augmenter.augment_scene(scene)
-    #     data_augmenter.augment_scene_images(scene)
+    print("augmenting scenes")
+    data_augmenter = DataAugmenter(args[1],args[2],args[3])
+    for scene in scene_list:
+        print(scene)
+        # data_augmenter.augment_scene(scene)
+        data_augmenter.augment_scene_images(scene)
 
-    # center = SceneCenters(args[1],args[2],args[3])
+    center = SceneCenters(args[1],args[2],args[3])
     
-    # center.get_centers(scene_list)
+    center.get_centers(scene_list)
     
-    # scaler = scene_scaler.SceneScalerMultiScene(args[2],False,scene_list,prepare_training_params["normalize"])
+    scaler = scene_scaler.SceneScalerMultiScene(args[2],False,scene_list,prepare_training_params["normalize"])
 
 if __name__ == "__main__":
     main()

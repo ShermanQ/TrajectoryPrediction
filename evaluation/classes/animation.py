@@ -5,11 +5,17 @@ import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
+from skimage import io,transform,util
+import cv2
 
 
 import json
 import sys 
 from learning.helpers.helpers_training import get_colors
+from scipy.spatial.distance import euclidean
+
+from scipy.misc import imread
+import matplotlib.image as mpimg
 
 class Animation():
     def __init__(self,data_params,prepare_params,eval_params):
@@ -23,6 +29,12 @@ class Animation():
         self.scene_samples = self.reports_dir + "{}_samples.json"
         self.gif_name = self.reports_dir + "{}_{}.gif"
 
+        self.correspondences = json.load(open(self.data_params["sdd_pixel2meters"]))
+
+
+        self.image = self.data_params["original_images"] + "{}.jpg"
+        
+
 
         
 
@@ -33,22 +45,59 @@ class Animation():
         labels = np.array(sample["labels"])
         outputs = np.array(sample["outputs"])
 
+        self.__get_factor(scene)
+
+        # img = cv2.imread(self.image.format(scene)).astype(int)
+
+        img = mpimg.imread(self.image.format(scene)).tolist()
+
+
+        # img = io.imread(self.image.format(scene)).tolist()
+        # img = np.array(img,dtype = float)
+
+        # img = [ [ [float(c) for c in b] for b in a] for a in img]
+
+        
+
+        print(type(img[0][0][0]))
+
+
+        
+        # io.imshow(img)
+        # io.show()
 
 
         prediction = np.concatenate([inputs,outputs], axis = 1)
         gt = np.concatenate([inputs,labels], axis = 1)
 
+        prediction = prediction * self.meter2pixel_ratio
+        gt = gt * self.meter2pixel_ratio
+
+
         nb_colors = gt.shape[0]
 
         colors = get_colors(nb_colors)
 
-        animator = Animate(prediction,gt,colors,self.gif_name.format(scene,sample_id))
+        animator = Animate(prediction,gt,colors,img,self.gif_name.format(scene,sample_id))
         animator.animate()
+
+
+    
+    def __get_factor(self,scene):
+        row = self.correspondences[scene]
+        meter_dist = row["meter_distance"]
+        pixel_coord = row["pixel_coordinates"]
+        pixel_dist = euclidean(pixel_coord[0],pixel_coord[1])
+        self.pixel2meter_ratio = meter_dist/float(pixel_dist)
+        self.meter2pixel_ratio = float(pixel_dist)/meter_dist
+
 
         
 
 class Animate():
-    def __init__(self,data_pred,data_gt,colors,gif_name = "test.gif", plot_ = False, save = True):
+    def __init__(self,data_pred,data_gt,colors,img,gif_name = "test.gif", plot_ = False, save = True):
+
+        self.img = img
         self.xs_pred = data_pred[:,:,0]
         self.ys_pred = data_pred[:,:,1]
 
@@ -57,7 +106,7 @@ class Animate():
 
 
         self.nb_agents = self.xs_pred.shape[0]
-        self.margin = 10
+        self.margin = 1
 
         self.nb_frames = self.xs_pred.shape[1]
         self.gif_name = gif_name
@@ -74,18 +123,22 @@ class Animate():
 
 
     def get_plots(self):
-        self.fig, self.ax = plt.subplots(2,1,squeeze= False)
+        self.fig, self.ax = plt.subplots(1,2,squeeze= False)
+        self.ax[0][0].imshow(self.img)
+        self.ax[0][1].imshow(self.img)
+
+
         self.plots1 = []
         self.plots2 = []
 
 
         for i in range(self.nb_agents):
-            tup = self.ax[0][0].plot([], [], color = self.colors[i],marker = 'o',markersize = 1.5,linewidth = 0.5)[0]
+            tup = self.ax[0][0].plot([], [], color = self.colors[i],marker = 'o',markersize = 2,linewidth = 0.5)[0]
             
                 
             self.plots1.append(tup)
 
-            tup = self.ax[1][0].plot([], [], color = self.colors[i],marker = 'o',markersize = 1.5,linewidth = 0.5)[0]
+            tup = self.ax[0][1].plot([], [], color = self.colors[i],marker = 'o',markersize = 2,linewidth = 0.5)[0]
             
             self.plots2.append(tup)
         
@@ -97,11 +150,11 @@ class Animate():
         self.ax[0][0].set_xlim(np.min(self.xs_pred)-self.margin, np.max(self.xs_pred)+self.margin)
         self.ax[0][0].set_ylim(np.min(self.ys_pred)-self.margin, np.max(self.ys_pred)+self.margin)
 
-        self.ax[1][0].set_xlim(np.min(self.xs_gt)-self.margin, np.max(self.xs_gt)+self.margin)
-        self.ax[1][0].set_ylim(np.min(self.ys_gt)-self.margin, np.max(self.ys_gt)+self.margin)
+        self.ax[0][1].set_xlim(np.min(self.xs_gt)-self.margin, np.max(self.xs_gt)+self.margin)
+        self.ax[0][1].set_ylim(np.min(self.ys_gt)-self.margin, np.max(self.ys_gt)+self.margin)
 
 
-        self.ax[1][0].set_title("Groundtruth",loc = "left", fontsize=8)
+        self.ax[0][1].set_title("Groundtruth",loc = "left", fontsize=8)
         self.ax[0][0].set_title("Predictions",loc = "left", fontsize=8)
 
         plt.tight_layout()
@@ -131,7 +184,9 @@ class Animate():
 
             if frame > 7 :
                 p.set_marker("+")
-                p.set_markersize(2)
+                p.set_markersize(3)
+
+                # p.set_fillstyle("none")
 
 
         for i,p in enumerate(self.plots2):
@@ -140,9 +195,9 @@ class Animate():
 
             if frame > 7 :
                 p.set_marker("+")
-                p.set_markersize(2)
+                p.set_markersize(3)
 
-
+    
 
 # python evaluation/classes/sample_animations.py
 def main():

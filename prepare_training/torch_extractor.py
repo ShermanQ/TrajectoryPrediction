@@ -40,6 +40,7 @@ class TorchExtractor():
         self.smooth = torch_params["smooth"]
         self.smooth_suffix = prepare_params["smooth_suffix"]
 
+        self.pedestrian_only = prepare_params["pedestrian_only"]
         
         
 
@@ -55,9 +56,19 @@ class TorchExtractor():
             self.eval_scenes = list(prepare_params["toy_test_scenes"])
             self.train_scenes = [ scene for scene in self.train_eval_scenes if scene not in self.eval_scenes]
         else:
+
             self.original_hdf5 = data["hdf5_file"]
             self.split_hdf5 = torch_params["split_hdf5"]
             self.max_neighbor_path = torch_params["nb_neighboors_path"]
+
+            if self.pedestrian_only:
+                self.original_hdf5 = data["hdf5_ped"]
+                self.split_hdf5 = torch_params["ped_hdf5"]
+                self.max_neighbor_path = torch_params["nb_pedestrians_path"]
+
+            
+                
+
             self.test_scenes = list(prepare_params["test_scenes"])
             self.train_eval_scenes = list(prepare_params["train_scenes"])
             self.eval_scenes = list(prepare_params["eval_scenes"])

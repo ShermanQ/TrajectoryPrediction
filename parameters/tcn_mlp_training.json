@@ -19,7 +19,7 @@
     "dropout" : 0.2,
     "nb_conv_feat":32,
     "offsets":1,
-    "predict_smooth":1,
+    "predict_smooth":0,
     "augmentation":0,
     "augmentation_angles":[90,180,270],
     "learning_curves":0,

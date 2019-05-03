@@ -82,7 +82,7 @@ class Hdf5Dataset():
             self.predict_offsets = predict_offsets
 
             self.predict_smooth = predict_smooth
-            self.smooth_suffix = smooth_suffix
+            # self.smooth_suffix = smooth_suffix
             self.normalize = normalize
 
 
@@ -110,7 +110,8 @@ class Hdf5Dataset():
             self.coord_dset = self.hdf5_file[self.dset_name]
 
             print(self.coord_dset.chunks)
-            self.coord_dset_smooth = self.hdf5_file[self.dset_name+self.smooth_suffix]
+            if self.predict_smooth:
+                  self.coord_dset_smooth = self.hdf5_file[self.dset_name+self.smooth_suffix]
 
             self.scenes_dset = self.hdf5_file[self.dset_img_name]   
             self.types_dset = self.hdf5_file[self.dset_types]  
@@ -217,7 +218,6 @@ class Hdf5Dataset():
             out = [
                   torch.FloatTensor(X).contiguous(),
                   torch.FloatTensor(y).contiguous(),
-                  scenes,
                   torch.FloatTensor(types)
             ]   
 
