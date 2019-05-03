@@ -80,20 +80,13 @@ class Animate():
 
 
         for i in range(self.nb_agents):
-            tup = (
-                # self.ax[0][0].plot([], [], self.colors[i])[0],
-                self.ax[0][0].plot([], [], self.colors[i],marker = 'o',markersize = 1.5,linewidth = 0.5)[0],
-                # self.ax[0][0].plot([], [], self.colors[i],marker = 'x',markersize = 1.5,linewidth = 0.5)[0],
-
-
-                # ,linestyle = ""
-            )
+            tup = self.ax[0][0].plot([], [], color = self.colors[i],marker = 'o',markersize = 1.5,linewidth = 0.5)[0]
+            
+                
             self.plots1.append(tup)
 
-            tup = (
-                # self.ax[1][0].plot([], [], self.colors[i])[0],
-                self.ax[1][0].plot([], [], self.colors[i],marker = 'o',markersize = 1.5,linewidth = 0.5)[0]
-            )
+            tup = self.ax[1][0].plot([], [], color = self.colors[i],marker = 'o',markersize = 1.5,linewidth = 0.5)[0]
+            
             self.plots2.append(tup)
         
             
@@ -108,8 +101,8 @@ class Animate():
         self.ax[1][0].set_ylim(np.min(self.ys_gt)-self.margin, np.max(self.ys_gt)+self.margin)
 
 
-        self.ax[1][0].set_title("groundtruth",loc = "right")
-        self.ax[0][0].set_title("predictions",loc = "right")
+        self.ax[1][0].set_title("Groundtruth",loc = "left", fontsize=8)
+        self.ax[0][0].set_title("Predictions",loc = "left", fontsize=8)
 
         plt.tight_layout()
 
@@ -127,42 +120,27 @@ class Animate():
         end = frame + 1
         start = max(0,end-self.history)
 
-        # if frame < 8:
-        #     self.fig.suptitle('Observations', fontsize=16)
-        # else:
-        #     self.fig.suptitle('Predictions', fontsize=16)
 
         self.fig.suptitle("timestep: {}".format(frame+1), fontsize=8)
 
         
         for i,p in enumerate(self.plots1):
 
-            # if frame < 8:
-            p[0].set_data(self.xs_pred[i,start:end], self.ys_pred[i,start:end])
-            p[0].set_color(self.colors[i])
-
-            if frame > 7 :
-                p[0].set_marker("+")
-                p[0].set_markersize(2)
-
-            
-            #     p[1].set_data([], [])
-
-            # else:
-            #     p[0].set_data([], [])
-            #     p[1].set_data(self.xs_pred[i,start:end], self.ys_pred[i,start:end])
-
-            # p[1].set_data(self.xs_pred[i,:frame], self.ys_pred[i,:frame])
-
-        for i,p in enumerate(self.plots2):
-            p.set_data(self.xs_gt[i,start:end], self.ys_gt[i,start:end])
-            p.set_color(self.colors[i])
+            p.set_data(self.xs_pred[i,start:end], self.ys_pred[i,start:end])
+            # p.set_color(self.colors[i])
 
             if frame > 7 :
                 p.set_marker("+")
                 p.set_markersize(2)
 
-            # p[1].set_data(self.xs_gt[i,:frame], self.ys_gt[i,:frame])
+
+        for i,p in enumerate(self.plots2):
+            p.set_data(self.xs_gt[i,start:end], self.ys_gt[i,start:end])
+            # p.set_color(self.colors[i])
+
+            if frame > 7 :
+                p.set_marker("+")
+                p.set_markersize(2)
 
 
 
