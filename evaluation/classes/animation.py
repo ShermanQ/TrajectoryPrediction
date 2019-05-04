@@ -46,6 +46,8 @@ class Animation():
         file_ = json.load(open(self.scene_samples.format(scene)))
         sample = file_[str(sample_id)]
         inputs = np.array(sample["inputs"])
+        
+
         labels = np.array(sample["labels"])
         outputs = np.array(sample["outputs"])
         types = np.array(sample["types"])
@@ -224,8 +226,21 @@ class Animate():
             self.fig.suptitle("Timestep: {}, prediction time".format(frame+1), fontsize=8)
         
         for i,p in enumerate(self.plots1):
+            
+            xs = self.xs_pred[i]
+            ys = self.ys_pred[i]
 
-            p.set_data(self.xs_pred[i,start:end], self.ys_pred[i,start:end])
+            c = 0
+            for x,y in zip(xs,ys):
+                if x == 0 and y == 0:
+                    c += 1
+                else:
+                    break
+            xs = xs[c:]
+            ys = ys[c:]
+
+
+            p.set_data(xs[start:end], ys[start:end])
             # p.set_color(self.colors[i])
 
             if frame > 7 :
@@ -236,7 +251,23 @@ class Animate():
 
 
         for i,p in enumerate(self.plots2):
-            p.set_data(self.xs_gt[i,start:end], self.ys_gt[i,start:end])
+
+
+            xs = self.xs_gt[i]
+            ys = self.ys_gt[i]
+
+            c = 0
+            for x,y in zip(xs,ys):
+                if x == 0 and y == 0:
+                    c += 1
+                else:
+                    break
+            xs = xs[c:]
+            ys = ys[c:]
+
+
+            p.set_data(xs[start:end], ys[start:end])
+            # p.set_data(self.xs_gt[i,start:end], self.ys_gt[i,start:end])
             # p.set_color(self.colors[i])
 
             if frame > 7 :

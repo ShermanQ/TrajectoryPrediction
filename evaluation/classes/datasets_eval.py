@@ -107,7 +107,7 @@ class Hdf5Dataset():
             self.coord_dset = self.hdf5_file[self.data_type][self.dset_name]
 
             print(self.coord_dset.chunks)
-            self.coord_dset_smooth = self.hdf5_file[self.data_type][self.dset_name+self.smooth_suffix]
+            # self.coord_dset_smooth = self.hdf5_file[self.data_type][self.dset_name+self.smooth_suffix]
 
             # self.scenes_dset = self.hdf5_file[self.dset_img_name]   
             self.types_dset = self.hdf5_file[self.data_type][self.dset_types]  
