@@ -4,6 +4,8 @@ import seaborn as sns
 import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
+import matplotlib.cm as cm
+import matplotlib.patches as mpatches
 
 from skimage import io,transform,util
 import cv2
@@ -33,6 +35,8 @@ class Animation():
 
 
         self.image = self.data_params["original_images"] + "{}.jpg"
+
+        self.rev_dict_types = self.prepare_params["types_dic_rev"]
         
 
 
@@ -44,12 +48,16 @@ class Animation():
         inputs = np.array(sample["inputs"])
         labels = np.array(sample["labels"])
         outputs = np.array(sample["outputs"])
+        types = np.array(sample["types"])
+        types = [ self.rev_dict_types[str(int(type_))] for type_ in types]
 
         self.__get_factor(scene)
 
         # img = cv2.imread(self.image.format(scene)).astype(int)
 
-        img = mpimg.imread(self.image.format(scene)).tolist()
+        # img = mpimg.imread(self.image.format(scene)).tolist()
+        img = mpimg.imread(self.image.format(scene))
+
 
 
         # img = io.imread(self.image.format(scene)).tolist()
@@ -78,7 +86,7 @@ class Animation():
 
         colors = get_colors(nb_colors)
 
-        animator = Animate(prediction,gt,colors,img,self.gif_name.format(scene,sample_id))
+        animator = Animate(prediction,gt,colors,img,types,self.gif_name.format(scene,sample_id))
         animator.animate()
 
 
@@ -95,7 +103,7 @@ class Animation():
         
 
 class Animate():
-    def __init__(self,data_pred,data_gt,colors,img,gif_name = "test.gif", plot_ = False, save = True):
+    def __init__(self,data_pred,data_gt,colors,img,types,gif_name = "test.gif", plot_ = False, save = True):
 
         self.img = img
         self.xs_pred = data_pred[:,:,0]
@@ -103,6 +111,8 @@ class Animate():
 
         self.xs_gt = data_gt[:,:,0]
         self.ys_gt = data_gt[:,:,1]
+
+        self.types = types 
 
 
         self.nb_agents = self.xs_pred.shape[0]
@@ -116,6 +126,21 @@ class Animate():
         self.fps = 1
         self.colors = colors
 
+        self.lin_size = 100
+
+        lin = np.linspace(0.6, 0.8, self.lin_size)
+ 
+        self.color_dict = {
+            "bicycle":cm.Blues(lin),
+            "pedestrian":cm.Reds(lin),
+            "car":cm.Greens(lin),
+            "skate":cm.Greys(lin),
+            "cart":cm.Purples(lin),
+            "bus":cm.Oranges(lin)
+        }
+
+        self.colors = [self.color_dict[type_][np.random.randint(self.lin_size)] for type_ in self.types]
+
         self.history = 4
 
         self.get_plots()
@@ -124,8 +149,28 @@ class Animate():
 
     def get_plots(self):
         self.fig, self.ax = plt.subplots(1,2,squeeze= False)
-        self.ax[0][0].imshow(self.img)
-        self.ax[0][1].imshow(self.img)
+
+
+        red_patch = mpatches.Patch(color='red', label='Pedestrians')
+        blue_patch = mpatches.Patch(color='b', label='Bycicles')
+        green_patch = mpatches.Patch(color='green', label='Cars')
+        grey_patch = mpatches.Patch(color='grey', label='Skates')
+        purple_patch = mpatches.Patch(color='purple', label='Carts')
+        orange_patch = mpatches.Patch(color='orange', label='Buses')
+
+
+
+        # red_patch = mpatches.Patch(color='red', label='Pedestrians')
+        # red_patch = mpatches.Patch(color='red', label='Pedestrians')
+        # red_patch = mpatches.Patch(color='red', label='Pedestrians')
+        # red_patch = mpatches.Patch(color='red', label='Pedestrians')
+
+        plt.legend(handles=[red_patch,blue_patch,green_patch,grey_patch,purple_patch,orange_patch],loc='best',fontsize = 3.5)
+
+
+        self.ax[0][0].imshow(self.img,origin = "upper")
+        self.ax[0][1].imshow(self.img,origin = "upper")
+        # plt.show()
 
 
         self.plots1 = []
@@ -147,11 +192,11 @@ class Animate():
     def animate(self):
         
 
-        self.ax[0][0].set_xlim(np.min(self.xs_pred)-self.margin, np.max(self.xs_pred)+self.margin)
-        self.ax[0][0].set_ylim(np.min(self.ys_pred)-self.margin, np.max(self.ys_pred)+self.margin)
+        # self.ax[0][0].set_xlim(np.min(self.xs_pred)-self.margin, np.max(self.xs_pred)+self.margin)
+        # self.ax[0][0].set_ylim(np.min(self.ys_pred)-self.margin, np.max(self.ys_pred)+self.margin)
 
-        self.ax[0][1].set_xlim(np.min(self.xs_gt)-self.margin, np.max(self.xs_gt)+self.margin)
-        self.ax[0][1].set_ylim(np.min(self.ys_gt)-self.margin, np.max(self.ys_gt)+self.margin)
+        # self.ax[0][1].set_xlim(np.min(self.xs_gt)-self.margin, np.max(self.xs_gt)+self.margin)
+        # self.ax[0][1].set_ylim(np.min(self.ys_gt)-self.margin, np.max(self.ys_gt)+self.margin)
 
 
         self.ax[0][1].set_title("Groundtruth",loc = "left", fontsize=8)
@@ -173,9 +218,10 @@ class Animate():
         end = frame + 1
         start = max(0,end-self.history)
 
-
-        self.fig.suptitle("timestep: {}".format(frame+1), fontsize=8)
-
+        if end < 9:
+            self.fig.suptitle("Timestep: {}, observation time".format(frame+1), fontsize=8)
+        else:
+            self.fig.suptitle("Timestep: {}, prediction time".format(frame+1), fontsize=8)
         
         for i,p in enumerate(self.plots1):
 

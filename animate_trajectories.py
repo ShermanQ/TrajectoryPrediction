@@ -40,7 +40,7 @@ def main():
 
     
 
-    framerate = 1
+    framerate = 30
     # factor_div = 3/2
     plot_last_step = True
     nb_last_steps = 200
