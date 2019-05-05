@@ -41,6 +41,8 @@ class TorchExtractor():
         self.smooth_suffix = prepare_params["smooth_suffix"]
 
         self.pedestrian_only = prepare_params["pedestrian_only"]
+        self.original_dataset = prepare_params["original"]
+
         
         
 
@@ -63,8 +65,8 @@ class TorchExtractor():
 
             if self.pedestrian_only:
                 self.original_hdf5 = data["hdf5_ped"]
-                self.split_hdf5 = torch_params["ped_hdf5"]
-                self.max_neighbor_path = torch_params["nb_pedestrians_path"]
+            #     self.split_hdf5 = torch_params["ped_hdf5"]
+            #     self.max_neighbor_path = torch_params["nb_pedestrians_path"]
 
             
                 
@@ -73,6 +75,13 @@ class TorchExtractor():
             self.train_eval_scenes = list(prepare_params["train_scenes"])
             self.eval_scenes = list(prepare_params["eval_scenes"])
             self.train_scenes = [ scene for scene in self.train_eval_scenes if scene not in self.eval_scenes]
+
+            if self.original_dataset:
+                self.test_scenes = list(prepare_params["test_original"])
+                self.train_eval_scenes = list(prepare_params["train_original"])
+                self.eval_scenes = list(prepare_params["eval_original"])
+                self.train_scenes = [ scene for scene in self.train_eval_scenes if scene not in self.eval_scenes]
+
             # self.train_scenes = augment_scene_list(self.train_scenes,preprocessing["augmentation_angles"])
             # self.test_scenes = augment_scene_list(self.test_scenes,preprocessing["augmentation_angles"])
 

@@ -11,7 +11,8 @@
     "img_size":224,
     "remove_hdf5":0,
     "toy": 0,
-    "pedestrian_only":1,
+    "pedestrian_only":0,
+    "original":0,
     "smooth":0,
     "normalize":1,
     "smooth_suffix":"_smooth",
@@ -49,6 +50,10 @@
         "bookstore1",
         "bookstore2",
         "bookstore3",
+        "coupa0",
+        "coupa1",
+        "coupa2",
+        "coupa3",
         "deathCircle0", 
         "deathCircle1",         
         "deathCircle2", 
@@ -81,14 +86,22 @@
         "little0", 
         "little1", 
         "little2", 
-        "little3"
+        "little3",
+        "quad0",
+        "quad1",
+        "quad2",
+        "quad3"
         
  
     ],
     "train_scenes":[
         "bookstore0",
         "bookstore1",
-        "bookstore3",   
+        "bookstore3", 
+        "coupa0",
+        "coupa1",
+        "coupa2",
+        "coupa3",  
         "deathCircle0", 
         "deathCircle1",         
         "deathCircle2", 
@@ -108,7 +121,11 @@
         "hyang5", 
         "hyang6", 
         "hyang7", 
-        "hyang8"
+        "hyang8",
+        "hyang12", 
+        "hyang13", 
+        "hyang14"
+
         
     ],
     "eval_scenes":
@@ -130,7 +147,72 @@
         "little0", 
         "little1", 
         "little2", 
-        "little3"
+        "little3",
+        "quad0",
+        "quad1",
+        "quad2",
+        "quad3"
+
+    ],
+
+    "train_original":[
+        "bookstore0",
+        "bookstore1",
+        "bookstore2",
+        "bookstore3",        
+        "coupa2",
+        "coupa3",
+        "deathCircle0", 
+        "deathCircle1",         
+        "deathCircle2", 
+        "deathCircle3", 
+        "deathCircle4", 
+        "gates0", 
+        "gates1",        
+        "gates3", 
+        "gates4", 
+        "gates5", 
+        "gates6", 
+        "gates7", 
+        "gates8",  
+        "hyang10", 
+        "hyang11", 
+        "hyang12", 
+        "hyang13", 
+        "hyang14",         
+        "hyang2", 
+        "hyang4", 
+        "hyang5", 
+        "hyang6", 
+        "hyang7", 
+        "hyang9"
+
+    ],
+    "eval_original":[
+        "deathCircle2",
+        "deathCircle4",
+        "gates5",
+        "hyang4",
+        "hyang2"
+
+    ],
+    "test_original":[
+        "coupa0",
+        "coupa1", 
+        "gates2",             
+        "hyang0", 
+        "hyang1",  
+        "hyang3",  
+        "hyang8", 
+        "little0", 
+        "little1", 
+        "little2", 
+        "little3",
+        "quad0",
+        "quad1",
+        "quad2",
+        "quad3"
+
 
     ],
     "eval_prop":0.8,

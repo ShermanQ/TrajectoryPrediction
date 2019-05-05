@@ -30,12 +30,8 @@ def main():
 
     if prep_toy:
         scene_list = prepare_training_params["toy_scenes"]
-        train_list = prepare_training_params["toy_train_scenes"]
-        test_list = prepare_training_params["toy_test_scenes"]
     else:
         scene_list = prepare_training_params["selected_scenes"]
-        train_list = prepare_training_params["train_scenes"]
-        test_list = prepare_training_params["test_scenes"]
 
         # scene_list = helpers.augment_scene_list(scene_list,preprocessing["augmentation_angles"])
         # train_list = helpers.augment_scene_list(train_list,preprocessing["augmentation_angles"])
