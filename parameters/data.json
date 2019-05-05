@@ -18,7 +18,9 @@
     "multiple_scalers":0,
     
     "torch_data": "./learning/data/",
-    "sdd_pixel2meters":"./data/original_datasets/sdd/correspondences.json",
+    "pixel2meters_trajnet":"./data/original_datasets/sdd/correspondences.json",
+    "pixel2meters_manual":"./data/original_datasets/sdd/correspondences1.json",
+
     "scene_centers":"./data/prepared_datasets/scene_centers.json",
 
     "hdf5_file":"./data/prepared_datasets/data.hdf5",

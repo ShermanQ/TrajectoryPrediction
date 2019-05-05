@@ -121,9 +121,9 @@ def main():
         # data_augmenter.augment_scene(scene)
         data_augmenter.augment_scene_images(scene)
 
-    center = SceneCenters(args[1],args[2],args[3])
+    # center = SceneCenters(args[1],args[2],args[3])
     
-    center.get_centers(scene_list)
+    # center.get_centers(scene_list)
     
     scaler = scene_scaler.SceneScalerMultiScene(args[2],False,scene_list,prepare_training_params["normalize"])
 
