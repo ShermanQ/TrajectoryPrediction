@@ -158,6 +158,10 @@ def main():
         "embedding_size" : training_param["embedding_size"],
         "output_size" : training_param["output_size"],
         "pred_length" : training_param["pred_length"],
+        "projection_layers" : training_param["projection_layers"],
+        "enc_feat_embedding" : training_param["enc_feat_embedding"]
+
+
 
 
     }

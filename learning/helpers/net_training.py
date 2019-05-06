@@ -59,7 +59,7 @@ def train(model, device, train_loader,criterion, optimizer, epoch,batch_size,pri
         # print("masking {}".format(time.time()-s))
         # s = time.time()
 # ###########################
-        points_mask = torch.FloatTensor(points_mask).to(device)
+        points_mask = torch.FloatTensor(points_mask[1]).to(device)
         outputs = torch.mul(points_mask,outputs)
         labels = torch.mul(points_mask,labels)
 
@@ -202,7 +202,7 @@ def evaluate(model, device, eval_loader,criterion, epoch, batch_size,scalers_pat
         
 
         # we don't count the prediction error for end of trajectory padding
-        points_mask = torch.FloatTensor(points_mask).to(device)#
+        points_mask = torch.FloatTensor(points_mask[1]).to(device)#
         outputs = torch.mul(points_mask,outputs)#
         labels = torch.mul(points_mask,labels)#
 

@@ -6,40 +6,30 @@ import numpy as np
 import torchvision
 import imp
 import time
+from classes.soft_attention import SoftAttention
 
-# class decoderLSTM(nn.Module):
-#     # def __init__(self,input_size,hidden_size,num_layers,output_size,batch_size,seq_len):
+class decoderLSTM(nn.Module):
+    # def __init__(self,input_size,hidden_size,num_layers,output_size,batch_size,seq_len):
 
-#     def __init__(self,device,batch_size,input_size,output_size,hidden_size,num_layers):
-#         super(decoderLSTM,self).__init__()
+    def __init__(self,device,batch_size,input_size,dec_hidden_size,num_layers):
+        super(decoderLSTM,self).__init__()
 
-#         self.device = device
+        self.device = device
 
-#         self.batch_size = batch_size
-#         self.input_size = input_size
+        self.batch_size = batch_size
+        self.input_size = input_size
 
-#         self.output_size = output_size
-#         self.hidden_size = hidden_size
-#         self.num_layers = num_layers
-
-
-#         self.lstm = nn.LSTM(input_size = input_size,hidden_size = hidden_size,num_layers = num_layers,batch_first = True)
-#         self.out = nn.Linear(self.hidden_size,self.output_size)
+        self.dec_hidden_size = dec_hidden_size
+        self.num_layers = num_layers
 
 
 
-#     def forward(self,x,hidden):
-#         # self.hidden = self.init_hidden_state()
-#         # x = x.view(self.seq_len,self.batch_size,2)
-#         output,self.hidden = self.lstm(x,hidden)
-#         output = self.out(output)#activation?
-#         return output, hidden
+        self.lstm = nn.LSTM(input_size = input_size,hidden_size = dec_hidden_size,num_layers = num_layers,batch_first = True)
+        
+    def forward(self,x,hidden):
+        output,self.hidden = self.lstm(x,hidden)
+        return output, hidden
 
-#     def init_hidden_state(self):
-#         h_0 = torch.rand(self.num_layers,self.batch_size,self.hidden_size).to(self.device)
-#         c_0 = torch.rand(self.num_layers,self.batch_size,self.hidden_size).to(self.device)
-
-#         return (h_0,c_0)
 
 class encoderLSTM(nn.Module):
     # def __init__(self,input_size,hidden_size,num_layers,output_size,batch_size,seq_len):
@@ -71,8 +61,8 @@ class encoderLSTM(nn.Module):
 
         # hidden tuple( B*N enc,B*N enc)
         # B*N enc
-
-        return x[:,-1,:], hidden[0][0], hidden[1][0]
+        hidden = (hidden[0].permute(1,2,0), hidden[1].permute(1,2,0))
+        return x[:,-1,:], hidden
 
 
 
@@ -90,6 +80,8 @@ class S2sSocialAtt(nn.Module):
     def __init__(self,args):
         super(S2sSocialAtt,self).__init__()
 
+        self.args = args
+
         self.device = args["device"]
         self.batch_size = args["batch_size"]
         self.input_dim = args["input_dim"]
@@ -100,12 +92,18 @@ class S2sSocialAtt(nn.Module):
         self.embedding_size = args["embedding_size"]
         self.output_size = args["output_size"]
         self.pred_length = args["pred_length"]
+        self.projection_layers = args["projection_layers"]
+        self.encoder_features_embedding = args["enc_feat_embedding"]
 
         self.coordinates_embedding = nn.Linear(self.input_dim,self.embedding_size)
-        self.coordinates_reverse_embedding = nn.Linear(self.embedding_size,self.output_size)
+        self.hdec2coord = nn.Linear(self.dec_hidden_size,self.output_size)
+        self.k_embedding = nn.Linear(self.enc_hidden_size,self.encoder_features_embedding)
+        self.q_embedding = nn.Linear(self.dec_hidden_size,self.encoder_features_embedding)
+
 
         self.encoder = encoderLSTM(self.device,self.batch_size,self.input_dim,self.enc_hidden_size,self.enc_num_layers,self.embedding_size)
-
+        self.decoder = decoderLSTM(self.device,self.batch_size,self.encoder_features_embedding + self.embedding_size,self.dec_hidden_size,self.dec_num_layer)
+        self.attention = SoftAttention(self.device,self.encoder_features_embedding,self.projection_layers)
 
     def forward(self,x):
         types = x[1]
@@ -135,25 +133,52 @@ class S2sSocialAtt(nn.Module):
         x_e = x_e[arg_ids]
         # get ordered/unpadded sequences lengths for pack_padded object   
         sorted_x_lengths = x_lengths[arg_ids] 
-        encoder_hiddens,h,c = self.encoder(x_e,sorted_x_lengths)
+        encoder_hiddens,hidden = self.encoder(x_e,sorted_x_lengths)
 
         # reverse ordering of indices
         rev_arg_ids = np.argsort(arg_ids)
         # reverse ordering of encoded sequence
+        x_e = x_e[rev_arg_ids].view(B,N,S,E)
         encoder_hiddens = encoder_hiddens[rev_arg_ids]
-        h = h[rev_arg_ids]
-        c = c[rev_arg_ids]
+        hidden = (hidden[0][rev_arg_ids].permute(2,0,1), hidden[1][rev_arg_ids].permute(2,0,1))
 
-        # reshape to original batch_size
-        encoder_hiddens = encoder_hiddens.view(B,N,self.enc_hidden_size)
-        h = h.view(B,N,self.enc_hidden_size)
-        c = c.view(B,N,self.enc_hidden_size)
+        # embed encoder hidden states features
+        encoder_hiddens = self.k_embedding(encoder_hiddens)
+        encoder_hiddens = f.relu(encoder_hiddens)
+
+        
+        # set keys and values to embedded values of encoder hidden states
+        k = v = encoder_hiddens.view(B,N,self.encoder_features_embedding)
+        out = encoder_hiddens
+
+        outputs = []
+
+        for t in range(self.pred_length):
+            # set query to last decoder hidden state
+            q = hidden[0].view(B,N,self.enc_hidden_size)
+            q = self.q_embedding(q)
+            q = f.relu(q)
 
 
+            # embedded last point of input sequence
+            last_pos = x_e[:,:,-1]  
+            # attention features          
+            att = self.attention(q,k,v,points_mask) # B N encoder_features_embedding
 
+            in_dec = torch.cat([last_pos,att],dim = 2) # B N 2*encoder_features_embedding
+            in_dec = in_dec.unsqueeze(2)
+            
+            
+            out,hidden = self.decoder(in_dec.view(B*N,1,in_dec.size()[-1]) ,hidden)
+            out = out.view(B,N,1,out.size()[-1])
+            outputs.append(out)
 
+        outputs = torch.cat(outputs, dim = 2)
 
-        print("a")
+        outputs = self.hdec2coord(outputs)
+
+        return outputs
+
 
 
 
