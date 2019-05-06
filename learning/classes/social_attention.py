@@ -101,7 +101,7 @@ class SocialAttention(nn.Module):
 
         types = x[1]
         active_agents = x[2]
-        points_mask = x[3]
+        points_mask = x[3][1]
         imgs = x[4]
 
         x = x[0]

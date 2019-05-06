@@ -182,7 +182,7 @@ class Hdf5Dataset():
                   X,y,points_mask = self.__get_x_y(X,y,seq)                      
 
 
-            sample_sum = (np.sum(points_mask.reshape(points_mask.shape[0],points_mask.shape[1],-1), axis = 2) > 0).astype(int)
+            sample_sum = (np.sum(points_mask[1].reshape(points_mask[1].shape[0],points_mask[1].shape[1],-1), axis = 2) > 0).astype(int)
             active_mask = np.argwhere(sample_sum.flatten()).flatten()
 
 
@@ -253,7 +253,9 @@ class Hdf5Dataset():
 
       # def __get_x_y_neighbors(self,coord_dset,ids,max_batch,types_dset,hdf5_file):
       def __get_x_y_neighbors(self,X,y,seq):
-            active_mask = (y != self.padding).astype(int)            
+            active_mask = (y != self.padding).astype(int)    
+            active_mask_in = (X != self.padding).astype(int)            
+
             if self.predict_offsets:
                   if self.predict_offsets == 1:
                         # offsets according to last obs point, take last point for each obs traj and make it an array of dimension y
@@ -271,7 +273,7 @@ class Hdf5Dataset():
                   y = np.multiply(y,active_mask) # put padding to 0
                   X = np.multiply(X,(X != self.padding).astype(int)) # put padding to 0
 
-            return X,y,active_mask
+            return X,y,(active_mask_in,active_mask)
 
       # def __get_x_y(self,coord_dset,ids,max_batch,types_dset,hdf5_file):
       def __get_x_y(self,X,y,seq):
@@ -279,6 +281,8 @@ class Hdf5Dataset():
             X = np.expand_dims( X[:,0] ,1) # keep only first neighbors and expand nb_agent dim 
             y = np.expand_dims( y[:,0], 1) #B,1,tpred,2 # keep only first neighbors and expand nb_agent dim 
             active_mask = (y != self.padding).astype(int)
+            active_mask_in = (X != self.padding).astype(int)            
+
             if self.predict_offsets:
 
                   if self.predict_offsets == 1 :
@@ -294,7 +298,7 @@ class Hdf5Dataset():
                   X = np.multiply(X,(X != self.padding).astype(int)) # put padding to 0
 
 
-            return X,y,active_mask
+            return X,y,(active_mask_in,active_mask)
 
       def __augmentation_ids(self,ids):
             red_ids = sorted(np.array(ids) % self.shape[0])

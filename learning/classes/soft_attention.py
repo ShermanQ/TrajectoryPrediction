@@ -29,12 +29,14 @@ class LinearProjection(nn.Module):
 
     def forward(self,q,k,v,mask = None): # B,N,dmodel
         
-        B,N,dmodel = q.size()
+        _,N,_ = q.size()
         q = q.unsqueeze(2).repeat(1,1,N,1) # B,N,N,dmodel 
+
+        _,N,_ = k.size()
         k = k.unsqueeze(1).repeat(1,N,1,1) # B,N,N,dmodel 
 
         comp_q_v = torch.cat([q,k],dim = 3) # B,N,N,2dmodel 
-        comp_q_v = self.projection_weight(comp_q_v)  # B,N,N  
+        comp_q_v = self.projection_weight(comp_q_v).squeeze(3)  # B,N,N  
 
         min_inf = float('-inf')       
         # mask
