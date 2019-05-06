@@ -10,7 +10,7 @@
     "center":1,
     "img_size":224,
     "remove_hdf5":0,
-    "toy": 0,
+    "toy": 1,
     "pedestrian_only":0,
     "original":0,
     "smooth":0,
@@ -33,16 +33,27 @@
         "6":"bus"
     },
     "toy_scenes":[
-        "little3",
-        "little0"
+        "coupa0",
+        "coupa1"
 
     ],
     "toy_train_scenes":[
-        "little3"
+        "coupa0"
 
     ],
     "toy_test_scenes":[
-        "little0"
+        "coupa1"
+
+    ],
+    "removed_scenes":[
+        "coupa2",
+
+        "hyang2", 
+        "hyang10", 
+        "hyang11", 
+        "hyang12", 
+        "hyang13", 
+        "hyang14"  
 
     ],
     "selected_scenes": [
@@ -53,6 +64,7 @@
         "coupa0",
         "coupa1",
         "coupa2",
+
         "coupa3",
         "deathCircle0", 
         "deathCircle1",         
@@ -69,24 +81,32 @@
         "gates7", 
         "gates8",          
         "hyang0", 
-        "hyang1", 
+        "hyang1",         
         "hyang10", 
         "hyang11", 
-        "hyang12", 
-        "hyang13", 
-        "hyang14",         
-        "hyang2", 
+        "hyang12",  
+        "hyang2",
         "hyang3", 
         "hyang4", 
         "hyang5", 
         "hyang6", 
         "hyang7", 
         "hyang8", 
-        "hyang9", 
+        "hyang9",         
         "little0", 
         "little1", 
         "little2", 
         "little3",
+        "nexus0",
+        "nexus1",
+        "nexus2",
+        "nexus3",
+        "nexus4",
+        "nexus5",
+        "nexus6",
+        "nexus7",
+        "nexus8",
+        "nexus9",
         "quad0",
         "quad1",
         "quad2",
@@ -94,73 +114,14 @@
         
  
     ],
+    
     "train_scenes":[
         "bookstore0",
         "bookstore1",
-        "bookstore3", 
-        "coupa0",
-        "coupa1",
-        "coupa2",
-        "coupa3",  
-        "deathCircle0", 
-        "deathCircle1",         
-        "deathCircle2", 
-        "deathCircle3", 
-        "deathCircle4",  
-        "gates0", 
-        "gates1",        
-        "gates3", 
-        "gates4", 
-        "gates5",           
-        "hyang0", 
-        "hyang1",  
-        "hyang11",         
-        "hyang2", 
-        "hyang3", 
-        "hyang4", 
-        "hyang5", 
-        "hyang6", 
-        "hyang7", 
-        "hyang8",
-        "hyang12", 
-        "hyang13", 
-        "hyang14"
-
-        
-    ],
-    "eval_scenes":
-    [
-        "deathCircle2",
-        "deathCircle4",
-        "gates5",
-        "hyang4",
-        "hyang2"
-
-    ],
-
-    "test_scenes":[
-        
         "bookstore2",
-        "gates6",
-        "hyang9",
-        "hyang10",
-        "little0", 
-        "little1", 
-        "little2", 
-        "little3",
-        "quad0",
-        "quad1",
-        "quad2",
-        "quad3"
-
-    ],
-
-    "train_original":[
-        "bookstore0",
-        "bookstore1",
-        "bookstore2",
-        "bookstore3",        
+        "bookstore3",
         "coupa2",
+
         "coupa3",
         "deathCircle0", 
         "deathCircle1",         
@@ -168,35 +129,44 @@
         "deathCircle3", 
         "deathCircle4", 
         "gates0", 
-        "gates1",        
+        "gates1",         
         "gates3", 
         "gates4", 
         "gates5", 
         "gates6", 
         "gates7", 
-        "gates8",  
+        "gates8",         
         "hyang10", 
         "hyang11", 
-        "hyang12", 
-        "hyang13", 
-        "hyang14",         
-        "hyang2", 
+        "hyang12",  
+        "hyang2",
         "hyang4", 
         "hyang5", 
         "hyang6", 
         "hyang7", 
-        "hyang9"
+        "hyang9",    
+        "nexus0",
+        "nexus1",
+        "nexus2",
+        "nexus3",
+        "nexus4",
+        "nexus7",
+        "nexus8",
+        "nexus9"
 
     ],
-    "eval_original":[
+    "eval_scenes":[
         "deathCircle2",
         "deathCircle4",
         "gates5",
         "hyang4",
-        "hyang2"
+        "hyang2",
+        "nexus4",
+        "bookstore3"
+
 
     ],
-    "test_original":[
+    "test_scenes":[
         "coupa0",
         "coupa1", 
         "gates2",             
@@ -208,6 +178,8 @@
         "little1", 
         "little2", 
         "little3",
+        "nexus5",
+        "nexus6",
         "quad0",
         "quad1",
         "quad2",

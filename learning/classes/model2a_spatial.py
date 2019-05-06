@@ -9,7 +9,7 @@ import time
 
 from classes.transformer import Transformer,MultiHeadAttention
 from classes.tcn import TemporalConvNet
-from classes.sophie_gan import customCNN
+from classes.pretrained_vgg import customCNN
 
 
 

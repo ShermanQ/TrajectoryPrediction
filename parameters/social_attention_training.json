@@ -21,12 +21,14 @@
     "model_type": 1,
     "plot_every": 5,
     "save_every":5,
-    "test":0,
+    "test":1,
     "convnet_embedding":32,
     "convnet_nb_layers":4,
     "use_tcn": 1,
     "offsets":1,
     "predict_smooth":0,
     "augmentation":0,
-    "augmentation_angles":[90,180,270]
+    "augmentation_angles":[90,180,270],
+    "projection_layers":[1024,512,256,128,64],
+    "use_mha":0
 }

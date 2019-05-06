@@ -7,12 +7,7 @@ import numpy as np
 import time
 
 from classes.datasets import Hdf5Dataset,CustomDataLoader
-# from classes.model2a import Model2a
-from classes.model2a1 import Model2a1
-
-# from classes.model2b import Model2b
-# from classes.model2c import Model2c
-# from classes.model2d import Model2d
+from classes.social_attention import SocialAttention
 import matplotlib.pyplot as plt
 
 import helpers.net_training as training
@@ -44,10 +39,7 @@ def main():
     data = json.load(open("parameters/data.json"))
     torch_param = json.load(open("parameters/torch_extractors.json"))
     prepare_param = json.load(open("parameters/prepare_training.json"))
-    training_param = json.load(open("parameters/model2a_training.json"))
-    # training_param = json.load(open("parameters/model2b_training.json"))
-    # training_param = json.load(open("parameters/model2c_training.json"))
-    # training_param = json.load(open("parameters/model2d_training.json"))
+    training_param = json.load(open("parameters/social_attention_training.json"))
 
     preprocessing = json.load(open("parameters/preprocessing.json"))
 
@@ -58,6 +50,8 @@ def main():
 
 
     data_file = torch_param["split_hdf5"]
+    if prepare_param["pedestrian_only"]:
+        data_file = torch_param["ped_hdf5"]
 
 
 
@@ -131,74 +125,7 @@ def main():
     eval_loader = CustomDataLoader( batch_size = training_param["batch_size"],shuffle = False,drop_last = False,dataset = eval_dataset,test= training_param["test"])
     
 
-    # ins_x,ins_y,las_x,las_y = [],[],[],[]
-    # for batch_idx, data in enumerate(train_loader):
-    #     # inputs, labels, ids,types = data
-    #     inputs, labels, ids,types,points_mask, active_mask = data
 
-
-    #     inputs = inputs.numpy()
-    #     labels = labels.numpy()
-
-    #     inputs_x = inputs[:,:,:,0].flatten()
-    #     inputs_y = inputs[:,:,:,1].flatten()
-    #     labels_x = labels[:,:,:,0].flatten()
-    #     labels_y = labels[:,:,:,1].flatten()
-
-
-    #     inputs_x = inputs_x[np.argwhere(inputs_x != prepare_param["padding"])]
-    #     inputs_y = inputs_y[np.argwhere(inputs_y != prepare_param["padding"])]
-    #     labels_x = labels_x[np.argwhere(labels_x != prepare_param["padding"])]
-    #     labels_y = labels_y[np.argwhere(labels_y != prepare_param["padding"])]
-
-
-       
-    #     las_x.append(labels_x)
-    #     las_y.append(labels_y)
-    #     ins_x.append(inputs_x)
-    #     ins_y.append(inputs_y)
-
-        
-
-    #     # if batch_idx > 100:
-    #     #     break
-    # ins_x = np.concatenate(ins_x)
-    # las_x = np.concatenate(las_x)
-    # ins_y = np.concatenate(ins_y)
-    # las_y = np.concatenate(las_y)
-
-    # fig,axs = plt.subplots(2,2,squeeze = False)
-    # axs[0][0].hist(ins_x,bins = 100)
-    # axs[0][0].set_title("inputs_x")
-    # axs[0][1].hist(las_x,bins = 100)
-    # axs[0][1].set_title("labels_X")
-
-    # axs[1][0].hist(ins_y,bins = 100)
-    # axs[1][0].set_title("inputs_y")
-    # axs[1][1].hist(las_y,bins = 100)
-    # axs[1][1].set_title("labels_y")
-
-    # plt.show()
-
-
-
-       
-    # nb_samples = train_dataset.get_len()
-    # print("nb samples train {}".format(nb_samples))
-    # print("**** proportion of train samples *** {}".format(0.1))
-    # train_loader.data_len = int( 0.1 * nb_samples)
-    # print("nb of kept train samples {}".format(train_loader.data_len))
-    # train_loader.split_batches()
-    # print("nb of kept batches {}".format(train_loader.nb_batches))
-
-
-    # nb_samples = eval_dataset.get_len()
-    # print("nb samples eval {}".format(nb_samples))
-    # print("**** proportion of eval samples *** {}".format(0.1))
-    # eval_loader.data_len = int( 0.1 * nb_samples)
-    # print("nb of kept train samples {}".format(eval_loader.data_len))
-    # eval_loader.split_batches()
-    # print("nb of kept batches {}".format(eval_loader.nb_batches))
 
 
     args = {
@@ -220,52 +147,20 @@ def main():
         "convnet_nb_layers" : training_param["convnet_nb_layers"],
         "use_tcn" : training_param["use_tcn"],
         "dropout_tcn" : training_param["dropout_tcn"],
-        "dropout_tfr" : training_param["dropout_tfr"]
+        "dropout_tfr" : training_param["dropout_tfr"],
+        "projection_layers":training_param["projection_layers"],
+        "use_mha":training_param["use_mha"]
+
 
     }
 
-    net = Model2a1(args)
-    # net = Model2a1(
-    # # net = Model2a(
-    # # net = Model2b(
-    # # net = Model2c(
-    # # net = Model2d(
-    
-    #     device = device,
-    #     input_dim = training_param["input_dim"],
-    #     input_length = training_param["obs_length"],
-    #     output_length = training_param["pred_length"],
-    #     kernel_size = training_param["kernel_size"],
-    #     nb_blocks_transformer = training_param["nb_blocks"],
-    #     h = training_param["h"],
-    #     dmodel = training_param["dmodel"],
-    #     d_ff_hidden = 4 * training_param["dmodel"],
-    #     dk = int(training_param["dmodel"]/training_param["h"]),
-    #     dv = int(training_param["dmodel"]/training_param["h"]),
-    #     predictor_layers = training_param["predictor_layers"],
-    #     pred_dim = training_param["pred_length"] * training_param["input_dim"] ,
-        
-    #     convnet_embedding = training_param["convnet_embedding"],
-    #     convnet_nb_layers = training_param["convnet_nb_layers"],
-    #     use_tcn = training_param["use_tcn"],
-    #     dropout_tcn = training_param["dropout_tcn"],
-    #     dropout_tfr = training_param["dropout_tfr"]
-
-    # )
+    net = SocialAttention(args) 
 
     net.apply(helpers.weight_init)
-
-    
-    # helpers.plot_params(net.named_parameters(),-1,root="./data/reports/weights/")
-
-
     net = net.to(device)
     print(net)
 
     optimizer = optim.Adam(net.parameters(),lr = training_param["lr"])
-    # optimizer = torch.optim.SGD(net.parameters(),lr = training_param["lr"] ,momentum = 0.9,nesterov= True )
-    # criterion = mse_loss
-    # criterion = nn.MSELoss(reduction= "mean")
     criterion = helpers.MaskedLoss(nn.MSELoss(reduction="none"))
     
 

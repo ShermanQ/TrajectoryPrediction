@@ -14,7 +14,7 @@ class Pixel2Meters():
         self.destination_image = data["prepared_images"] + "{}.jpg"
         self.temp = data["temp"] + "temp.csv"
         self.original_file = data["filtered_datasets"] + "{}.csv"
-        # self.destination_file = data["filtered_datasets"] + "{}.csv"
+        # self.destination_file = data["filtered_datasets"] + "{}.csv
 
         self.pixel2meters = pixel2meters
 

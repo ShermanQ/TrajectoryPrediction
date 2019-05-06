@@ -45,12 +45,12 @@ def main():
     s = time.time()
 
 
-    img_size = int(prepare_training_params["img_size"])
-    scaler = img_scaler.ImgScaler(data_params_path,img_size)  
-    print("scaling images")
-    for scene in helpers.augment_scene_list(scene_list,preprocessing["augmentation_angles"]):
-        print(scene)
-        scaler.scale(scene)
+    # img_size = int(prepare_training_params["img_size"])
+    # scaler = img_scaler.ImgScaler(data_params_path,img_size)  
+    # print("scaling images")
+    # for scene in helpers.augment_scene_list(scene_list,preprocessing["augmentation_angles"]):
+    #     print(scene)
+    #     scaler.scale(scene)
 
 
    

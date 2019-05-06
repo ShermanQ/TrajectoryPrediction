@@ -16,7 +16,10 @@ class SceneCenters():
         prepare_params = json.load(open(prepare_params)) 
         data = json.load(open(data))
 
-        self.correspondences = json.load(open(data["sdd_pixel2meters"]))
+        # self.correspondences = json.load(open(data["sdd_pixel2meters"]))
+
+        self.correspondences_trajnet = json.load(open(data["pixel2meters_trajnet"]))
+        self.correspondences_manual = json.load(open(data["pixel2meters_manual"]))
 
 
         self.original_image = data["original_images"] + "{}.jpg"
@@ -41,9 +44,25 @@ class SceneCenters():
 
         return center
 
+    # def __get_factor(self,scene):
+    #     row = self.correspondences[scene]
+    #     meter_dist = row["meter_distance"]
+    #     pixel_coord = row["pixel_coordinates"]
+    #     pixel_dist = euclidean(pixel_coord[0],pixel_coord[1])
+    #     self.pixel2meter_ratio = meter_dist/float(pixel_dist)
+
+
     def __get_factor(self,scene):
-        row = self.correspondences[scene]
-        meter_dist = row["meter_distance"]
-        pixel_coord = row["pixel_coordinates"]
-        pixel_dist = euclidean(pixel_coord[0],pixel_coord[1])
-        self.pixel2meter_ratio = meter_dist/float(pixel_dist)
+        if scene in self.correspondences_trajnet:
+            row = self.correspondences_trajnet[scene]
+            self.pixel2meter_ratio = row["pixel2meter"]
+            self.meter2pixel_ratio = 1/self.pixel2meter_ratio
+        else:
+            row = self.correspondences_manual[scene]
+            meter_dist = row["meter_distance"]
+            pixel_coord = row["pixel_coordinates"]
+            pixel_dist = euclidean(pixel_coord[0],pixel_coord[1])
+            self.pixel2meter_ratio = meter_dist/float(pixel_dist)
+            self.meter2pixel_ratio = float(pixel_dist)/meter_dist
+
+        

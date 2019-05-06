@@ -36,7 +36,7 @@ class CustomDataLoader():
             self.nb_batches = len(self.batches)
             print(self.nb_batches)
             if self.test :
-                  self.nb_batches = 50
+                  self.nb_batches = 20
 
             
 

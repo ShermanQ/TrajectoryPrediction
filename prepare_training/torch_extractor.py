@@ -65,8 +65,8 @@ class TorchExtractor():
 
             if self.pedestrian_only:
                 self.original_hdf5 = data["hdf5_ped"]
-            #     self.split_hdf5 = torch_params["ped_hdf5"]
-            #     self.max_neighbor_path = torch_params["nb_pedestrians_path"]
+                self.split_hdf5 = torch_params["ped_hdf5"]
+                self.max_neighbor_path = torch_params["nb_pedestrians_path"]
 
             
                 

@@ -8,47 +8,82 @@ import imp
 import time
 
 
-class SoftAttention(nn.Module):
-    # def __init__(self,input_size,hidden_size,num_layers,output_size,batch_size,seq_len):
-    
-    def __init__(self,device,key_size,value_size,query_size , layers = [64,128,64]):
-        super(SoftAttention,self).__init__()
-    
-        # self.social_attention = SoftAttention(device,batch_size,enc_hidden_size,social_features_embedding_size,dec_hidden_size ,nb_neighbors_max)
-
+class LinearProjection(nn.Module):
+    def __init__(self,device,dmodel,projection_layers ,dropout = 0.1):
+        super(LinearProjection, self).__init__()
         self.device = device
-        self.key_size = key_size
-        self.query_size = query_size
-        self.value_size = value_size
+        self.dmodel = dmodel
+        self.projection_layers = projection_layers
+        self.projection_weight = []
+        self.projection_weight.append(nn.Linear(self.dmodel*2,self.projection_layers[0]))
 
-        self.layers = [query_size + key_size] + layers + [1]
+        self.projection_weight.append(nn.ReLU())
+
+        for i in range(1,len(self.projection_layers)):
+            self.projection_weight.append(nn.Linear(self.projection_layers[i-1], self.projection_layers[i]))
+            self.projection_weight.append(nn.ReLU())
+
+        self.projection_weight.append(nn.Linear(self.projection_layers[-1], 1))
+
+        self.projection_weight = nn.Sequential(*self.projection_weight)
+
+    def forward(self,q,k,v,mask = None): # B,N,dmodel
         
+        B,N,dmodel = q.size()
+        q = q.unsqueeze(2).repeat(1,1,N,1) # B,N,N,dmodel 
+        k = k.unsqueeze(1).repeat(1,N,1,1) # B,N,N,dmodel 
+
+        comp_q_v = torch.cat([q,k],dim = 3) # B,N,N,2dmodel 
+        comp_q_v = self.projection_weight(comp_q_v)  # B,N,N  
+
+        min_inf = float('-inf')       
+        # mask
+        if mask is not None:
+            comp_q_v = comp_q_v.masked_fill(mask,min_inf)
+        
+        # softmax
+        weights = f.softmax(comp_q_v,dim = 2 ) # B,N,N
+
+        # matmul
+        att = torch.bmm(weights,v) # B,N,N * B,N,dmodel -> B,N,dmodel
+        return att
+
+    def get_mask(self,points_mask,max_batch):
+        # compute mask put one where the dot product conv_features*conv_features.T is 0.
+        # and the sum over a given row of the resulting matrice is gt 1
+        # Nmax = q.size()[1]
+        # dot = torch.bmm(q, torch.transpose(k,2,1))
+        # mask = (dot == 0) & (torch.sum(dot,dim = 1) > 0.).unsqueeze(2).repeat(1,1,Nmax)
+        # mask = mask.to(self.device)
+        # return mask
+        if max_batch == 1:
+            points_mask = np.expand_dims(points_mask, axis = 1)
+
+        sample_sum = (np.sum(points_mask.reshape(points_mask.shape[0],points_mask.shape[1],-1), axis = 2) > 0).astype(int)
+        a = np.repeat(np.expand_dims(sample_sum,axis = 2),max_batch,axis = -1)
+        b = np.transpose(a,axes=(0,2,1))
+        mha_mask = np.logical_and(np.logical_xor(a,b),a).astype(int)
+        # eyes = np.expand_dims(np.eye(mha_mask.shape[-1]),0)
+        # eyes = eyes.repeat(mha_mask.shape[0],0)
+
+        # mha_mask = np.logical_or(mha_mask,eyes).astype(int)
+        return torch.ByteTensor(mha_mask).to(self.device)
+
+class SoftAttention(nn.Module):
+    # dk = dv = dmodel/h
+    def __init__(self,device,dmodel,projection_layers ,dropout = 0.1):
+        super(SoftAttention,self).__init__()
+        self.device = device
+        self.projection_layers = projection_layers
+        
+        self.mlp_attention = LinearProjection(device,dmodel,self.projection_layers,dropout = dropout)
+
+    def forward(self,q,k,v,points_mask = None):
+        if points_mask is not None:
+            mask = self.mlp_attention.get_mask(points_mask,q.size()[1])
+            att = self.mlp_attention(q,k,v,mask)
+        else:
+            att = self.mlp_attention(q,k,v)
 
 
-        modules = []
-        for i in range(1,len(self.layers)):
-            modules.append(nn.Linear(self.layers[i-1],self.layers[i]))
-            if i < len(self.layers) -1 :
-                modules.append(nn.ReLU())
-        self.core = nn.Sequential(*modules)
-   
-
-    def forward(self,q,k,v,mask = None):
-
-        for i in range()
-
-        hdec = hdec.unsqueeze(1)
-        hdec = hdec.repeat(1,features.size()[1],1)
-        features = self.features_embedding(features)
-        features = f.relu(features)
-
-        inputs = torch.cat([features,hdec],dim = 2)
-
-     
-        attn = self.core(inputs)
-        attn_weigths = f.softmax(attn.permute(0,2,1), dim = 2)
-
-       
-
-        attn_applied = torch.bmm(attn_weigths, features)
-        return attn_applied
+        return att #B,Nmax,dv

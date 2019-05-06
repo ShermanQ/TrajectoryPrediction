@@ -74,8 +74,9 @@ def main():
     toy = prepare_param["toy"]
 
     data_file = torch_param["split_hdf5"]
-    # if prepare_param["pedestrian_only"]:
-    #     data_file = torch_param["ped_hdf5"]
+    if prepare_param["pedestrian_only"]:
+        data_file = torch_param["ped_hdf5"]
+
         
     eval_scenes = prepare_param["eval_scenes"]
 
@@ -100,10 +101,10 @@ def main():
     train_dataset = Hdf5Dataset(
         images_path = data["prepared_images"],
         hdf5_file= data_file,
-        scene_list= train_scenes,
+        scene_list= train_eval_scenes,
         t_obs=prepare_param["t_obs"],
         t_pred=prepare_param["t_pred"],
-        set_type = "train", # train
+        set_type = "train_eval", # train
         use_images = True,
         data_type = "trajectories",
         use_neighbors = False,
@@ -122,10 +123,10 @@ def main():
     eval_dataset = Hdf5Dataset(
         images_path = data["prepared_images"],
         hdf5_file= data_file,
-        scene_list= eval_scenes, #eval_scenes
+        scene_list= test_scenes, #eval_scenes
         t_obs=prepare_param["t_obs"],
         t_pred=prepare_param["t_pred"],
-        set_type = "eval", #eval
+        set_type = "test", #eval
         use_images = True,
         data_type = "trajectories",
         use_neighbors = False,
@@ -136,7 +137,7 @@ def main():
         centers = json.load(open(data["scene_centers"])),
         padding = prepare_param["padding"],
 
-        augmentation = 1,
+        augmentation = 0,
         augmentation_angles = [],
         normalize =prepare_param["normalize"]
 
@@ -146,8 +147,8 @@ def main():
     # print("n_train_samples: {}".format(train_dataset.get_len()))
     # print("n_eval_samples: {}".format(eval_dataset.get_len()))
 
-    train_loader = CustomDataLoader( batch_size = training_param["batch_size"],shuffle = True,drop_last = True,dataset = train_dataset)
-    eval_loader = CustomDataLoader( batch_size = training_param["batch_size"],shuffle = False,drop_last = True,dataset = eval_dataset)
+    train_loader = CustomDataLoader( batch_size = training_param["batch_size"],shuffle = True,drop_last = True,dataset = train_dataset,test=training_param["test"])
+    eval_loader = CustomDataLoader( batch_size = training_param["batch_size"],shuffle = False,drop_last = True,dataset = eval_dataset,test=training_param["test"])
     
 
     # net = RNN_MLP(

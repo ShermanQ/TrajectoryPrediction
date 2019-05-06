@@ -24,7 +24,8 @@ def train(model, device, train_loader,criterion, optimizer, epoch,batch_size,pri
 
     start_time = time.time()
 
-    nb_grad_plots = 0
+    # nb_grad_plots = 20
+    nb_grad_plots = int(int(train_loader.nb_batches)/100.0)
     ids_grads = np.arange(int(train_loader.nb_batches) )
     np.random.shuffle(ids_grads)
     ids_grads = ids_grads[:nb_grad_plots]
@@ -147,6 +148,7 @@ def evaluate(model, device, eval_loader,criterion, epoch, batch_size,scalers_pat
     kept_batches_id = np.arange(nb_batches)
     np.random.shuffle(kept_batches_id)
 
+    nb_plots = int(nb_batches/100.0)
     kept_batches_id = kept_batches_id[:nb_plots]
 
     kept_samples = []

@@ -6,11 +6,11 @@
     "seq_length"  : 20,
     "nb_samples" : 9892,
     "num_workers" : 0,
-    "lr" : 0.0001, 
+    "lr" : 0.001, 
     "load_path" : "",    
     "plot": 1,
     "input_dim":2,
-    "mlp_layers":[500,250,175,32],
+    "mlp_layers":[100,100],
     "output_size":2,
     "model_type": 0,
     "plot_every": 5,
@@ -23,6 +23,7 @@
     "augmentation":0,
     "augmentation_angles":[90,180,270],
     "learning_curves":0,
-    "learning_props":[0.1,0.2,0.5,1.0]
+    "learning_props":[0.1,0.2,0.5,1.0],
+    "test":0
 
 }

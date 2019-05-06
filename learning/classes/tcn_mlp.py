@@ -38,7 +38,9 @@ class TCN_MLP(nn.Module):
 
 
         self.mlp = nn.Sequential()
-        self.mlp.add_module("layer0",nn.Linear(self.input_length* self.num_channels[-1] ,self.mlp_layers[0]))
+        # self.mlp.add_module("layer0",nn.Linear(self.input_length* self.num_channels[-1] ,self.mlp_layers[0]))
+        self.mlp.add_module("layer0",nn.Linear(self.num_channels[-1] ,self.mlp_layers[0]))
+        
         self.mlp.add_module("relu0",  nn.ReLU())
         for i in range(1,len(self.mlp_layers)):
             self.mlp.add_module("layer{}".format(i),nn.Linear(self.mlp_layers[i-1],self.mlp_layers[i]))
@@ -60,7 +62,8 @@ class TCN_MLP(nn.Module):
         conv_features = self.tcn(x) # B,num_channels[-1], T_obs
         conv_features = conv_features.permute(0,2,1)
         b,tobs,f = conv_features.size()
-        conv_features = conv_features.contiguous().view(b,tobs*f) # B,num_channels[-1] * T_obs
+        conv_features = conv_features[:,-1].view(b,f)
+        # conv_features = conv_features.contiguous().view(b,tobs*f) # B,num_channels[-1] * T_obs
 
         # if self.nb_cat > 0:
         #     conv_features = torch.cat([conv_features,types],dim = 1)

@@ -9,13 +9,15 @@ import time
 
 from classes.transformer import Transformer,MultiHeadAttention
 from classes.tcn import TemporalConvNet
-from classes.sophie_gan import customCNN
+from classes.pretrained_vgg import customCNN
+
+from classes.soft_attention import SoftAttention
 
 
 
-class Model2a1(nn.Module):
+class SocialAttention(nn.Module):
     def __init__(self,args):
-        super(Model2a1,self).__init__()
+        super(SocialAttention,self).__init__()
 
         self.args = args
 
@@ -38,7 +40,9 @@ class Model2a1(nn.Module):
 
         self.convnet_embedding =  args["convnet_embedding"]
         self.convnet_nb_layers =  args["convnet_nb_layers"]
+        self.projection_layers = args["projection_layers"]
         self.use_tcn =  args["use_tcn"]
+        self.use_mha =  args["use_mha"]
 
 
 
@@ -58,12 +62,18 @@ class Model2a1(nn.Module):
         # project conv features to dmodel
         self.conv2att = nn.Linear(self.convnet_embedding,self.dmodel)
 
-        self.conv2pred = nn.Linear(self.input_length*self.convnet_embedding,self.dmodel)
+        # self.conv2pred = nn.Linear(self.input_length*self.convnet_embedding,self.dmodel)
+        self.conv2pred = nn.Linear(self.convnet_embedding,self.dmodel)
+
 
 
 ############# Attention #########################################
         # apply multihead attention output d_model
-        self.mha = MultiHeadAttention(self.device,self.h,self.dmodel,self.dk,self.dv,self.dropout_tfr)
+
+        if self.use_mha:
+            self.mha = MultiHeadAttention(self.device,self.h,self.dmodel,self.dk,self.dv,self.dropout_tfr)
+        else:
+            self.mha = SoftAttention(self.device,self.dmodel,self.projection_layers,self.dropout_tfr)
 
 ############# Predictor #########################################
 
@@ -126,7 +136,7 @@ class Model2a1(nn.Module):
         y = y.permute(0,2,1) # [B*Nmax],Tobs,Nfeat
         conv_features = y.view(B,Nmax,Tobs,y.size()[2]).contiguous() # B,Nmax,Tobs,Nfeat
         y_last = conv_features[:,:,-1]
-        conv_features = conv_features.view(B,Nmax,-1) # B,Nmax,Tobs*Nfeat
+        # conv_features = conv_features.view(B,Nmax,-1) # B,Nmax,Tobs*Nfeat
 
 
         x = self.conv2att(y_last) # B,Nmax,dmodel    
@@ -137,11 +147,9 @@ class Model2a1(nn.Module):
 
 
 
+        # conv_features = self.conv2pred(conv_features)
+        conv_features = self.conv2pred(y_last)
 
-
-
-
-        conv_features = self.conv2pred(conv_features)
         conv_features = f.relu(conv_features)
 
         y = torch.cat([att_feat,conv_features],dim = 2 ) # B,Nmax,2*dmodel
