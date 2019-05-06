@@ -2,6 +2,7 @@ from helpers import extract_trajectories,get_speeds,get_accelerations,remove_fil
 import json
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.ticker import PercentFormatter
 
 class Accelerations():
     def __init__(self,data_params,prepare_params,eval_params):
@@ -25,12 +26,16 @@ class Accelerations():
         dataset_accelerations = []
         trajectory_len = []
         ctr = 0
+        offsets_dict = {}
         for scene in self.scenes:
             print(scene)
             remove_file(self.trajectories_temp)
             extract_trajectories(self.scene_paths.format(scene),self.trajectories_temp,save=True)
 
             scene_accelerations = []
+
+            scene_dxs = []
+            scene_dys = []
             with open(self.trajectories_temp) as trajectories:
 
                 for k,trajectory in enumerate(trajectories):     
@@ -41,9 +46,27 @@ class Accelerations():
 
                     if type_ not in types_dict:
                         types_dict[type_] = []
+
+                    if type_ not in offsets_dict:
+                        offsets_dict[type_] = {
+                            "x":[],
+                            "y":[]
+                        }
+                    
                     
                     trajectory_len.append(len(coordinates))
                     accelerations = get_accelerations(get_speeds(coordinates,self.delta_t),self.delta_t)
+
+                    
+                    for i in range(1,len(coordinates)):
+                        dx = coordinates[i][0] - coordinates[i-1][0]
+                        dy = coordinates[i][1] - coordinates[i-1][1]
+                    
+                        offsets_dict[type_]["x"].append(dx)
+                        offsets_dict[type_]["y"].append(dy)
+
+
+
 
                     # print(coordinates)
 
@@ -63,9 +86,11 @@ class Accelerations():
             types_dict[key] = np.concatenate(types_dict[key])
         thresholds = {}
         for key in types_dict:
-            p = np.max(np.abs(np.percentile(types_dict[key],[5,95])))
+            # p = np.max(np.abs(np.percentile(types_dict[key],[5,95])))
             
-            thresholds[key] = {"lower_bound": -1* p, "upper_bound": p}
+            # thresholds[key] = {"lower_bound": -1* p, "upper_bound": p}
+            thresholds[key] = {"mean": np.mean(types_dict[key]), "std": np.std(types_dict[key])}
+
             # val = np.abs(np.mean(types_dict[key])-np.std(types_dict[key]))
             # thresholds[key] = {"lower_boud": -1* val, "upper_bound": val}
         remove_file(self.report_path)
@@ -79,10 +104,38 @@ class Accelerations():
         ctr = 0
         for i, key in enumerate(types_dict):
             
-            axs[i].hist(types_dict[key])
+            axs[i].hist(types_dict[key],bins = 1500)
             axs[i].set_title(key)
 
+            # print(np.mean(types_dict[key]))
+            # print(np.std(types_dict[key]))
+
+
+        plt.gca().yaxis.set_major_formatter(PercentFormatter(1))
         plt.show()
+
+
+        # nb_types = len(list(offsets_dict.keys()))
+        # fig,axs = plt.subplots(nb_types)
+
+        # ctr = 0
+        # for i, key in enumerate(offsets_dict):
+            
+        #     axs[i].hist(offsets_dict[key]["x"])
+        #     axs[i].set_title(key)
+        # plt.gca().yaxis.set_major_formatter(PercentFormatter(1))
+        # plt.show()
+
+        # nb_types = len(list(offsets_dict.keys()))
+        # fig,axs = plt.subplots(nb_types)
+
+        # ctr = 0
+        # for i, key in enumerate(offsets_dict):
+            
+        #     axs[i].hist(offsets_dict[key]["y"])
+        #     axs[i].set_title(key)
+        # plt.gca().yaxis.set_major_formatter(PercentFormatter(1))
+        # plt.show()
 
 
 

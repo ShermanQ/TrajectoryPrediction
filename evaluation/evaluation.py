@@ -6,6 +6,8 @@ import torch
 import sys
 import os
 from scipy.spatial import distance_matrix
+from scipy.stats import norm
+
 
 
 from evaluation.classes.datasets_eval import Hdf5Dataset,CustomDataLoader
@@ -31,6 +33,8 @@ class Evaluation():
         self.delta_t = 1.0/float(self.prepare_params["framerate"])
 
         self.types_dic = self.prepare_params["types_dic_rev"]
+
+        self.dynamic_threshold = self.eval_params["dynamic_threshold"]
 
 
 
@@ -172,8 +176,8 @@ class Evaluation():
                     # social loss
                     social_loss,conflict_points = self.conflicts(o.squeeze(1).cpu().numpy())
 
-                    dynamic_loss = self.dynamic_eval(l.squeeze(1).cpu().numpy(),t.squeeze(1).cpu().numpy())
-                    # dynamic_loss = self.dynamic_eval(o.squeeze(1).cpu().numpy(),t.squeeze(1).cpu().numpy())
+                    # dynamic_loss = self.dynamic_eval(l.squeeze(1).cpu().numpy(),t.squeeze(1).cpu().numpy())
+                    dynamic_loss = self.dynamic_eval(o.squeeze(1).cpu().numpy(),t.squeeze(1).cpu().numpy())
 
 
                     if "social" not in losses_scenes[scene]:
@@ -273,6 +277,28 @@ class Evaluation():
 # for a trajectory of n points, we get m<n accelerations
 # we report the proportion of outlier acceleration for a trajectory
 # we average on all trajectories
+    # def dynamic_eval(self,output,types):
+    #     count_per_traj = []
+    #     for a in range(output.shape[0]):
+    #         coordinates = output[a]
+    #         type_ = types[a]
+    #         type_ = self.types_dic[str(int(type_))]
+
+    #         accelerations = get_accelerations(get_speeds(coordinates,self.delta_t),self.delta_t)
+
+
+    #         dynamic_type = self.dynamics[type_]
+    #         nb_outliers = 0
+    #         for e in accelerations:
+    #             if e < dynamic_type["lower_bound"] or e > dynamic_type["upper_bound"]:
+    #                 nb_outliers += 1
+            
+    #         percentage_outlier_points = nb_outliers/len(accelerations) * 100
+    #         count_per_traj.append(percentage_outlier_points)
+
+    #     return np.mean(count_per_traj)
+        
+        
     def dynamic_eval(self,output,types):
         count_per_traj = []
         for a in range(output.shape[0]):
@@ -284,17 +310,20 @@ class Evaluation():
 
 
             dynamic_type = self.dynamics[type_]
-            nb_outliers = 0
-            for e in accelerations:
-                if e < dynamic_type["lower_bound"] or e > dynamic_type["upper_bound"]:
-                    nb_outliers += 1
+            # nb_outliers = 0
+
+            props = norm.pdf(accelerations, loc = dynamic_type["mean"], scale=dynamic_type["std"]) 
+
+            nb_outliers = (props < self.dynamic_threshold).astype(int).sum()
+
+            # for e in accelerations:
+            #     if e < dynamic_type["lower_bound"] or e > dynamic_type["upper_bound"]:
+            #         nb_outliers += 1
             
             percentage_outlier_points = nb_outliers/len(accelerations) * 100
             count_per_traj.append(percentage_outlier_points)
 
         return np.mean(count_per_traj)
-        
-        
 
 
 

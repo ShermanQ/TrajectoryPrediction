@@ -9,6 +9,7 @@
     "batch_size":8,
     "use_neighbors":0,
     "model_name":"mha",
-    "report_name":"report_name"
+    "report_name":"report_name",
+    "dynamic_threshold":0.001
 
 }
