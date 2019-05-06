@@ -61,7 +61,7 @@ class encoderLSTM(nn.Module):
 
         # hidden tuple( B*N enc,B*N enc)
         # B*N enc
-        hidden = (hidden[0].permute(1,2,0), hidden[1].permute(1,2,0))
+        hidden = (hidden[0].permute(1,2,0), hidden[1].permute(1,2,0)) # put batch size first to revert sort by x_lengths
         return x[:,-1,:], hidden
 
 
@@ -95,10 +95,13 @@ class S2sSocialAtt(nn.Module):
         self.projection_layers = args["projection_layers"]
         self.encoder_features_embedding = args["enc_feat_embedding"]
 
-        self.coordinates_embedding = nn.Linear(self.input_dim,self.embedding_size)
-        self.hdec2coord = nn.Linear(self.dec_hidden_size,self.output_size)
-        self.k_embedding = nn.Linear(self.enc_hidden_size,self.encoder_features_embedding)
-        self.q_embedding = nn.Linear(self.dec_hidden_size,self.encoder_features_embedding)
+        # assert(self.enc_hidden_size == self.dec_hidden_size)
+        assert(self.embedding_size == self.encoder_features_embedding)
+
+        self.coordinates_embedding = nn.Linear(self.input_dim,self.embedding_size) # input 2D coordinates to embedding dim
+        self.hdec2coord = nn.Linear(self.dec_hidden_size,self.output_size) # decoder hidden to 2D coordinates space
+        self.k_embedding = nn.Linear(self.enc_hidden_size,self.encoder_features_embedding) # embedding enc_hidden_size to dmodel
+        self.q_embedding = nn.Linear(self.dec_hidden_size,self.encoder_features_embedding) # embedding dec_hidden_size to dmodel
 
 
         self.encoder = encoderLSTM(self.device,self.batch_size,self.input_dim,self.enc_hidden_size,self.enc_num_layers,self.embedding_size)
@@ -110,9 +113,6 @@ class S2sSocialAtt(nn.Module):
         active_agents = x[2]
         points_mask = x[3][1]
         points_mask_in = x[3][0]
-
-        imgs = x[4]
-
         x = x[0] # B N S 2
 
         # embed coordinates
@@ -120,6 +120,7 @@ class S2sSocialAtt(nn.Module):
         x_e = f.relu(x_e)
         B,N,S,E = x_e.size()
 
+        # reduce to unique batch_size
         x_e = x_e.view(B*N,S,E)# B*N S E
 
         # get lengths for padding
@@ -149,33 +150,43 @@ class S2sSocialAtt(nn.Module):
         
         # set keys and values to embedded values of encoder hidden states
         k = v = encoder_hiddens.view(B,N,self.encoder_features_embedding)
-        out = encoder_hiddens
+        
+
+        # embedded last point of input sequence
+        # out = x_e[:,:,-1].view(B*N,self.embedding_size) # B,N,embedding_size
+        out = x_e[:,:,-1] # B,N,embedding_size
+
 
         outputs = []
 
-        for t in range(self.pred_length):
+        for _ in range(self.pred_length):
             # set query to last decoder hidden state
             q = hidden[0].view(B,N,self.enc_hidden_size)
-            q = self.q_embedding(q)
+            q = self.q_embedding(q) # B N encoder_features_embedding
             q = f.relu(q)
 
 
-            # embedded last point of input sequence
-            last_pos = x_e[:,:,-1]  
+             
             # attention features          
             att = self.attention(q,k,v,points_mask) # B N encoder_features_embedding
 
-            in_dec = torch.cat([last_pos,att],dim = 2) # B N 2*encoder_features_embedding
-            in_dec = in_dec.unsqueeze(2)
+            in_dec = torch.cat([out,att],dim = 2) # B N embedding_size + encoder_features_embedding (embedding_size == encoder_features_embedding)
+            in_dec = in_dec.unsqueeze(2) # B N 1 2*encoder_features_embedding
+            in_dec = in_dec.view(B*N,1,in_dec.size()[-1]) # B*N 1 2*encoder_features_embedding  (batch,seqlen,feat_size)
             
             
-            out,hidden = self.decoder(in_dec.view(B*N,1,in_dec.size()[-1]) ,hidden)
-            out = out.view(B,N,1,out.size()[-1])
-            outputs.append(out)
+            out,hidden = self.decoder(in_dec ,hidden) # out: B*N 1 dec_hidden_size (dec_hidden == enc_hidden)
+            out = self.hdec2coord(out) # B*N 1 2 
+            out = out.view(B,N,1,self.input_dim)           
+            outputs.append(out) # out: B N 1 2
+
+            out = self.coordinates_embedding(out) # out: B*N 1 2  2d coordinates to embedding space
+            out = f.relu(out)
+            out = out.squeeze(2)
 
         outputs = torch.cat(outputs, dim = 2)
 
-        outputs = self.hdec2coord(outputs)
+        
 
         return outputs
 
