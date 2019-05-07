@@ -9,7 +9,9 @@ import time
 from collections import OrderedDict
 
 
-from learning.classes.fcn32s import FCN32s
+from classes.fcn32s import FCN32s
+# from learning.classes.fcn32s import FCN32s
+
 
 class customCNN(nn.Module):
     def __init__(self,device, nb_channels_out = 512,nb_channels_projection = 128,weights_path = "./learning/data/pretrained_models/fcn32s_from_caffe.pth"):

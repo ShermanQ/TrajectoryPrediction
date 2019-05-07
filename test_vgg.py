@@ -19,6 +19,7 @@ print(img.shape)
 
 img = torch.FloatTensor(img).to(device)
 img = img.permute(2,0,1).unsqueeze(0)
+img = img.repeat(62,1,1,1)
 print(img.size())
 
 
@@ -29,9 +30,10 @@ for k,v in pretrained_dict.items():
     if k in c.state_dict():
         new_dict[k] = v
 c.load_state_dict(new_dict)
-
 c.to(device)
-out = c(img)
+
+for i in range(10):
+    out = c(img)
 
 # out = out.squeeze(0).permute(1,2,0).detach().cpu().numpy()
 
