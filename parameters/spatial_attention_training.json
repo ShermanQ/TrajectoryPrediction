@@ -22,7 +22,7 @@
     "plot_every": 5,
     "save_every":5,
 
-    "test":0,
+    "test":1,
 
     "convnet_embedding":32,
     "coordinates_embedding":16,
@@ -35,5 +35,5 @@
     "augmentation":0,
     "augmentation_angles":[90,180,270],
     "projection_layers":[128,256,128,64],
-    "use_mha":1
+    "use_mha":0
 }
