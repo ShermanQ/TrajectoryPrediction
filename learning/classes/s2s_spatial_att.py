@@ -13,12 +13,11 @@ from classes.pretrained_vgg import customCNN
 class decoderLSTM(nn.Module):
     # def __init__(self,input_size,hidden_size,num_layers,output_size,batch_size,seq_len):
 
-    def __init__(self,device,batch_size,input_size,dec_hidden_size,num_layers):
+    def __init__(self,device,input_size,dec_hidden_size,num_layers):
         super(decoderLSTM,self).__init__()
 
         self.device = device
 
-        self.batch_size = batch_size
         self.input_size = input_size
 
         self.dec_hidden_size = dec_hidden_size
@@ -36,18 +35,16 @@ class decoderLSTM(nn.Module):
 class encoderLSTM(nn.Module):
     # def __init__(self,input_size,hidden_size,num_layers,output_size,batch_size,seq_len):
 
-    def __init__(self,device,batch_size,input_size,hidden_size,num_layers,embedding_size):
+    def __init__(self,device,input_size,hidden_size,num_layers):
         super(encoderLSTM,self).__init__()
 
         self.device = device
         self.input_size = input_size
         self.hidden_size = hidden_size
         self.num_layers = num_layers
-        self.embedding_size = embedding_size
-        self.batch_size = batch_size
 
 
-        self.lstm = nn.LSTM(input_size = self.embedding_size,hidden_size = self.hidden_size,num_layers = self.num_layers,batch_first = True)
+        self.lstm = nn.LSTM(input_size = self.input_size,hidden_size = self.hidden_size,num_layers = self.num_layers,batch_first = True)
 
 
     # def forward(self,x,x_lengths,nb_max):
@@ -108,8 +105,8 @@ class S2sSpatialAtt(nn.Module):
         self.q_embedding = nn.Linear(self.dec_hidden_size,self.att_features_embedding) # embedding dec_hidden_size to dmodel
 
 
-        self.encoder = encoderLSTM(self.device,self.batch_size,self.input_dim,self.enc_hidden_size,self.enc_num_layers,self.embedding_size)
-        self.decoder = decoderLSTM(self.device,self.batch_size,self.att_features_embedding + self.embedding_size,self.dec_hidden_size,self.dec_num_layer)
+        self.encoder = encoderLSTM(self.device,self.embedding_size,self.enc_hidden_size,self.enc_num_layers)
+        self.decoder = decoderLSTM(self.device,self.att_features_embedding + self.embedding_size,self.dec_hidden_size,self.dec_num_layer)
         self.attention = SoftAttention(self.device,self.att_features_embedding,self.projection_layers)
 
         ##### Spatial part ##############################################
@@ -154,7 +151,6 @@ class S2sSpatialAtt(nn.Module):
         rev_arg_ids = np.argsort(arg_ids)
         # reverse ordering of encoded sequence
 
-        # encoder_hiddens = encoder_hiddens[rev_arg_ids]
         hidden = (hidden[0][rev_arg_ids].permute(2,0,1), hidden[1][rev_arg_ids].permute(2,0,1))
 
         ### Spatial ##############
@@ -169,6 +165,9 @@ class S2sSpatialAtt(nn.Module):
 
         # # set keys and values to embedded values of encoder hidden states
         k = v = self.k_embedding(spatial_features)
+        k = nn.functional.relu(k)
+        v = nn.functional.relu(v)
+
         
 
         # embedded last point of input sequence
@@ -180,7 +179,7 @@ class S2sSpatialAtt(nn.Module):
         for _ in range(self.pred_length):
             ########## Attention #############################
             # set query to last decoder hidden state
-            q = hidden[0].view(B,N,self.enc_hidden_size)
+            q = hidden[0].view(B,N,self.dec_hidden_size)
             q = self.q_embedding(q) # B N att_features_embedding
             q = nn.functional.relu(q)
 

@@ -151,7 +151,9 @@ class S2sSocialAtt(nn.Module):
 
         
         # set keys and values to embedded values of encoder hidden states
-        k = v = encoder_hiddens.view(B,N,self.encoder_features_embedding)   
+        k = v = encoder_hiddens.view(B,N,self.encoder_features_embedding) 
+        k = nn.functional.relu(k)
+        v = nn.functional.relu(v)  
 
         # embedded last point of input sequence
         out = x_e[:,:,-1] # B,N,embedding_size
