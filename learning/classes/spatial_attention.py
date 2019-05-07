@@ -9,6 +9,7 @@ import time
 
 from classes.transformer import Transformer,MultiHeadAttention
 from classes.tcn import TemporalConvNet
+from classes.pretrained_vgg import customCNN
 
 from classes.soft_attention import SoftAttention
 
@@ -38,8 +39,6 @@ class SocialAttention(nn.Module):
         self.dropout_tfr =  args["dropout_tfr"]
 
         self.convnet_embedding =  args["convnet_embedding"]
-        self.coordinates_embedding =  args["coordinates_embedding"]
-
         self.convnet_nb_layers =  args["convnet_nb_layers"]
         self.projection_layers = args["projection_layers"]
         self.use_tcn =  args["use_tcn"]
@@ -48,7 +47,7 @@ class SocialAttention(nn.Module):
 
 
 ############# x/y embedding ###############################
-        self.coord_embedding = nn.Linear(self.input_dim,self.coordinates_embedding)
+        self.coord_embedding = nn.Linear(self.input_dim,self.convnet_embedding)
 ############# TCN #########################################
         # compute nb temporal blocks
 
@@ -57,7 +56,7 @@ class SocialAttention(nn.Module):
         self.num_channels = [self.convnet_embedding for _ in range(self.nb_temporal_blocks)]
 
         # init network
-        self.tcn = TemporalConvNet(self.device, self.coordinates_embedding, self.num_channels, self.kernel_size, self.dropout_tcn)
+        self.tcn = TemporalConvNet(self.device, self.convnet_embedding, self.num_channels, self.kernel_size, self.dropout_tcn)
 
 
         # project conv features to dmodel

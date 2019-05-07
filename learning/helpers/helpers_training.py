@@ -529,8 +529,8 @@ def weight_init(m):
         init.normal_(m.bias.data)
     elif isinstance(m, nn.Conv1d):
         init.xavier_normal_(m.weight.data,gain=nn.init.calculate_gain('relu'))
-        init.xavier_normal_(m.weight_g.data,gain=nn.init.calculate_gain('relu'))
-        init.xavier_normal_(m.weight_v.data,gain=nn.init.calculate_gain('relu'))
+        # init.xavier_normal_(m.weight_g.data,gain=nn.init.calculate_gain('relu'))
+        # init.xavier_normal_(m.weight_v.data,gain=nn.init.calculate_gain('relu'))
 
         init.normal_(m.bias.data)
         # init.normal_(m.weight.data)

@@ -322,36 +322,36 @@ def training_loop(n_epochs,batch_size,net,device,train_loader,eval_loader,criter
 
     s = time.time()
     
-    # try:
-    for epoch in range(start_epoch,n_epochs):
-        train_loss,_ = train(net, device, train_loader,criterion_train, optimizer, epoch,batch_size)
-        
-        # train_loss,fde_train,ade_train = evaluate(net, device, train_loader,criterion_eval, 
-        #         epoch, batch_size,scalers_path,multiple_scalers,model_type,offsets=offsets,
-        #         normalized =normalized )
-        
-        eval_loss,fde,ade = evaluate(net, device, eval_loader,criterion_eval, 
-                epoch, batch_size,scalers_path,multiple_scalers,model_type,offsets=offsets,
-                normalized =normalized )
+    try:
+        for epoch in range(start_epoch,n_epochs):
+            train_loss,_ = train(net, device, train_loader,criterion_train, optimizer, epoch,batch_size)
             
+            # train_loss,fde_train,ade_train = evaluate(net, device, train_loader,criterion_eval, 
+            #         epoch, batch_size,scalers_path,multiple_scalers,model_type,offsets=offsets,
+            #         normalized =normalized )
+            
+            eval_loss,fde,ade = evaluate(net, device, eval_loader,criterion_eval, 
+                    epoch, batch_size,scalers_path,multiple_scalers,model_type,offsets=offsets,
+                    normalized =normalized )
+                
 
-        losses["train"]["loss"].append(train_loss)
-        losses["eval"]["loss"].append(eval_loss)
-        losses["eval"]["ade"].append(ade)
-        losses["eval"]["fde"].append(fde)
+            losses["train"]["loss"].append(train_loss)
+            losses["eval"]["loss"].append(eval_loss)
+            losses["eval"]["ade"].append(ade)
+            losses["eval"]["fde"].append(fde)
 
 
-        if plot and epoch % plot_every == 0:
-            plot_losses(losses,s,root = "./data/reports/losses/")
+            if plot and epoch % plot_every == 0:
+                plot_losses(losses,s,root = "./data/reports/losses/")
 
-        if epoch % save_every == 0:
-            save_model(epoch,net,optimizer,losses)
+            if epoch % save_every == 0:
+                save_model(epoch,net,optimizer,losses)
 
-        print(time.time()-s)
+            print(time.time()-s)
         
     
-    # except Exception as e: 
-    #     print(e)
+    except Exception as e: 
+        print(e)
 
     save_model(epoch+1,net,optimizer,losses)
     if plot:

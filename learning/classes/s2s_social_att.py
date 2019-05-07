@@ -109,7 +109,6 @@ class S2sSocialAtt(nn.Module):
         self.attention = SoftAttention(self.device,self.encoder_features_embedding,self.projection_layers)
 
     def forward(self,x):
-        types = x[1]
         active_agents = x[2]
         points_mask = x[3][1]
         points_mask_in = x[3][0]
@@ -120,8 +119,7 @@ class S2sSocialAtt(nn.Module):
         x_e = f.relu(x_e)
         B,N,S,E = x_e.size()
 
-        # reduce to unique batch_size
-        x_e = x_e.view(B*N,S,E)# B*N S E
+      
 
         # get lengths for padding
         x_lengths = np.sum(points_mask_in[:,:,:,0],axis = -1).reshape(B*N)
@@ -131,15 +129,16 @@ class S2sSocialAtt(nn.Module):
         arg_ids = list(reversed(np.argsort(x_lengths)))
 
         # order input vector based on descending sequence lengths
-        x_e = x_e[arg_ids]
+        x_e_sorted = x_e.view(B*N,S,E) [arg_ids]# B*N S E
+        
         # get ordered/unpadded sequences lengths for pack_padded object   
         sorted_x_lengths = x_lengths[arg_ids] 
-        encoder_hiddens,hidden = self.encoder(x_e,sorted_x_lengths)
+        encoder_hiddens,hidden = self.encoder(x_e_sorted,sorted_x_lengths)
 
         # reverse ordering of indices
         rev_arg_ids = np.argsort(arg_ids)
         # reverse ordering of encoded sequence
-        x_e = x_e[rev_arg_ids].view(B,N,S,E)
+
         encoder_hiddens = encoder_hiddens[rev_arg_ids]
         hidden = (hidden[0][rev_arg_ids].permute(2,0,1), hidden[1][rev_arg_ids].permute(2,0,1))
 

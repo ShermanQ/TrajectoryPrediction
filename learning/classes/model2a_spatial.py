@@ -40,7 +40,7 @@ class Model2a1(nn.Module):
         self.convnet_nb_layers =  args["convnet_nb_layers"]
         self.use_tcn =  args["use_tcn"]
 
-        self.cnn = customCNN(device,nb_channels_projection = dmodel)
+        self.cnn = customCNN(self.device,nb_channels_projection = dmodel)
 
 
 ############# x/y embedding ###############################

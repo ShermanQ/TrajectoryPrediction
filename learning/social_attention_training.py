@@ -144,6 +144,7 @@ def main():
         "pred_dim" : training_param["pred_length"] * training_param["input_dim"] ,
         
         "convnet_embedding" : training_param["convnet_embedding"],
+        "coordinates_embedding" : training_param["coordinates_embedding"],
         "convnet_nb_layers" : training_param["convnet_nb_layers"],
         "use_tcn" : training_param["use_tcn"],
         "dropout_tcn" : training_param["dropout_tcn"],
