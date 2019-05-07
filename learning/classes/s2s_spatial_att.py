@@ -7,15 +7,18 @@ import torchvision
 import imp
 import time
 from classes.soft_attention import SoftAttention
+from classes.pretrained_vgg import customCNN
+
 
 class decoderLSTM(nn.Module):
     # def __init__(self,input_size,hidden_size,num_layers,output_size,batch_size,seq_len):
 
-    def __init__(self,device,input_size,dec_hidden_size,num_layers):
+    def __init__(self,device,batch_size,input_size,dec_hidden_size,num_layers):
         super(decoderLSTM,self).__init__()
 
         self.device = device
 
+        self.batch_size = batch_size
         self.input_size = input_size
 
         self.dec_hidden_size = dec_hidden_size
@@ -33,16 +36,18 @@ class decoderLSTM(nn.Module):
 class encoderLSTM(nn.Module):
     # def __init__(self,input_size,hidden_size,num_layers,output_size,batch_size,seq_len):
 
-    def __init__(self,device,input_size,hidden_size,num_layers):
+    def __init__(self,device,batch_size,input_size,hidden_size,num_layers,embedding_size):
         super(encoderLSTM,self).__init__()
 
         self.device = device
         self.input_size = input_size
         self.hidden_size = hidden_size
         self.num_layers = num_layers
+        self.embedding_size = embedding_size
+        self.batch_size = batch_size
 
 
-        self.lstm = nn.LSTM(input_size = self.input_size,hidden_size = self.hidden_size,num_layers = self.num_layers,batch_first = True)
+        self.lstm = nn.LSTM(input_size = self.embedding_size,hidden_size = self.hidden_size,num_layers = self.num_layers,batch_first = True)
 
 
     # def forward(self,x,x_lengths,nb_max):
@@ -71,11 +76,11 @@ class encoderLSTM(nn.Module):
 
 
 
-class S2sSocialAtt(nn.Module):
+class S2sSpatialAtt(nn.Module):
     # def __init__(self,input_size,hidden_size,num_layers,output_size,batch_size,seq_len):
 
     def __init__(self,args):
-        super(S2sSocialAtt,self).__init__()
+        super(S2sSpatialAtt,self).__init__()
 
         self.args = args
 
@@ -90,32 +95,43 @@ class S2sSocialAtt(nn.Module):
         self.output_size = args["output_size"]
         self.pred_length = args["pred_length"]
         self.projection_layers = args["projection_layers"]
-        self.encoder_features_embedding = args["enc_feat_embedding"]
+        self.att_features_embedding = args["att_feat_embedding"]
+        self.spatial_projection = args["spatial_projection"]
+
 
         # assert(self.enc_hidden_size == self.dec_hidden_size)
-        assert(self.embedding_size == self.encoder_features_embedding)
+        # assert(self.embedding_size == self.encoder_features_embedding)
 
         self.coordinates_embedding = nn.Linear(self.input_dim,self.embedding_size) # input 2D coordinates to embedding dim
         self.hdec2coord = nn.Linear(self.dec_hidden_size,self.output_size) # decoder hidden to 2D coordinates space
-        self.k_embedding = nn.Linear(self.enc_hidden_size,self.encoder_features_embedding) # embedding enc_hidden_size to dmodel
-        self.q_embedding = nn.Linear(self.dec_hidden_size,self.encoder_features_embedding) # embedding dec_hidden_size to dmodel
+        self.k_embedding = nn.Linear(self.spatial_projection,self.att_features_embedding) # embedding spatial feature to dmodel
+        self.q_embedding = nn.Linear(self.dec_hidden_size,self.att_features_embedding) # embedding dec_hidden_size to dmodel
 
 
-        self.encoder = encoderLSTM(self.device,self.embedding_size,self.enc_hidden_size,self.enc_num_layers)
-        self.decoder = decoderLSTM(self.device,self.encoder_features_embedding + self.embedding_size,self.dec_hidden_size,self.dec_num_layer)
-        self.attention = SoftAttention(self.device,self.encoder_features_embedding,self.projection_layers)
+        self.encoder = encoderLSTM(self.device,self.batch_size,self.input_dim,self.enc_hidden_size,self.enc_num_layers,self.embedding_size)
+        self.decoder = decoderLSTM(self.device,self.batch_size,self.att_features_embedding + self.embedding_size,self.dec_hidden_size,self.dec_num_layer)
+        self.attention = SoftAttention(self.device,self.att_features_embedding,self.projection_layers)
+
+        ##### Spatial part ##############################################
+
+        ############# features ##########################################
+        self.cnn = customCNN(self.device,nb_channels_projection= self.spatial_projection)
+        self.spatt2att = nn.Linear(self.spatial_projection,self.att_features_embedding)
+
 
     def forward(self,x):
         active_agents = x[2]
         points_mask = x[3][1]
         points_mask_in = x[3][0]
+        imgs = x[4]
+
         x = x[0] # B N S 2
 
-
         ##### Dynamic part ####################################
+
         # embed coordinates
         x_e = self.coordinates_embedding(x) # B N S E
-        x_e = f.relu(x_e)
+        x_e = nn.functional.relu(x_e)
         B,N,S,E = x_e.size()
 
       
@@ -132,26 +148,28 @@ class S2sSocialAtt(nn.Module):
         
         # get ordered/unpadded sequences lengths for pack_padded object   
         sorted_x_lengths = x_lengths[arg_ids] 
-        encoder_hiddens,hidden = self.encoder(x_e_sorted,sorted_x_lengths)
+        _,hidden = self.encoder(x_e_sorted,sorted_x_lengths)
 
         # reverse ordering of indices
         rev_arg_ids = np.argsort(arg_ids)
         # reverse ordering of encoded sequence
 
-        encoder_hiddens = encoder_hiddens[rev_arg_ids]
+        # encoder_hiddens = encoder_hiddens[rev_arg_ids]
         hidden = (hidden[0][rev_arg_ids].permute(2,0,1), hidden[1][rev_arg_ids].permute(2,0,1))
 
-        # embed encoder hidden states features
-        encoder_hiddens = self.k_embedding(encoder_hiddens)
-        encoder_hiddens = f.relu(encoder_hiddens)
+        ### Spatial ##############
 
+        spatial_features = self.cnn(imgs)
+        b,f,w,h = spatial_features.size()
+        spatial_features = spatial_features.view(b,f,w*h).permute(0,2,1)# B,Nfeaturevectors,spatial projection
+        spatial_features = self.spatt2att(spatial_features)
+        spatial_features = nn.functional.relu(spatial_features) # B,Nfeaturevectors,dmodel
 
-        ######################################################
-        ######################################################
+        ##########################
 
+        # # set keys and values to embedded values of encoder hidden states
+        k = v = self.k_embedding(spatial_features)
         
-        # set keys and values to embedded values of encoder hidden states
-        k = v = encoder_hiddens.view(B,N,self.encoder_features_embedding)   
 
         # embedded last point of input sequence
         out = x_e[:,:,-1] # B,N,embedding_size
@@ -160,22 +178,21 @@ class S2sSocialAtt(nn.Module):
         outputs = []
 
         for _ in range(self.pred_length):
-
             ########## Attention #############################
             # set query to last decoder hidden state
             q = hidden[0].view(B,N,self.enc_hidden_size)
-            q = self.q_embedding(q) # B N encoder_features_embedding
-            q = f.relu(q)
+            q = self.q_embedding(q) # B N att_features_embedding
+            q = nn.functional.relu(q)
 
 
              
             # attention features          
-            att = self.attention(q,k,v,points_mask) # B N encoder_features_embedding
+            att = self.attention(q,k,v) # B N att_features_embedding
             ##################################################
             ####### Prediction ###############################
-            in_dec = torch.cat([out,att],dim = 2) # B N embedding_size + encoder_features_embedding (embedding_size == encoder_features_embedding)
-            in_dec = in_dec.unsqueeze(2) # B N 1 2*encoder_features_embedding
-            in_dec = in_dec.view(B*N,1,in_dec.size()[-1]) # B*N 1 2*encoder_features_embedding  (batch,seqlen,feat_size)
+            in_dec = torch.cat([out,att],dim = 2) # B N embedding_size + att_features_embedding (embedding_size == encoder_features_embedding)
+            in_dec = in_dec.unsqueeze(2) # B N 1 2*att_features_embedding
+            in_dec = in_dec.view(B*N,1,in_dec.size()[-1]) # B*N 1 2*att_features_embedding  (batch,seqlen,feat_size)
             
             
             out,hidden = self.decoder(in_dec ,hidden) # out: B*N 1 dec_hidden_size (dec_hidden == enc_hidden)
@@ -184,13 +201,14 @@ class S2sSocialAtt(nn.Module):
             outputs.append(out) # out: B N 1 2
 
             out = self.coordinates_embedding(out) # out: B*N 1 2  2d coordinates to embedding space
-            out = f.relu(out)
+            out = nn.functional.relu(out)
             out = out.squeeze(2)
             ################################################
 
         outputs = torch.cat(outputs, dim = 2)
 
         ####################################################
+        
 
         return outputs
 

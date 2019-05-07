@@ -1,0 +1,43 @@
+{
+    "n_epochs": 200,
+    "batch_size": 1,
+    "obs_length": 8,
+    "pred_length": 12,
+    "seq_length": 20,
+    "nb_samples": 9892,
+    "num_workers": 0,
+    "lr": 0.001,
+    "load_path": "",
+    "plot": 1,
+    "input_dim": 2,
+    "hidden_size": 32,
+    "recurrent_layer": 1,
+    "mlp_layers": [
+        100,
+        100
+    ],
+
+
+    "enc_hidden_size" : 32,
+    "enc_num_layers" : 1, 
+    "embedding_size" : 16,
+    "dec_hidden_size" : 32,
+    "dec_num_layer" : 1,
+    "output_size" : 2,
+    "projection_layers": [64,128,64],
+    "att_feat_embedding": 128,
+    "spatial_projection":128,
+
+    "model_type": 0,
+    "plot_every": 5,
+    "save_every": 5,
+    "offsets": 1,
+    "predict_smooth": 0,
+    "augmentation": 0,
+    "augmentation_angles": [
+        90,
+        180,
+        270
+    ],
+    "test": 1
+}
