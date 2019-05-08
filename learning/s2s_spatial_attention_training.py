@@ -160,7 +160,9 @@ def main():
         "pred_length" : training_param["pred_length"],
         "projection_layers" : training_param["projection_layers"],
         "att_feat_embedding" : training_param["att_feat_embedding"],
-        "spatial_projection" : training_param["spatial_projection"]
+        "spatial_projection" : training_param["spatial_projection"],
+        "condition_decoder_on_outputs" : training_param["condition_decoder_on_outputs"]
+
 
 
 
@@ -176,6 +178,10 @@ def main():
 
     # print(sum_)
 
+    if torch.cuda.device_count() > 1:
+        print("Let's use", torch.cuda.device_count(), "GPUs!")
+        # dim = 0 [30, xxx] -> [10, ...], [10, ...], [10, ...] on 3 GPUs
+        net = nn.DataParallel(net)
     print(net)
     net = net.to(device)
 

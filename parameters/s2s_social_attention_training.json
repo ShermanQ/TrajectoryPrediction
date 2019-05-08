@@ -38,5 +38,7 @@
         180,
         270
     ],
-    "test": 0
+    "test": 0,
+
+    "condition_decoder_on_outputs":1
 }

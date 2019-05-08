@@ -91,6 +91,7 @@ class S2sSocialAtt(nn.Module):
         self.pred_length = args["pred_length"]
         self.projection_layers = args["projection_layers"]
         self.encoder_features_embedding = args["enc_feat_embedding"]
+        self.condition_decoder_on_outputs = args["condition_decoder_on_outputs"]
 
         # assert(self.enc_hidden_size == self.dec_hidden_size)
         assert(self.embedding_size == self.encoder_features_embedding)
@@ -102,7 +103,13 @@ class S2sSocialAtt(nn.Module):
 
 
         self.encoder = encoderLSTM(self.device,self.embedding_size,self.enc_hidden_size,self.enc_num_layers)
-        self.decoder = decoderLSTM(self.device,self.encoder_features_embedding + self.embedding_size,self.dec_hidden_size,self.dec_num_layer)
+
+        if self.condition_decoder_on_outputs:
+            self.decoder = decoderLSTM(self.device,self.encoder_features_embedding + self.embedding_size,self.dec_hidden_size,self.dec_num_layer)
+        else:
+            self.decoder = decoderLSTM(self.device,self.encoder_features_embedding ,self.dec_hidden_size,self.dec_num_layer)
+
+
         self.attention = SoftAttention(self.device,self.encoder_features_embedding,self.projection_layers)
 
     def forward(self,x):
@@ -175,7 +182,12 @@ class S2sSocialAtt(nn.Module):
             att = self.attention(q,k,v,points_mask) # B N encoder_features_embedding
             ##################################################
             ####### Prediction ###############################
-            in_dec = torch.cat([out,att],dim = 2) # B N embedding_size + encoder_features_embedding (embedding_size == encoder_features_embedding)
+
+            if self.condition_decoder_on_outputs:
+                in_dec = torch.cat([out,att],dim = 2) # B N embedding_size + encoder_features_embedding (embedding_size == encoder_features_embedding)
+            else:
+                in_dec = att
+            
             in_dec = in_dec.unsqueeze(2) # B N 1 2*encoder_features_embedding
             in_dec = in_dec.view(B*N,1,in_dec.size()[-1]) # B*N 1 2*encoder_features_embedding  (batch,seqlen,feat_size)
             
@@ -185,9 +197,10 @@ class S2sSocialAtt(nn.Module):
             out = out.view(B,N,1,self.input_dim)           
             outputs.append(out) # out: B N 1 2
 
-            out = self.coordinates_embedding(out) # out: B*N 1 2  2d coordinates to embedding space
-            out = f.relu(out)
-            out = out.squeeze(2)
+            if self.condition_decoder_on_outputs:
+                out = self.coordinates_embedding(out.detach()) # out: B*N 1 2  2d coordinates to embedding space
+                out = f.relu(out)
+                out = out.squeeze(2)
             ################################################
 
         outputs = torch.cat(outputs, dim = 2)

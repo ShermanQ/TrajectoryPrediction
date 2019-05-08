@@ -83,7 +83,7 @@ def main():
         t_pred=prepare_param["t_pred"],
         set_type = "train",
         normalize = prepare_param["normalize"],
-        use_images = True,
+        use_images = False,
         data_type = "trajectories",
         use_neighbors = True,
         use_masks= 1,
@@ -107,7 +107,7 @@ def main():
         t_pred=prepare_param["t_pred"],
         set_type = "eval", ##############
         normalize = prepare_param["normalize"],
-        use_images = True,
+        use_images = False,
         data_type = "trajectories",
         use_neighbors = True,
         use_masks= 1,
@@ -158,6 +158,12 @@ def main():
     net = SocialAttention(args) 
 
     net.apply(helpers.weight_init)
+
+    if torch.cuda.device_count() > 1:
+        print("Let's use", torch.cuda.device_count(), "GPUs!")
+        # dim = 0 [30, xxx] -> [10, ...], [10, ...], [10, ...] on 3 GPUs
+        net = nn.DataParallel(net)
+
     net = net.to(device)
     print(net)
 

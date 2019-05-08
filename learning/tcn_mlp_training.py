@@ -105,7 +105,7 @@ def main():
         t_obs=prepare_param["t_obs"],
         t_pred=prepare_param["t_pred"],
         set_type = "train_eval", # train
-        use_images = True,
+        use_images = False,
         data_type = "trajectories",
         use_neighbors = False,
         use_masks = 1,
@@ -127,7 +127,7 @@ def main():
         t_obs=prepare_param["t_obs"],
         t_pred=prepare_param["t_pred"],
         set_type = "test", #eval
-        use_images = True,
+        use_images = False,
         data_type = "trajectories",
         use_neighbors = False,
         use_masks = 1,
@@ -183,6 +183,11 @@ def main():
     #     sum_ += torch.flatten(parameter).size()[0]
 
     # print(sum_
+
+    if torch.cuda.device_count() > 1:
+        print("Let's use", torch.cuda.device_count(), "GPUs!")
+        # dim = 0 [30, xxx] -> [10, ...], [10, ...], [10, ...] on 3 GPUs
+        net = nn.DataParallel(net)
 
     print(net)
     net = net.to(device)
