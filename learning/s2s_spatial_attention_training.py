@@ -68,7 +68,7 @@ def main():
     prepare_param = json.load(open("parameters/prepare_training.json"))
     preprocessing = json.load(open("parameters/preprocessing.json"))
 
-
+    log_tensorboard = training_param["log_tensorboard"]
 
     toy = prepare_param["toy"]
 
@@ -192,7 +192,8 @@ def main():
         data["multiple_scalers"],training_param["model_type"],
         plot = training_param["plot"],early_stopping = True,load_path = training_param["load_path"],
         plot_every = training_param["plot_every"], save_every = training_param["save_every"],
-        offsets = training_param["offsets"], normalized = prepare_param["normalize"])
+        offsets = training_param["offsets"], normalized = prepare_param["normalize"],
+        log_tensorboard = log_tensorboard)
 
 
     # load_path = "./learning/data/models/model_1552260631.156045.tar"

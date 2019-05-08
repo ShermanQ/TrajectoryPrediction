@@ -226,9 +226,11 @@ class Hdf5Dataset():
             if self.use_masks:
                   out.append(points_mask)
                   out.append(torch.LongTensor(active_mask))
+            
+            imgs = torch.FloatTensor([])
             if self.use_images:
                   imgs = torch.stack([self.images[img] for img in scenes],dim = 0) 
-                  out.append(imgs)
+            out.append(imgs)
       
             # print("data loading {}".format(time.time()-s))
             return tuple(out)

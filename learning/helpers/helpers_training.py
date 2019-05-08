@@ -264,7 +264,7 @@ def get_colors(nb_colors,nb_colors_per_map = 20,maps = [cm.tab20,cm.tab20b,cm.ta
 
     nb_colors_per_map = int(nb_colors/len(maps)) + 1
     max_colors = len(maps) * nb_colors_per_map
-    print(nb_colors,nb_colors_per_map)
+    # print(nb_colors,nb_colors_per_map)
     # x = np.arange(nb_colors)
 
     colors =  np.concatenate([ map_( np.linspace(0, 1, nb_colors_per_map)) for map_ in maps ], axis = 0)
@@ -286,7 +286,8 @@ def plot_samples(kept_samples,epoch,n_columns = 2,n_rows = 2,root = "./data/repo
     for plot in range(n_plots):
         fig,axs = plt.subplots(n_rows,n_columns,sharex=True,sharey=True,squeeze = False)
 
-        colors = np.array(get_colors(len(kept_samples[plot][0])))
+        nb_colors = np.max([len(e) for e in kept_samples[plot]])
+        colors = np.array(get_colors(nb_colors))
 
         if len(colors) > 0:          
             last_points = []

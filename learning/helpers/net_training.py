@@ -7,6 +7,7 @@ import numpy as np
 from joblib import load
 import helpers.helpers_training as helpers
 import os
+# from tensorboardX import SummaryWriter
 
 
 """
@@ -16,7 +17,7 @@ import os
     THen averaged batch losses are averaged
     over the number of batches
 """
-def train(model, device, train_loader,criterion, optimizer, epoch,batch_size,print_every = 10):
+def train(model, device, train_loader,criterion, optimizer, epoch,batch_size,log_tensorboard = 0,print_every = 10):
     model.train()
     epoch_loss = 0.
     batches_loss = []
@@ -33,8 +34,9 @@ def train(model, device, train_loader,criterion, optimizer, epoch,batch_size,pri
 
     torch.cuda.synchronize()
     s = time.time()
+    it = 0
     for batch_idx, data in enumerate(train_loader):
-        
+        it += 1
 #         s = time.time()
         inputs, labels,types,points_mask, active_mask, imgs = data
         inputs, labels,types, imgs = inputs.to(device), labels.to(device), types.to(device) , imgs.to(device)
@@ -73,6 +75,11 @@ def train(model, device, train_loader,criterion, optimizer, epoch,batch_size,pri
         #padding not used for prediction, no gradients
         loss = criterion(outputs, labels,points_mask)
 
+        # if log_tensorboard:
+        #     # print("in")
+        #     writer = SummaryWriter("./tensorboard")
+        #     writer.add_scalar('batch_loss',loss.item(),it)
+
         # print(loss)
 
 
@@ -88,10 +95,15 @@ def train(model, device, train_loader,criterion, optimizer, epoch,batch_size,pri
         # s = time.time()
 
         if batch_idx in ids_grads:
-            helpers.plot_params(model.named_parameters(),epoch)
+            try:
+                helpers.plot_params(model.named_parameters(),epoch)
+            except Exception as e: 
+                print(e)
 
-            helpers.plot_grad_flow(model.named_parameters(),epoch)
-
+            try:
+                helpers.plot_grad_flow(model.named_parameters(),epoch)
+            except Exception as e: 
+                print(e)
         # torch.cuda.synchronize()
         # print("grad flow {}".format(time.time()-s))
         
@@ -133,7 +145,7 @@ def train(model, device, train_loader,criterion, optimizer, epoch,batch_size,pri
            1 iatcnn
 """
 def evaluate(model, device, eval_loader,criterion, epoch, batch_size,scalers_path,multiple_scalers,
-            model_type,nb_plots = 8, offsets = 0 ,normalized = 0):
+            model_type,nb_plots = 8, offsets = 0 ,normalized = 0,log_tensorboard = 0):
     model.eval()
     eval_loss = 0.
     fde = 0.
@@ -150,11 +162,15 @@ def evaluate(model, device, eval_loader,criterion, epoch, batch_size,scalers_pat
     np.random.shuffle(kept_batches_id)
 
     nb_plots = int(nb_batches/100.0)
+    
+    print(nb_plots)
+
     kept_batches_id = kept_batches_id[:nb_plots]
 
     kept_samples = []
     for i,data in enumerate(eval_loader):
         keep_batch = (i in kept_batches_id )
+        
 
 
         inputs, labels,types,points_mask, active_mask,img = data
@@ -268,7 +284,11 @@ def evaluate(model, device, eval_loader,criterion, epoch, batch_size,scalers_pat
         eval_loss += loss.item()
 
     # print(len(kept_samples))
-    helpers.plot_samples(kept_samples,epoch,1,1) #### retrieve 
+    try:
+        helpers.plot_samples(kept_samples,epoch,1,1) #### retrieve 
+    except Exception as e: 
+        print(e)
+
 
             
     # eval_loss /= eval_loader_len 
@@ -296,7 +316,7 @@ def evaluate(model, device, eval_loader,criterion, epoch, batch_size,scalers_pat
 """
 def training_loop(n_epochs,batch_size,net,device,train_loader,eval_loader,criterion_train,criterion_eval,optimizer,
         scalers_path,multiple_scalers,model_type,plot = True,early_stopping = True,load_path = None,plot_every = 5,
-        save_every = 1,offsets = 0,normalized = 0):
+        save_every = 1,offsets = 0,normalized = 0,log_tensorboard = 0):
 
     losses = {
         "train":{
@@ -325,36 +345,36 @@ def training_loop(n_epochs,batch_size,net,device,train_loader,eval_loader,criter
 
     s = time.time()
     
-    # try:
-    for epoch in range(start_epoch,n_epochs):
-        train_loss,_ = train(net, device, train_loader,criterion_train, optimizer, epoch,batch_size)
-        
-        # train_loss,fde_train,ade_train = evaluate(net, device, train_loader,criterion_eval, 
-        #         epoch, batch_size,scalers_path,multiple_scalers,model_type,offsets=offsets,
-        #         normalized =normalized )
-        
-        eval_loss,fde,ade = evaluate(net, device, eval_loader,criterion_eval, 
-                epoch, batch_size,scalers_path,multiple_scalers,model_type,offsets=offsets,
-                normalized =normalized )
+    try:
+        for epoch in range(start_epoch,n_epochs):
+            train_loss,_ = train(net, device, train_loader,criterion_train, optimizer, epoch,batch_size,log_tensorboard)
             
+            # train_loss,fde_train,ade_train = evaluate(net, device, train_loader,criterion_eval, 
+            #         epoch, batch_size,scalers_path,multiple_scalers,model_type,offsets=offsets,
+            #         normalized =normalized )
+            
+            eval_loss,fde,ade = evaluate(net, device, eval_loader,criterion_eval, 
+                    epoch, batch_size,scalers_path,multiple_scalers,model_type,offsets=offsets,
+                    normalized =normalized, log_tensorboard = log_tensorboard)
+                
 
-        losses["train"]["loss"].append(train_loss)
-        losses["eval"]["loss"].append(eval_loss)
-        losses["eval"]["ade"].append(ade)
-        losses["eval"]["fde"].append(fde)
+            losses["train"]["loss"].append(train_loss)
+            losses["eval"]["loss"].append(eval_loss)
+            losses["eval"]["ade"].append(ade)
+            losses["eval"]["fde"].append(fde)
 
 
-        if plot and epoch % plot_every == 0:
-            plot_losses(losses,s,root = "./data/reports/losses/")
+            if plot and epoch % plot_every == 0:
+                plot_losses(losses,s,root = "./data/reports/losses/")
 
-        if epoch % save_every == 0:
-            save_model(epoch,net,optimizer,losses)
+            if epoch % save_every == 0:
+                save_model(epoch,net,optimizer,losses)
 
-        print(time.time()-s)
+            print(time.time()-s)
         
     
-    # except Exception as e: 
-    #     print(e)
+    except Exception as e: 
+        print(e)
 
     save_model(epoch+1,net,optimizer,losses)
     if plot:

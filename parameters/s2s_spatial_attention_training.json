@@ -1,6 +1,6 @@
 {
-    "n_epochs": 200,
-    "batch_size": 1,
+    "n_epochs": 100,
+    "batch_size": 32,
     "obs_length": 8,
     "pred_length": 12,
     "seq_length": 20,
@@ -28,7 +28,7 @@
     "att_feat_embedding": 128,
     "spatial_projection":128,
 
-    "model_type": 0,
+    "model_type": 1,
     "plot_every": 5,
     "save_every": 5,
     "offsets": 1,
@@ -39,5 +39,6 @@
         180,
         270
     ],
-    "test": 1
+    "test": 0,
+    "log_tensorboard":0
 }

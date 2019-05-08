@@ -100,7 +100,7 @@ def main():
         t_obs=prepare_param["t_obs"],
         t_pred=prepare_param["t_pred"],
         set_type = "train_eval", # train
-        use_images = True,
+        use_images = False,
         data_type = "trajectories",
         use_neighbors = True,
         use_masks = 1,
@@ -122,7 +122,7 @@ def main():
         t_obs=prepare_param["t_obs"],
         t_pred=prepare_param["t_pred"],
         set_type = "test", #eval
-        use_images = True,
+        use_images = False,
         data_type = "trajectories",
         use_neighbors = True,
         use_masks = 1,
