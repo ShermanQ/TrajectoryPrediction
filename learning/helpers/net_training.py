@@ -26,7 +26,7 @@ def train(model, device, train_loader,criterion, optimizer, epoch,batch_size,log
     start_time = time.time()
 
     # nb_grad_plots = 20
-    nb_grad_plots = int(int(train_loader.nb_batches)/100.0)
+    nb_grad_plots = 1
     ids_grads = np.arange(int(train_loader.nb_batches) )
     np.random.shuffle(ids_grads)
     ids_grads = ids_grads[:nb_grad_plots]
@@ -161,7 +161,7 @@ def evaluate(model, device, eval_loader,criterion, epoch, batch_size,scalers_pat
     kept_batches_id = np.arange(nb_batches)
     np.random.shuffle(kept_batches_id)
 
-    nb_plots = int(nb_batches/100.0)
+    nb_plots = 1
     
     print(nb_plots)
 
@@ -376,7 +376,7 @@ def training_loop(n_epochs,batch_size,net,device,train_loader,eval_loader,criter
     except Exception as e: 
         print(e)
 
-    save_model(epoch+1,net,optimizer,losses)
+    save_model(epoch+1,net,optimizer,losses,remove = 0)
     if plot:
         plot_losses(losses,s,root = "./data/reports/losses/")
      
@@ -408,7 +408,7 @@ def plot_losses(losses,idx,root = "./data/reports/losses/"):
     THe different losses at previous time_steps are loaded
 
 """
-def save_model(epoch,net,optimizer,losses,save_root = "./learning/data/models/" ):
+def save_model(epoch,net,optimizer,losses,remove = 1,save_root = "./learning/data/models/" ):
 
     dirs = os.listdir(save_root)
 
@@ -418,6 +418,8 @@ def save_model(epoch,net,optimizer,losses,save_root = "./learning/data/models/" 
     state = {
         'epoch': epoch,
         'state_dict': net.state_dict(),
+        # 'named_parameters': net.named_parameters(),
+
         'optimizer': optimizer.state_dict(),             
         'losses': losses,
         'args': net.args
@@ -427,8 +429,9 @@ def save_model(epoch,net,optimizer,losses,save_root = "./learning/data/models/" 
     #     }
     torch.save(state, save_path)
 
-    for dir_ in dirs:
-        os.remove(save_root+dir_)
+    if remove:
+        for dir_ in dirs:
+            os.remove(save_root+dir_)
     
     print("model saved in {}".format(save_path))
 

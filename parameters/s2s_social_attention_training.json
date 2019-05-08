@@ -29,7 +29,7 @@
 
     "model_type": 1,
     "plot_every": 5,
-    "save_every": 5,
+    "save_every": 1,
     "offsets": 1,
     "predict_smooth": 0,
     "augmentation": 0,

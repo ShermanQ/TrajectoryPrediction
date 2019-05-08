@@ -36,7 +36,7 @@ class CustomDataLoader():
             self.nb_batches = len(self.batches)
             print(self.nb_batches)
             if self.test :
-                  self.nb_batches = 20
+                  self.nb_batches = 100
 
             
 
@@ -110,8 +110,8 @@ class Hdf5Dataset():
             self.coord_dset = self.hdf5_file[self.dset_name]
 
             print(self.coord_dset.chunks)
-            if self.predict_smooth:
-                  self.coord_dset_smooth = self.hdf5_file[self.dset_name+self.smooth_suffix]
+            # if self.predict_smooth:
+            #       self.coord_dset_smooth = self.hdf5_file[self.dset_name+self.smooth_suffix]
 
             self.scenes_dset = self.hdf5_file[self.dset_img_name]   
             self.types_dset = self.hdf5_file[self.dset_types]  

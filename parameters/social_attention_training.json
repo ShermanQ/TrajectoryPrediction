@@ -20,7 +20,7 @@
     "predictor_layers": [128,64],
     "model_type": 1,
     "plot_every": 5,
-    "save_every":5,
+    "save_every":1,
 
     "test":0,
 

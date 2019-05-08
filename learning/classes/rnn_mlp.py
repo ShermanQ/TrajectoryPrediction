@@ -8,6 +8,7 @@ import imp
 from torch.nn.utils import weight_norm
 import collections
 
+import matplotlib.pyplot as plt
 
 
 def custom_mse(pred_seq,gt_seq):
@@ -38,12 +39,29 @@ class RNN_MLP(nn.Module):
         self.output_size = args["output_size"]
 
         self.nb_cat = args["nb_cat"]
+        self.use_types = args["use_types"]
+        self.word_embedding_size = args["word_embedding_size"]
+
 
 
         self.encoder = nn.LSTM(input_size = self.input_dim,hidden_size = self.hidden_size,num_layers = self.recurrent_layer,batch_first = True)
 
         self.mlp = nn.Sequential()
-        self.mlp.add_module("layer0",nn.Linear(self.hidden_size + self.nb_cat,self.mlp_layers[0]))
+
+        if self.use_types == 1:
+            print("types as one hot encoding")
+            self.mlp.add_module("layer0",nn.Linear(self.hidden_size + self.nb_cat,self.mlp_layers[0]))
+        elif self.use_types == 2:
+            print("types as embedding")
+            self.type_embedding = nn.Embedding(self.nb_cat,self.word_embedding_size )
+            self.mlp.add_module("layer0",nn.Linear(self.hidden_size + self.word_embedding_size,self.mlp_layers[0]))
+
+        else:
+            print("no types")
+
+            self.mlp.add_module("layer0",nn.Linear(self.hidden_size,self.mlp_layers[0]))
+
+
         self.mlp.add_module("relu0",  nn.ReLU())
         for i in range(1,len(self.mlp_layers)):
             self.mlp.add_module("layer{}".format(i),nn.Linear(self.mlp_layers[i-1],self.mlp_layers[i]))
@@ -65,8 +83,16 @@ class RNN_MLP(nn.Module):
         h = self.init_hidden_state()
         output,h = self.encoder(x,h)
         output = output[:,-1]
-        if self.nb_cat > 0:
+        if self.use_types == 1:        
             output = torch.cat([output,types],dim = 1)
+        elif self.use_types == 2:
+            types = torch.argmax(types,dim = -1)
+            embedded_types = self.type_embedding(types)
+
+            # plt.hist(self.type_embedding.weight.detach().cpu().numpy() )
+            # plt.show()
+            output = torch.cat([output,embedded_types],dim = 1)
+
         x = self.mlp(output).view(self.batch_size,1,int(self.output_size/self.input_dim),self.input_dim)       
         return x
 

@@ -96,10 +96,10 @@ def main():
     train_dataset = Hdf5Dataset(
         images_path = data["prepared_images"],
         hdf5_file= data_file,
-        scene_list= train_eval_scenes,
+        scene_list= train_scenes,
         t_obs=prepare_param["t_obs"],
         t_pred=prepare_param["t_pred"],
-        set_type = "train_eval", # train
+        set_type = "train", # train
         use_images = True,
         data_type = "trajectories",
         use_neighbors = False,
@@ -118,10 +118,10 @@ def main():
     eval_dataset = Hdf5Dataset(
         images_path = data["prepared_images"],
         hdf5_file= data_file,
-        scene_list= test_scenes, #eval_scenes
+        scene_list= eval_scenes, #eval_scenes
         t_obs=prepare_param["t_obs"],
         t_pred=prepare_param["t_pred"],
-        set_type = "test", #eval
+        set_type = "eval", #eval
         use_images = True,
         data_type = "trajectories",
         use_neighbors = False,
@@ -154,8 +154,13 @@ def main():
         "recurrent_layer" : training_param["recurrent_layer"],
         "mlp_layers" : training_param["mlp_layers"],
         "output_size" : training_param["output_size"],
-        # nb_cat: len(prepare_param["types_dic"]),
-        "nb_cat": 0
+        "nb_cat": len(prepare_param["types_dic"]),
+        "use_types": training_param["use_type"],
+        "word_embedding_size": training_param["word_embedding_size"],
+
+        # "use_types": 1 #ohe
+        # "use_types": 2 #embedding
+
 
     }
 
