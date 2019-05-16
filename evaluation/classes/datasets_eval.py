@@ -132,6 +132,7 @@ class Hdf5Dataset():
 
 
       def get_ids(self,ids):
+            print(len(ids))
             torch.cuda.synchronize()
             s = time.time()
 
@@ -160,8 +161,10 @@ class Hdf5Dataset():
             # compute max nb of agents in a frame
             if self.reduce_batches:
                   max_batch = self.__get_batch_max_neighbors(X)
-
+            print(X.shape)
             X = X[:,:max_batch]
+            print(X.shape)
+
             y = y[:,:max_batch]
             seq = seq[:,:max_batch]
 
@@ -173,6 +176,7 @@ class Hdf5Dataset():
             types = self.types_dset[ids,:max_batch] #B,N,tpred,2
             X,y,points_mask = self.__get_x_y_neighbors(X,y,seq)
 
+            print(X.shape)
 
 
 
@@ -212,15 +216,16 @@ class Hdf5Dataset():
             #       y = self.scaler.transform(y).squeeze()
             #       y = y.reshape(y_shape)
 
+            print(X.shape)
 
 
 
             if not self.use_neighbors:
                   X = np.expand_dims(X, axis = 2)
                   y = np.expand_dims(y, axis = 2)
-                  points_mask[0] = np.expand_dims(points_mask[0], axis = 2)
-                  points_mask[1] = np.expand_dims(points_mask[1], axis = 2)
-
+                  points_mask_0 = np.expand_dims(points_mask[0], axis = 2)
+                  points_mask_1 = np.expand_dims(points_mask[1], axis = 2)
+                  points_mask = (points_mask_0,points_mask_1)
 
 
                   types = np.expand_dims(types, axis = 2)
@@ -228,10 +233,21 @@ class Hdf5Dataset():
 
                   
             else:
+                  # n = len(X.shape)
+                  # print(X.shape)
+                  # if n == 2:
+                  #       X = np.expand_dims(X, axis = 0)
+                  #       y = np.expand_dims(y, axis = 0)
+                  #       points_mask_0 = np.expand_dims(points_mask[0], axis = 0)
+                  #       points_mask_1 = np.expand_dims(points_mask[1], axis = 0)
+                  #       points_mask = (points_mask_0,points_mask_1)
+
                   X = np.expand_dims(X, axis = 1)
                   y = np.expand_dims(y, axis = 1)
-                  points_mask[0] = np.expand_dims(points_mask[0], axis = 1)
-                  points_mask[1] = np.expand_dims(points_mask[1], axis = 1)
+                  points_mask_0 = np.expand_dims(points_mask[0], axis = 1)
+                  points_mask_1 = np.expand_dims(points_mask[1], axis = 1)
+                  points_mask = (points_mask_0,points_mask_1)
+
 
                   types = np.expand_dims(types, axis = 1)
 

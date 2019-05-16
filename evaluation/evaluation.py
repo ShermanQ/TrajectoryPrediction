@@ -113,16 +113,23 @@ class Evaluation():
 
                 inputs, labels,types,points_mask, active_mask, imgs = data
                 inputs, labels,types, imgs = inputs.to(device), labels.to(device), types.to(device) , imgs.to(device)
+                print(labels.size())
+                for i,l,t,p0,p1,a,img in zip(inputs,labels,types,points_mask[0],points_mask[1],active_mask,imgs):
 
-                for i,l,t,p,a,img in zip(inputs,labels,types,points_mask,active_mask,imgs):
+                    print(l.size())
+                    print(i.size())
+
+                    print(a.shape)
+                    
+                    i[0] = i[0][a]
+                    l[0] = l[0][a]
+                    t[0] = t[0][a]
+                    p0[0] = p0[0][a]
+                    p1[0] = p1[0][a]
+                    p = (p0,p1)
 
 
-                    i = i[a]
-                    l = l[a]
-                    t = t[a]
-                    p = p[a]
-
-
+                    print(l.size())
 
 
                     scene_dict[sample_id] = {}
@@ -142,6 +149,8 @@ class Evaluation():
                     torch.cuda.synchronize()
                     start = time.time()
                     o = model((i,t,a,p,img))
+                    print(o.size())
+
 
                     torch.cuda.synchronize()
                     end = time.time() - start
@@ -149,7 +158,7 @@ class Evaluation():
                     times += end 
                     nb += len(a)
 
-                    p = torch.FloatTensor(p).to(device)
+                    p = torch.FloatTensor(p[1]).to(device)
                     o = torch.mul(p,o)
                     l = torch.mul(p,l)
 

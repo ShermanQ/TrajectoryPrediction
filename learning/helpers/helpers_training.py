@@ -7,8 +7,71 @@ import numpy as np
 from joblib import load
 import matplotlib.cm as cm
 import json
-
+from classes.datasets import Hdf5Dataset,CustomDataLoader
 from matplotlib.lines import Line2D
+
+
+def load_data_loaders(data,prepare_param,training_param,net_params,data_file,scenes):
+    train_eval_scenes,train_scenes,test_scenes,eval_scenes = scenes
+
+       
+    if training_param["set_type_train"] == "train_eval":
+        train_scenes = train_eval_scenes
+    if training_param["set_type_test"] == "eval":
+        test_scenes = eval_scenes
+    
+
+
+    train_dataset = Hdf5Dataset(
+        images_path = data["prepared_images"],
+        hdf5_file= data_file,
+        scene_list= train_scenes,
+        t_obs=prepare_param["t_obs"],
+        t_pred=prepare_param["t_pred"],
+        set_type = training_param["set_type_train"], # train
+        use_images = net_params["use_images"],
+        data_type = "trajectories",
+        use_neighbors = net_params["use_neighbors"],
+        use_masks = 1,
+        predict_offsets = training_param["offsets"],
+        predict_smooth= training_param["predict_smooth"],
+        smooth_suffix= prepare_param["smooth_suffix"],
+        centers = json.load(open(data["scene_centers"])),
+        padding = prepare_param["padding"],
+
+        augmentation = training_param["augmentation"],
+        augmentation_angles = training_param["augmentation_angles"],
+        normalize =prepare_param["normalize"]
+        )
+
+    eval_dataset = Hdf5Dataset(
+        images_path = data["prepared_images"],
+        hdf5_file= data_file,
+        scene_list= test_scenes, #eval_scenes
+        t_obs=prepare_param["t_obs"],
+        t_pred=prepare_param["t_pred"],
+        set_type = training_param["set_type_test"], #eval
+        use_images = net_params["use_images"],
+        data_type = "trajectories",
+        use_neighbors = net_params["use_neighbors"],
+        use_masks = 1,
+        predict_offsets = training_param["offsets"],
+        predict_smooth= training_param["predict_smooth"],
+        smooth_suffix= prepare_param["smooth_suffix"],
+        centers = json.load(open(data["scene_centers"])),
+        padding = prepare_param["padding"],
+
+        augmentation = 0,
+        augmentation_angles = [],
+        normalize =prepare_param["normalize"]
+
+
+        )
+
+    train_loader = CustomDataLoader( batch_size = training_param["batch_size"],shuffle = True,drop_last = True,dataset = train_dataset,test=training_param["test"])
+    eval_loader = CustomDataLoader( batch_size = training_param["batch_size"],shuffle = False,drop_last = True,dataset = eval_dataset,test=training_param["test"])
+    return train_loader,eval_loader
+
 
 class MaskedLoss(nn.Module):
     def __init__(self,criterion):

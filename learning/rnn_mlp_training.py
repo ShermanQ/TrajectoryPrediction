@@ -51,7 +51,7 @@ import matplotlib.pyplot as plt
 def main():
           
     # set pytorch
-    # torch.manual_seed(10)
+    torch.manual_seed(10)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")    
     print(device)
     print(torch.cuda.is_available())
@@ -96,10 +96,10 @@ def main():
     train_dataset = Hdf5Dataset(
         images_path = data["prepared_images"],
         hdf5_file= data_file,
-        scene_list= train_scenes,
+        scene_list= train_eval_scenes,
         t_obs=prepare_param["t_obs"],
         t_pred=prepare_param["t_pred"],
-        set_type = "train", # train
+        set_type = "train_eval", # train
         use_images = True,
         data_type = "trajectories",
         use_neighbors = False,
@@ -118,10 +118,10 @@ def main():
     eval_dataset = Hdf5Dataset(
         images_path = data["prepared_images"],
         hdf5_file= data_file,
-        scene_list= eval_scenes, #eval_scenes
+        scene_list= test_scenes, #eval_scenes
         t_obs=prepare_param["t_obs"],
         t_pred=prepare_param["t_pred"],
-        set_type = "eval", #eval
+        set_type = "test", #eval
         use_images = True,
         data_type = "trajectories",
         use_neighbors = False,

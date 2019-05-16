@@ -1,7 +1,10 @@
 
 from evaluation.evaluation import Evaluation
-from evaluation.classes.tcn_mlp import TCN_MLP
-from evaluation.classes.model2a1 import Model2a1
+# from evaluation.classes.tcn_mlp import TCN_MLP
+# from evaluation.classes.model2a1 import Model2a1
+from evaluation.classes.s2s_social_att import S2sSocialAtt
+
+
 
 import json
 from evaluation.classes.datasets_eval import Hdf5Dataset,CustomDataLoader
@@ -52,7 +55,8 @@ def main():
     eval_ = Evaluation("parameters/data.json","parameters/prepare_training.json","parameters/model_evaluation.json")
     torch.manual_seed(21)
 
-    eval_.evaluate(Model2a1,eval_scenes,criterions,device,report_name)
+    # eval_scenes = ["hyang4"]
+    eval_.evaluate(S2sSocialAtt,eval_scenes,criterions,device,report_name)
 
     # eval_.evaluate(Model2a1,["hyang4"],criterions,device,report_name)
 

@@ -1,5 +1,4 @@
 {
-    
     "n_epochs" : 200,
     "batch_size": 32 ,
     "obs_length": 8,
@@ -13,18 +12,6 @@
     "print_every":10,
     "nb_grad_plots":5,
     "nb_sample_plots":5,
-    "load_path" : "",       
-    "input_dim":2,
-    "hidden_size":32,
-    "recurrent_layer":1,
-    "mlp_layers":[100,100],
-    "output_size":24,
-      
-    "use_type":2,
-    "word_embedding_size":10,    
-    "use type: 0 non, 1:ohe, 2:word_embedding":-1,
-    "use_neighbors": 0,
-    "use_images": 0,
     "offsets":1,
     "predict_smooth":0,
     "augmentation":0,
@@ -32,8 +19,10 @@
     "use_type":2,    
     "use type: 0 non, 1:ohe, 2:word_embedding":-1,
     "test":1,
-    "model_type":0
-
-
+    "model":"rnn_mlp",
+    "set_type_train": "train_eval",
+    "set_type_test": "test",
+    "train":1
     
+
 }
