@@ -1,0 +1,21 @@
+{
+    
+    
+    "load_path" : "",    
+    
+    "input_dim":2,
+    "mlp_layers":[100,100],
+    "output_size":2,
+    "model_type": 0,
+    
+    "kernel_size":2,
+    "dropout" : 0.2,
+    "nb_conv_feat":32,
+
+    "use_type":2,
+    
+    "use_neighbors": 0,
+    "use_images": 0
+    
+
+}

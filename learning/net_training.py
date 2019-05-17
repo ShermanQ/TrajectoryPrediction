@@ -14,10 +14,17 @@ import numpy as np
 import time
 
 from classes.datasets import Hdf5Dataset,CustomDataLoader
-from classes.rnn_mlp import RNN_MLP,custom_mse
+from classes.rnn_mlp import RNN_MLP
+from classes.tcn_mlp import TCN_MLP
+from classes.s2s_social_att import S2sSocialAtt
+from classes.s2s_spatial_att import S2sSpatialAtt
+from classes.social_attention import SocialAttention
+from classes.spatial_attention import SpatialAttention
+
 from helpers.training_class import NetTraining
+
 # import helpers.helpers_training as training
-import helpers.net_training as training
+# import helpers.net_training as training
 import helpers.helpers_training as helpers
 
 
@@ -92,7 +99,7 @@ def main():
         train_eval_scenes = train_scenes
 
     scenes = [train_eval_scenes,train_scenes,test_scenes,eval_scenes]
-    parameters_path = "parameters/{}.json"
+    parameters_path = "parameters/networks/{}.json"
     model = training_param["model"]
     
     # select model
@@ -113,6 +120,135 @@ def main():
         "word_embedding_size": net_params["word_embedding_size"],
         }
         net = RNN_MLP(args_net)
+    elif model == "tcn_mlp":
+        net_params = json.load(open(parameters_path.format(model)))
+        
+        args_net = {
+        "device" : device,
+        "batch_size" : training_param["batch_size"],
+        "input_length" : training_param["obs_length"],
+        "output_length" : training_param["pred_length"],
+        "num_inputs" : net_params["input_dim"],
+        "nb_conv_feat" : net_params["nb_conv_feat"],
+        "mlp_layers" : net_params["mlp_layers"],
+        "output_size" : net_params["output_size"],
+        # nb_cat: len(prepare_param["types_dic"]),
+        "nb_cat": 0,
+        "kernel_size": net_params["kernel_size"],
+        "dropout" : net_params["dropout"]
+        }
+
+        net = TCN_MLP(args_net)
+    elif model == "cnn_mlp":
+        pass 
+    
+    elif model == "s2s_social_attention":
+        net_params = json.load(open(parameters_path.format(model)))
+        args_net = {
+        "device" : device,
+        "batch_size" : training_param["batch_size"],
+        "input_dim" : net_params["input_dim"],
+        "enc_hidden_size" : net_params["enc_hidden_size"],
+        "enc_num_layers" : net_params["enc_num_layers"],
+        "dec_hidden_size" : net_params["dec_hidden_size"],
+        "dec_num_layer" : net_params["dec_num_layer"],
+
+        "embedding_size" : net_params["embedding_size"],
+        "output_size" : net_params["output_size"],
+        "pred_length" : training_param["pred_length"],
+        "projection_layers" : net_params["projection_layers"],
+        "enc_feat_embedding" : net_params["enc_feat_embedding"],
+        "condition_decoder_on_outputs" : net_params["condition_decoder_on_outputs"]
+        }
+        net = S2sSocialAtt(args_net)
+    
+    elif model == "s2s_spatial_attention":
+        net_params = json.load(open(parameters_path.format(model)))
+        args_net = {
+        "device" : device,
+        "batch_size" : training_param["batch_size"],
+        "input_dim" : net_params["input_dim"],
+        "enc_hidden_size" : net_params["enc_hidden_size"],
+        "enc_num_layers" : net_params["enc_num_layers"],
+        "dec_hidden_size" : net_params["dec_hidden_size"],
+        "dec_num_layer" : net_params["dec_num_layer"],
+
+        "embedding_size" : net_params["embedding_size"],
+        "output_size" : net_params["output_size"],
+        "pred_length" : training_param["pred_length"],
+        "projection_layers" : net_params["projection_layers"],
+        "att_feat_embedding" : net_params["att_feat_embedding"],
+        "spatial_projection" : net_params["spatial_projection"],
+        "condition_decoder_on_outputs" : net_params["condition_decoder_on_outputs"]
+        }
+
+        net = S2sSpatialAtt(args_net)
+    
+    elif model == "social_attention":
+        net_params = json.load(open(parameters_path.format(model)))
+        args_net = {
+            "device" : device,
+            "input_dim" : net_params["input_dim"],
+            "input_length" : training_param["obs_length"],
+            "output_length" : training_param["pred_length"],
+            "kernel_size" : net_params["kernel_size"],
+            "nb_blocks_transformer" : net_params["nb_blocks"],
+            "h" : net_params["h"],
+            "dmodel" : net_params["dmodel"],
+            "d_ff_hidden" : 4 * net_params["dmodel"],
+            "dk" : int(net_params["dmodel"]/net_params["h"]),
+            "dv" : int(net_params["dmodel"]/net_params["h"]),
+            "predictor_layers" : net_params["predictor_layers"],
+            "pred_dim" : training_param["pred_length"] * net_params["input_dim"] ,
+            
+            "convnet_embedding" : net_params["convnet_embedding"],
+            "coordinates_embedding" : net_params["coordinates_embedding"],
+            "convnet_nb_layers" : net_params["convnet_nb_layers"],
+            "use_tcn" : net_params["use_tcn"],
+            "dropout_tcn" : net_params["dropout_tcn"],
+            "dropout_tfr" : net_params["dropout_tfr"],
+            "projection_layers":net_params["projection_layers"],
+            "use_mha":net_params["use_mha"]
+        }
+        
+
+        net = SocialAttention(args_net)
+    elif model == "spatial_attention":
+        net_params = json.load(open(parameters_path.format(model)))
+        args_net = {
+            "device" : device,
+            "input_dim" : net_params["input_dim"],
+            "input_length" : training_param["obs_length"],
+            "output_length" : training_param["pred_length"],
+            "kernel_size" : net_params["kernel_size"],
+            "nb_blocks_transformer" : net_params["nb_blocks"],
+            "h" : net_params["h"],
+            "dmodel" : net_params["dmodel"],
+            "d_ff_hidden" : 4 * net_params["dmodel"],
+            "dk" : int(net_params["dmodel"]/net_params["h"]),
+            "dv" : int(net_params["dmodel"]/net_params["h"]),
+            "predictor_layers" : net_params["predictor_layers"],
+            "pred_dim" : training_param["pred_length"] * net_params["input_dim"] ,
+            
+            "convnet_embedding" : net_params["convnet_embedding"],
+            "coordinates_embedding" : net_params["coordinates_embedding"],
+            "convnet_nb_layers" : net_params["convnet_nb_layers"],
+            "use_tcn" : net_params["use_tcn"],
+            "dropout_tcn" : net_params["dropout_tcn"],
+            "dropout_tfr" : net_params["dropout_tfr"],
+            "projection_layers":net_params["projection_layers"],
+            "spatial_projection":net_params["spatial_projection"],
+            "vgg_feature_size":net_params["vgg_feature_size"],
+
+
+            "use_mha":net_params["use_mha"]
+        }
+        
+
+        net = SpatialAttention(args_net)
+
+
+
 
     train_loader,eval_loader = helpers.load_data_loaders(data,prepare_param,training_param,net_params,data_file,scenes)
     

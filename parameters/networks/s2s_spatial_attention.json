@@ -1,0 +1,30 @@
+{
+    
+    "load_path": "",
+    
+    "input_dim": 2,
+    "hidden_size": 32,
+    "recurrent_layer": 1,
+    "mlp_layers": [
+        100,
+        100
+    ],
+
+
+    "enc_hidden_size" : 32,
+    "enc_num_layers" : 1, 
+    "embedding_size" : 16,
+    "dec_hidden_size" : 32,
+    "dec_num_layer" : 1,
+    "output_size" : 2,
+    "projection_layers": [64,128,64],
+    "att_feat_embedding": 128,
+    "spatial_projection":128,
+
+    "condition_decoder_on_outputs":0,
+    "use_type":2,
+    
+    "use_neighbors": 0,
+    "use_images": 1
+
+}
