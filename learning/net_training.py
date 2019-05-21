@@ -20,6 +20,8 @@ from classes.s2s_social_att import S2sSocialAtt
 from classes.s2s_spatial_att import S2sSpatialAtt
 from classes.social_attention import SocialAttention
 from classes.spatial_attention import SpatialAttention
+from classes.cnn_mlp import CNN_MLP
+
 
 from helpers.training_class import NetTraining
 
@@ -140,7 +142,30 @@ def main():
 
         net = TCN_MLP(args_net)
     elif model == "cnn_mlp":
-        pass 
+        net_params = json.load(open(parameters_path.format(model)))
+        
+        args_net = {
+        "device" : device,
+        "batch_size" : training_param["batch_size"],
+        "input_length" : training_param["obs_length"],
+        "output_length" : training_param["pred_length"],
+        "num_inputs" : net_params["input_dim"],
+        "mlp_layers" : net_params["mlp_layers"],
+        "output_size" : net_params["output_size"],
+        "input_dim" : net_params["input_dim"],
+
+        # nb_cat: len(prepare_param["types_dic"]),
+        "nb_cat": 0,
+        "kernel_size": net_params["kernel_size"],
+        "use_types": net_params["use_type"],
+        "coord_embedding_size": net_params["coord_embedding_size"],
+        "nb_conv": net_params["nb_conv"],
+        "nb_kernel": net_params["nb_kernel"],
+        "cnn_feat_size": net_params["cnn_feat_size"],
+        "word_embedding_size": net_params["word_embedding_size"]
+        }
+        net = CNN_MLP(args_net)
+
     
     elif model == "s2s_social_attention":
         net_params = json.load(open(parameters_path.format(model)))
