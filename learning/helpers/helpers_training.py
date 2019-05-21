@@ -70,7 +70,7 @@ def load_data_loaders(data,prepare_param,training_param,net_params,data_file,sce
 
     train_loader = CustomDataLoader( batch_size = training_param["batch_size"],shuffle = True,drop_last = True,dataset = train_dataset,test=training_param["test"])
     eval_loader = CustomDataLoader( batch_size = training_param["batch_size"],shuffle = False,drop_last = True,dataset = eval_dataset,test=training_param["test"])
-    return train_loader,eval_loader
+    return train_loader,eval_loader,train_dataset,eval_dataset
 
 
 class MaskedLoss(nn.Module):

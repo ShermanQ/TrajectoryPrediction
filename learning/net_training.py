@@ -250,7 +250,7 @@ def main():
 
 
 
-    train_loader,eval_loader = helpers.load_data_loaders(data,prepare_param,training_param,net_params,data_file,scenes)
+    train_loader,eval_loader,train_dataset,eval_dataset = helpers.load_data_loaders(data,prepare_param,training_param,net_params,data_file,scenes)
     
     print(net)
     net = net.to(device)
@@ -280,11 +280,15 @@ def main():
         "train" : training_param["train"]
     }
 
-    trainer = NetTraining(args_training)
-    trainer.training_loop()
+    if training_param["learning_curves"]:
+        batch_props = training_param["learning_curves_proportions"]
+        nb_samples = train_dataset.get_len()
+        trainer = NetTraining(args_training)
+        trainer.analysis_curves(nb_samples,batch_props,args_training)
 
-
-    
+    else:
+        trainer = NetTraining(args_training)
+        trainer.training_loop()
 
 
 

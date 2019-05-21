@@ -153,7 +153,9 @@ class NetTraining():
             # print batch loss <-- mean batch loss for last print_every timesteps
             if batch_idx % self.print_every == 0:
                 print(batch_idx,loss.item(),time.time()-start_time)     
-        epoch_loss = np.median(batches_loss)  
+        epoch_loss = np.median(batches_loss) 
+        epoch_loss = np.mean(batches_loss)  
+
         print('Epoch n {} Loss: {}'.format(epoch,epoch_loss))
 
         return epoch_loss,batches_loss
@@ -255,12 +257,15 @@ class NetTraining():
             fde += helpers.fde_loss(outputs,labels,points_mask).item()
         
             eval_loss += loss.item()
+        
         try:
             helpers.plot_samples(kept_samples,epoch,1,1) #### retrieve 
         except Exception as e: 
             print(e)
 
         eval_loss = np.median(batch_losses)
+        eval_loss = np.mean(batch_losses)
+
 
         ade /= eval_loader_len      
         fde /= eval_loader_len        
@@ -271,9 +276,114 @@ class NetTraining():
         return eval_loss,fde,ade
 
 
+    def analysis_curves(self,nb_samples,batch_props,args):
+        print("nb samples train {}".format(nb_samples))
 
 
+        train_errors = []
+        dev_errors = [] 
+        nb_samples_kept = []
+        desired_perfs = []
 
+        print("learning curves")
+        for prop in batch_props:
+
+            self.__init__(args)
+
+            print("**** proportion of train samples *** {}".format(prop))
+            self.train_loader.data_len = int( prop * nb_samples)
+            print("nb of kept train samples {}".format(self.train_loader.data_len))
+            self.train_loader.split_batches()
+            print("nb of kept batches {}".format(self.train_loader.nb_batches))
+
+            
+
+
+            for epoch in range(self.n_epochs):
+                self.train(epoch)
+
+            train_loss,_,_ = self.evaluate_analysis(self.train_loader)
+            eval_loss,_,_ = self.evaluate_analysis(self.eval_loader)
+        
+            train_errors.append(train_loss)
+            dev_errors.append(eval_loss)
+            nb_samples_kept.append(int( prop * nb_samples))
+            desired_perfs.append(0.)
+
+        plt.plot(nb_samples_kept,train_errors,label = "train_error")
+        plt.plot(nb_samples_kept,dev_errors,label = "dev_error")
+        plt.plot(nb_samples_kept,desired_perfs,label = "desired_perfs")
+
+        plt.ylabel("loss function")
+        plt.xlabel("nb train samples")
+
+        plt.legend()
+
+        plt.savefig("{}learning_curves.jpg".format("./data/reports/analysis_curves/"))
+        plt.close()
+
+
+    def evaluate_analysis(self,eval_loader):
+        self.net.eval()
+        eval_loss = 0.
+        fde = 0.
+        ade = 0.
+        eval_loader_len =   float(eval_loader.nb_batches)
+
+        batch_losses = []
+
+        
+        for i,data in enumerate(eval_loader):
+
+            # Load data
+            inputs, labels,types,points_mask, active_mask, imgs = data
+            inputs = inputs.to(self.device)
+            labels =  labels.to(self.device)
+            types =  types.to(self.device)
+            imgs =  imgs.to(self.device)        
+            active_mask = active_mask.to(self.device)
+            
+            outputs = self.net((inputs,types,active_mask,points_mask,imgs))
+            
+            if self.normalized:
+                _,_,inputs = helpers.revert_scaling(labels,outputs,inputs,self.scalers_path)            
+                outputs = outputs.view(labels.size())
+                inputs,labels,outputs = helpers.offsets_to_trajectories(inputs.detach().cpu().numpy(),
+                                                                    labels.detach().cpu().numpy(),
+                                                                    outputs.detach().cpu().numpy(),
+                                                                    self.offsets)
+           
+            inputs,labels,outputs = torch.FloatTensor(inputs).to(self.device),torch.FloatTensor(labels).to(self.device),torch.FloatTensor(outputs).to(self.device)
+            
+
+            # we don't count the prediction error for end of trajectory padding
+            points_mask = points_mask[1]
+
+            points_mask = torch.FloatTensor(points_mask).to(self.device)#
+            outputs = torch.mul(points_mask,outputs)#
+            labels = torch.mul(points_mask,labels)#
+
+
+            loss = self.criterion(outputs, labels,points_mask)
+            batch_losses.append(loss.item())
+
+            
+
+            ade += helpers.ade_loss(outputs,labels,points_mask).item() ######
+            fde += helpers.fde_loss(outputs,labels,points_mask).item()
+        
+            eval_loss += loss.item()
+       
+
+        eval_loss = np.median(batch_losses)
+        eval_loss = np.mean(batch_losses)
+
+
+        ade /= eval_loader_len      
+        fde /= eval_loader_len        
+
+        print('Evaluation Loss: {}, ADE: {}, FDE: {}'.format(eval_loss,ade,fde))
+        return eval_loss,fde,ade
 
     def plot_losses(self,losses,idx,root = "./data/reports/losses/"):
         plt.plot(losses["train"]["loss"],label = "train_loss")
