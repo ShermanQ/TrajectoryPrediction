@@ -192,7 +192,6 @@ def main():
                     t = t[a]
                     p0 = p0[a]
                     p1 = p1[a]
-                    p = (p0,p1)
 
 
                     if args_net["use_neighbors"]:
@@ -207,6 +206,7 @@ def main():
                         p0 = np.expand_dims(p0,axis = 1)
                         p1 = np.expand_dims(p1,axis = 1)
                         # t = t.unsqueeze(1)
+                    p = (p0,p1)
 
                     # scene_dict[sample_id] = {}
                     # losses_dict[sample_id] = {}
