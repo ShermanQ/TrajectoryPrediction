@@ -14,6 +14,7 @@ import torch
 import sys
 import helpers.helpers_training as helpers
 import torch.nn as nn
+import numpy as np
 
 # python model_evaluation.py parameters/data.json parameters/prepare_training.json parameters/model_evaluation.json 
 def main():
@@ -113,7 +114,9 @@ def main():
         set_type = set_type_test, #eval
         use_images = args_net["use_images"],
         data_type = "trajectories",
-        use_neighbors = args_net["use_neighbors"],
+        # use_neighbors = args_net["use_neighbors"],
+        use_neighbors = 1,
+
         use_masks = 1,
         predict_offsets = args_net["offsets"],
         predict_smooth= args_net["predict_smooth"],
@@ -142,6 +145,68 @@ def main():
             types =  types.to(device)
             imgs =  imgs.to(device)        
             active_mask = active_mask.to(device)
+            points_mask = list(points_mask)
+
+            # if args_net["use_neighbors"]:
+            #     inputs = inputs.unsqueeze(1)
+            #     labels = labels.unsqueeze(1)
+            #     points_mask[0] = np.expand_dims(points_mask[0],axis = 1)
+            #     points_mask[1] = np.expand_dims(points_mask[1],axis = 1)
+            #     types = types.unsqueeze(1)
+            # else:
+            #     inputs = inputs.unsqueeze(2)
+            #     labels = labels.unsqueeze(2)
+            #     points_mask[0] = np.expand_dims(points_mask[0],axis = 2)
+            #     points_mask[1] = np.expand_dims(points_mask[1],axis = 2)
+            #     types = types.unsqueeze(2)
+
+            if not args_net["use_images"]:
+                imgs = imgs.repeat(inputs.size()[0],1)
+
+            # sample_sum = (np.sum(points_mask[1].reshape(list(points_mask[1].shape[:3])+[-1]), axis = 3) > 0).astype(int)
+            
+            sample_sum = (np.sum(points_mask[1].reshape(list(points_mask[1].shape[:2])+[-1]), axis = 2) > 0).astype(int)
+            
+            #8 1 17 12 2
+            # 8 17 12 2
+            active_mask = []
+            for b in sample_sum:
+                  ids = np.argwhere(b.flatten()).flatten()
+                  active_mask.append(torch.LongTensor(ids))
+
+
+
+            for i,l,t,p0,p1,a,img in zip(inputs,labels,types,points_mask[0],points_mask[1],active_mask,imgs):
+            # for i,l,t,p0,p1,a in zip(inputs,labels,types,points_mask[0],points_mask[1],active_mask):
+
+
+                    print(l.size())
+                    print(i.size())
+
+                    print(a.shape)
+                    
+                    # ne fonctionne pas en multi-agent
+                    i = i[a]
+                    l = l[a]
+                    t = t[a]
+                    p0 = p0[a]
+                    p1 = p1[a]
+                    p = (p0,p1)
+
+
+                    if args_net["use_neighbors"]:
+                        i = i.unsqueeze(0)
+                        l = l.unsqueeze(0)
+                        p0 = np.expand_dims(p0,axis = 0)
+                        p1 = np.expand_dims(p1,axis = 0)
+                        t = t.unsqueeze(0)
+                    else:
+                        i = i.unsqueeze(1)
+                        l = l.unsqueeze(1)
+                        p0 = np.expand_dims(p0,axis = 1)
+                        p1 = np.expand_dims(p1,axis = 1)
+                        t = t.unsqueeze(1)
+
 
             
 
