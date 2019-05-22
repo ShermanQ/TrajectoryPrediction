@@ -17,7 +17,6 @@ class CNN(nn.Module):
         self.cnn = nn.Sequential()
         padding = int((self.kernel_size-1)/2.0)
         for i in range(self.nb_conv):
-            print("fgdg {}".format(i))
             conv = nn.Conv1d(self.nb_kernel , self.nb_kernel , self.kernel_size, padding=padding)
 
             if i == 0:

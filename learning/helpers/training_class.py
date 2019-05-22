@@ -7,6 +7,7 @@ import numpy as np
 from joblib import load
 import helpers.helpers_training as helpers
 import os
+from scipy import stats
 # from tensorboardX import SummaryWriter
 
 
@@ -56,12 +57,14 @@ class NetTraining():
             start_epoch = checkpoint["epoch"]
 
         try:
+            best_harmonic_fde_ade = float('inf')
             for epoch in range(start_epoch,self.n_epochs):
                 train_loss = 0.
                 if self.train_model:
                     train_loss,_ = self.train(epoch)
                 eval_loss,fde,ade = self.evaluate(epoch)
                     
+                
 
                 losses["train"]["loss"].append(train_loss)
                 losses["eval"]["loss"].append(eval_loss)
@@ -73,7 +76,14 @@ class NetTraining():
                     self.plot_losses(losses,s,root = "./data/reports/losses/")
 
                 if epoch % self.save_every == 0:
-                    self.save_model(epoch,self.net,self.optimizer,losses)
+                    self.save_model(epoch,epoch,self.net,self.optimizer,losses)
+
+                h = stats.hmean([ade,fde])
+
+                if h < best_harmonic_fde_ade:
+                    print("harmonic mean {} is better than {}, saving new best model!".format(h,best_harmonic_fde_ade))
+                    self.save_model(epoch,"best",self.net,self.optimizer,losses,remove=0)
+                    best_harmonic_fde_ade = h
 
                 print(time.time()-s)
             
@@ -410,11 +420,13 @@ class NetTraining():
         THe different losses at previous time_steps are loaded
 
     """
-    def save_model(self,epoch,net,optimizer,losses,remove = 1,save_root = "./learning/data/models/" ):
+    def save_model(self,epoch,name,net,optimizer,losses,remove = 1,save_root = "./learning/data/models/" ):
 
         dirs = os.listdir(save_root)
 
-        save_path = save_root + "model_{}_{}.tar".format(epoch,time.time())
+        # save_path = save_root + "model_{}_{}.tar".format(name,time.time())
+        save_path = save_root + "model_{}.tar".format(name)
+
 
         print("args {}".format(net.args))
         state = {
@@ -433,7 +445,8 @@ class NetTraining():
 
         if remove:
             for dir_ in dirs:
-                os.remove(save_root+dir_)
+                if dir_ != "model_best.tar":
+                    os.remove(save_root+dir_)
         
         print("model saved in {}".format(save_path))
 

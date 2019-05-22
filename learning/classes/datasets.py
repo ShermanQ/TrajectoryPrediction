@@ -103,8 +103,8 @@ class Hdf5Dataset():
             if self.augmentation:
                   self.r_matrices = self.__get_matrices()
                   self.scene_list = helpers.helpers_training.augment_scene_list(self.scene_list,self.augmentation_angles)
-            
-            self.images = self.__load_images()
+            if self.use_images:
+                  self.images = self.__load_images()
             self.scaler = load("./data/scalers/scaler.joblib")
             # self.hdf5_file = hdf5_file
             self.hdf5_file = h5py.File(hdf5_file,"r")
