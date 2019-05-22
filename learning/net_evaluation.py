@@ -8,6 +8,7 @@ from classes.s2s_spatial_att import S2sSpatialAtt
 from classes.social_attention import SocialAttention
 from classes.spatial_attention import SpatialAttention
 from classes.cnn_mlp import CNN_MLP
+import time
 
 import json
 import torch
@@ -205,7 +206,49 @@ def main():
                         l = l.unsqueeze(1)
                         p0 = np.expand_dims(p0,axis = 1)
                         p1 = np.expand_dims(p1,axis = 1)
-                        t = t.unsqueeze(1)
+                        # t = t.unsqueeze(1)
+
+                    # scene_dict[sample_id] = {}
+                    # losses_dict[sample_id] = {}
+
+                    # if sample_id % print_every == 0:
+                    #     print("sample n {}".format(sample_id))
+
+                    
+                    a = a.to(device)
+                    
+
+                    # print(a)
+                    # print(len(a))
+
+
+                    torch.cuda.synchronize()
+                    start = time.time()
+                    o = net((i,t,a,p,img))
+                    print(o.size())
+
+
+                    torch.cuda.synchronize()
+                    end = time.time() - start
+
+                    # times += end 
+                    # nb += len(a)
+
+                    p = torch.FloatTensor(p[1]).to(device)
+                    o = torch.mul(p,o)
+                    l = torch.mul(p,l)
+
+
+                    if args_net["normalize"]:
+                        _,_,i = helpers.revert_scaling(l,o,i,data_params["scalers"])
+
+                    o = o.view(l.size())
+                    i,l,o = helpers.offsets_to_trajectories(i.detach().cpu().numpy(),
+                                                                        l.detach().cpu().numpy(),
+                                                                        o.detach().cpu().numpy(),
+                                                                        args_net["offsets"])
+
+                    print(",,,")
 
 
             
