@@ -8,6 +8,8 @@ import imp
 import time
 from classes.soft_attention import SoftAttention
 from classes.pretrained_vgg import customCNN
+from classes.pretrained_vgg import customCNN2
+
 
 
 class decoderLSTM(nn.Module):
@@ -121,7 +123,9 @@ class S2sSpatialAtt(nn.Module):
         ##### Spatial part ##############################################
 
         ############# features ##########################################
-        self.cnn = customCNN(self.device,nb_channels_projection= self.spatial_projection)
+        # self.cnn = customCNN(self.device,nb_channels_projection= self.spatial_projection)
+        self.cnn = customCNN2(self.device,nb_channels_projection= self.spatial_projection)
+
         self.spatt2att = nn.Linear(self.spatial_projection,self.att_features_embedding)
 
 

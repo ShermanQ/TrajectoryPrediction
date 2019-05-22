@@ -11,6 +11,8 @@ from classes.transformer import Transformer,MultiHeadAttention
 from classes.tcn import TemporalConvNet
 
 from classes.pretrained_vgg import customCNN
+from classes.pretrained_vgg import customCNN2
+
 
 from classes.soft_attention import SoftAttention
 
@@ -77,7 +79,9 @@ class SpatialAttention(nn.Module):
 ##### Spatial part ##############################################
 
 ############# features ##########################################
-        self.cnn = customCNN(self.device,nb_channels_projection= self.spatial_projection)
+        # self.cnn = customCNN(self.device,nb_channels_projection= self.spatial_projection)
+        self.cnn = customCNN2(self.device,nb_channels_projection= self.spatial_projection)
+
         self.spatt2att = nn.Linear(self.spatial_projection,self.dmodel)
 
 ############# Attention #########################################

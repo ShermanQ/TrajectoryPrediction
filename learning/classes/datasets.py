@@ -1,5 +1,7 @@
 import torch
 from torch.utils import data
+from classes.pretrained_vgg import customCNN1
+
 import cv2
 import numpy as np 
 import json
@@ -367,13 +369,31 @@ class Hdf5Dataset():
             return X,y
 
 
+      # def __load_images(self):
+      #       images = {}
+      #       for scene in self.scene_list:
+      #             img = torch.FloatTensor(cv2.imread(self.images_path.format(scene)))
+      #             img = img.permute(2,0,1)
+      #             images[scene] = img
+      #       return images
+
       def __load_images(self):
             images = {}
+            print("loading images features")
+            cnn = customCNN1()
             for scene in self.scene_list:
                   img = torch.FloatTensor(cv2.imread(self.images_path.format(scene)))
                   img = img.permute(2,0,1)
+                  img = img.unsqueeze(0)
+                  img = cnn(img)
+                  img = img.squeeze(0)
+
                   images[scene] = img
+            print("Done!")
+            
             return images
+
+
       def __get_matrices(self):
 
             matrices = {}

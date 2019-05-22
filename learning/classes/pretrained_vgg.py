@@ -45,4 +45,46 @@ class customCNN(nn.Module):
         projected_features = self.projection(cnn_features)
         return projected_features
 
+class customCNN1(nn.Module):
+    def __init__(self,weights_path = "./learning/data/pretrained_models/fcn32s_from_caffe.pth"):
+
+        
+        super(customCNN1,self).__init__()
+
+        self.weights_path = weights_path
+
+        self.cnn = FCN32s()
+
+        pretrained_dict = torch.load(weights_path)
+        new_dict = OrderedDict()
+        for k,v in pretrained_dict.items():
+            if k in self.cnn.state_dict():
+                new_dict[k] = v
+        self.cnn.load_state_dict(new_dict)
+
+        for param in self.cnn.parameters():
+            param.requires_grad = False
+ 
+
+    def forward(self,x):
+        cnn_features = self.cnn(x)        
+        return cnn_features
+
+class customCNN2(nn.Module):
+    def __init__(self,device, nb_channels_out = 512,nb_channels_projection = 128):
+
+        
+        super(customCNN2,self).__init__()
+
+        self.device = device
+        self.nb_channels_out = nb_channels_out
+        
+                    
+        self.projection = nn.Conv2d(nb_channels_out,nb_channels_projection,1)
+
     
+        
+
+    def forward(self,x):
+        projected_features = self.projection(x)
+        return projected_features

@@ -19,7 +19,7 @@
     "use_type":0,    
     "use type: 0 non, 1:ohe, 2:word_embedding":-1,
     "test":1,
-    "model":"cnn_mlp",
+    "model":"spatial_attention",
     "set_type_train": "train_eval",
     "set_type_test": "test",
     "train":1,
