@@ -1,5 +1,5 @@
 {
-    "n_epochs" : 20,
+    "n_epochs" : 3,
     "batch_size": 32 ,
     "obs_length": 8,
     "pred_length"  : 12,
@@ -18,12 +18,12 @@
     "augmentation_angles":[90,180,270],
     "use_type":0,    
     "use type: 0 non, 1:ohe, 2:word_embedding":-1,
-    "test":0,
+    "test":1,
     "model":"cnn_mlp",
     "set_type_train": "train_eval",
     "set_type_test": "test",
     "train":1,
-    "learning_curves": 1,
+    "learning_curves": 0,
     "learning_curves_proportions":[0.10,0.20,0.50,1.0]
     
 

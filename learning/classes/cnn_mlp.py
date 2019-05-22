@@ -6,6 +6,7 @@ import numpy as np
 # import torchvision
 import imp
 from torch.nn.utils import weight_norm
+from classes.cnn import CNN
 import collections
 
 import matplotlib.pyplot as plt
@@ -52,17 +53,18 @@ class CNN_MLP(nn.Module):
 
         self.coord_embedding = nn.Linear(self.input_dim,self.coord_embedding_size)
 
-        self.cnn = nn.Sequential()
-        padding = int((self.kernel_size-1)/2.0)
-        for i in range(self.nb_conv):
+        self.cnn = CNN(num_inputs = self.coord_embedding_size,nb_kernel = self.nb_kernel,cnn_feat_size = self.cnn_feat_size,obs_len = self.obs_len,kernel_size = self.kernel_size,nb_conv = self.nb_conv)
+        # self.cnn = nn.Sequential()
+        # padding = int((self.kernel_size-1)/2.0)
+        # for i in range(self.nb_conv):
             
-            conv = nn.Conv1d(self.nb_kernel , self.nb_kernel , self.kernel_size, padding=padding)
+        #     conv = nn.Conv1d(self.nb_kernel , self.nb_kernel , self.kernel_size, padding=padding)
 
-            if i == 0:
-                conv = nn.Conv1d(self.coord_embedding_size, self.nb_kernel , self.kernel_size, padding=padding)
-            self.cnn.add_module("conv0",conv)
+        #     if i == 0:
+        #         conv = nn.Conv1d(self.coord_embedding_size, self.nb_kernel , self.kernel_size, padding=padding)
+        #     self.cnn.add_module("conv0",conv)
         
-        self.project_cnn = nn.Linear(self.obs_len*self.nb_kernel,self.cnn_feat_size)
+        # self.project_cnn = nn.Linear(self.obs_len*self.nb_kernel,self.cnn_feat_size)
         self.mlp = nn.Sequential()
 
         if self.use_types == 1:
@@ -101,16 +103,17 @@ class CNN_MLP(nn.Module):
         x = x.squeeze(1)
         x = x.permute(0,2,1) # x: B,e,Tobs
 
-        x = self.cnn(x)# x: B,n_kernels,Tobs
-        x = x.permute(0,2,1).contiguous() # x: B,Tobs,n_kernels
+        # x = self.cnn(x)# x: B,n_kernels,Tobs
+        # x = x.permute(0,2,1).contiguous() # x: B,Tobs,n_kernels
 
-        x = x.view(self.batch_size,-1)# x: B,Tobs*n_kernels
-        x = f.relu(x) # ?
+        # x = x.view(self.batch_size,-1)# x: B,Tobs*n_kernels
+        # x = f.relu(x) # ?
 
-        x = self.project_cnn(x) # x: B,cnn_feat_size
+        # x = self.project_cnn(x) # x: B,cnn_feat_size
 
-        output = f.relu(x)
+        # output = f.relu(x)
 
+        output = self.cnn(x)
 
         
 
