@@ -155,7 +155,7 @@ def main():
         "input_dim" : net_params["input_dim"],
 
         # nb_cat: len(prepare_param["types_dic"]),
-        "nb_cat": 0,
+        "nb_cat": len(prepare_param["types_dic"]),
         "kernel_size": net_params["kernel_size"],
         "use_types": net_params["use_type"],
         "coord_embedding_size": net_params["coord_embedding_size"],

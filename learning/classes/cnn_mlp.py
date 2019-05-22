@@ -92,20 +92,23 @@ class CNN_MLP(nn.Module):
 
     def forward(self,x):
         types = x[1]
-        x = x[0]
-        x = x.squeeze(1)
+        x = x[0]# B,1,Obs,2  
+        x = x.squeeze(1)# B,Obs,2 
 
-        x = self.coord_embedding(x) # B,1,Obs,e        
+        x = self.coord_embedding(x) # B,Obs,e        
         x = f.relu(x)
 
         x = x.squeeze(1)
         x = x.permute(0,2,1) # x: B,e,Tobs
 
-        x = self.cnn(x)
-        x = x.permute(0,2,1).contiguous() # x: B,Tobs,e
+        x = self.cnn(x)# x: B,n_kernels,Tobs
+        x = x.permute(0,2,1).contiguous() # x: B,Tobs,n_kernels
 
-        x = x.view(self.batch_size,-1)
-        x = self.project_cnn(x)
+        x = x.view(self.batch_size,-1)# x: B,Tobs*n_kernels
+        x = f.relu(x) # ?
+
+        x = self.project_cnn(x) # x: B,cnn_feat_size
+
         output = f.relu(x)
 
 
@@ -119,8 +122,8 @@ class CNN_MLP(nn.Module):
             embedded_types = self.type_embedding(types)
             output = torch.cat([output,embedded_types],dim = 1)
 
-        x = self.mlp(output).view(self.batch_size,int(self.output_size/self.input_dim),self.input_dim)   
-        x = x.unsqueeze(1)    
+        x = self.mlp(output).view(self.batch_size,int(self.output_size/self.input_dim),self.input_dim)   # x: B,tpred,2
+        x = x.unsqueeze(1)   # x: B,1,tpred,2  
         return x
 
     

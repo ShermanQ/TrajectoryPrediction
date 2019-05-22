@@ -1,5 +1,5 @@
 {
-    "n_epochs" : 100,
+    "n_epochs" : 20,
     "batch_size": 32 ,
     "obs_length": 8,
     "pred_length"  : 12,
@@ -23,7 +23,7 @@
     "set_type_train": "train_eval",
     "set_type_test": "test",
     "train":1,
-    "learning_curves": 0,
+    "learning_curves": 1,
     "learning_curves_proportions":[0.10,0.20,0.50,1.0]
     
 

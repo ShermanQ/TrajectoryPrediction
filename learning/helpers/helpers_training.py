@@ -81,6 +81,7 @@ class MaskedLoss(nn.Module):
     def forward(self, outputs, targets, mask = None):
         if mask is not None:
             loss =  self.criterion(outputs*mask, targets*mask)
+            
             # loss = loss.sum()/(mask.sum()/2.0)
             loss = loss.sum()/(mask.sum())
 
