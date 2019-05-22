@@ -91,8 +91,18 @@ def main():
 
     print(net)
 
-    scenes = eval_scenes
-    set_type_test = "eval"
+    scenes = test_scenes
+    set_type_test = eval_params["set_type_test"]
+
+    if set_type_test == "train":
+        scenes = train_scenes
+    elif set_type_test == "eval":
+        scenes = eval_scenes
+    elif set_type_test == "train_eval":
+        scenes = train_eval_scenes
+
+
+
 
     dataset = Hdf5Dataset(
         images_path = data_params["prepared_images"],
@@ -118,6 +128,22 @@ def main():
 
         )
     print(dataset)
+
+    data_loader = CustomDataLoader( batch_size = eval_params["batch_size"],shuffle = False,drop_last = False,dataset = dataset,test=0)
+
+
+
+    for batch_idx, data in enumerate(data_loader):
+            
+            # Load data
+            inputs, labels,types,points_mask, active_mask, imgs = data
+            inputs = inputs.to(device)
+            labels =  labels.to(device)
+            types =  types.to(device)
+            imgs =  imgs.to(device)        
+            active_mask = active_mask.to(device)
+
+            
 
 
 if __name__ == "__main__":
