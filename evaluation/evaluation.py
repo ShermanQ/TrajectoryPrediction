@@ -11,6 +11,7 @@ from scipy.stats import norm
 
 
 from evaluation.classes.datasets_eval import Hdf5Dataset,CustomDataLoader
+from learning.classes.datasets import CustomDataLoader
 import learning.helpers.helpers_training as helpers_training
 from helpers import get_speeds,get_accelerations
 

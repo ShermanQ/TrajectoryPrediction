@@ -27,8 +27,8 @@
     "hdf5_toy":"./data/prepared_datasets/toy.hdf5",
     "hdf5_ped":"./data/prepared_datasets/pedestrians.hdf5",
 
-    "models_evaluation": "./evaluation/models/",
-    "reports_evaluation": "./evaluation/reports/",
+    "models_evaluation": "./learning/data/models_evaluation/",
+    "reports_evaluation": "./learning/data/evaluation_reports/",
     "dynamics": "./evaluation/dynamics.json"
 
 }

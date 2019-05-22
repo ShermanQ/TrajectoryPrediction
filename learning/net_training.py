@@ -120,6 +120,17 @@ def main():
         "nb_cat": len(prepare_param["types_dic"]),
         "use_types": net_params["use_type"],
         "word_embedding_size": net_params["word_embedding_size"],
+
+        "model_name":model,
+        "t_pred":training_param["pred_length"],
+        "t_obs":training_param["obs_length"],
+        "use_images":net_params["use_images"],
+        "use_neighbors":net_params["use_neighbors"],
+        "offsets":training_param["offsets"],
+        "predict_smooth":prepare_param["smooth"],
+        "normalize": prepare_param["normalize"]
+
+
         }
         net = RNN_MLP(args_net)
     elif model == "tcn_mlp":
@@ -137,7 +148,17 @@ def main():
         # nb_cat: len(prepare_param["types_dic"]),
         "nb_cat": 0,
         "kernel_size": net_params["kernel_size"],
-        "dropout" : net_params["dropout"]
+        "dropout" : net_params["dropout"],
+
+        "model_name":model,
+        "t_pred":training_param["pred_length"],
+        "t_obs":training_param["obs_length"],
+        "use_images":net_params["use_images"],
+        "use_neighbors":net_params["use_neighbors"],
+        "offsets":training_param["offsets"],
+        "predict_smooth":prepare_param["smooth"],
+        "normalize": prepare_param["normalize"]
+
         }
 
         net = TCN_MLP(args_net)
@@ -162,7 +183,17 @@ def main():
         "nb_conv": net_params["nb_conv"],
         "nb_kernel": net_params["nb_kernel"],
         "cnn_feat_size": net_params["cnn_feat_size"],
-        "word_embedding_size": net_params["word_embedding_size"]
+        "word_embedding_size": net_params["word_embedding_size"],
+        
+        "model_name":model,
+        "t_pred":training_param["pred_length"],
+        "t_obs":training_param["obs_length"],
+        "use_images":net_params["use_images"],
+        "use_neighbors":net_params["use_neighbors"],
+        "offsets":training_param["offsets"],
+        "predict_smooth":prepare_param["smooth"],
+        "normalize": prepare_param["normalize"]
+
         }
         net = CNN_MLP(args_net)
 
@@ -183,7 +214,16 @@ def main():
         "pred_length" : training_param["pred_length"],
         "projection_layers" : net_params["projection_layers"],
         "enc_feat_embedding" : net_params["enc_feat_embedding"],
-        "condition_decoder_on_outputs" : net_params["condition_decoder_on_outputs"]
+        "condition_decoder_on_outputs" : net_params["condition_decoder_on_outputs"],
+        
+        "model_name":model,
+        "t_pred":training_param["pred_length"],
+        "t_obs":training_param["obs_length"],
+        "use_images":net_params["use_images"],
+        "use_neighbors":net_params["use_neighbors"],
+        "offsets":training_param["offsets"],
+        "predict_smooth":prepare_param["smooth"],
+        "normalize": prepare_param["normalize"]
         }
         net = S2sSocialAtt(args_net)
     
@@ -204,7 +244,17 @@ def main():
         "projection_layers" : net_params["projection_layers"],
         "att_feat_embedding" : net_params["att_feat_embedding"],
         "spatial_projection" : net_params["spatial_projection"],
-        "condition_decoder_on_outputs" : net_params["condition_decoder_on_outputs"]
+        "condition_decoder_on_outputs" : net_params["condition_decoder_on_outputs"],
+        
+        "model_name":model,
+        "t_pred":training_param["pred_length"],
+        "t_obs":training_param["obs_length"],
+        "use_images":net_params["use_images"],
+        "use_neighbors":net_params["use_neighbors"],
+        "offsets":training_param["offsets"],
+        "predict_smooth":prepare_param["smooth"],
+        "normalize": prepare_param["normalize"]
+
         }
 
         net = S2sSpatialAtt(args_net)
@@ -233,7 +283,17 @@ def main():
             "dropout_tcn" : net_params["dropout_tcn"],
             "dropout_tfr" : net_params["dropout_tfr"],
             "projection_layers":net_params["projection_layers"],
-            "use_mha":net_params["use_mha"]
+            "use_mha":net_params["use_mha"],
+            
+            "model_name":model,
+            "t_pred":training_param["pred_length"],
+            "t_obs":training_param["obs_length"],
+            "use_images":net_params["use_images"],
+            "use_neighbors":net_params["use_neighbors"],
+            "offsets":training_param["offsets"],
+            "predict_smooth":prepare_param["smooth"],
+            "normalize": prepare_param["normalize"]
+
         }
         
 
@@ -266,7 +326,17 @@ def main():
             "vgg_feature_size":net_params["vgg_feature_size"],
 
 
-            "use_mha":net_params["use_mha"]
+            "use_mha":net_params["use_mha"],
+             
+            "model_name":model,
+            "t_pred":training_param["pred_length"],
+            "t_obs":training_param["obs_length"],
+            "use_images":net_params["use_images"],
+            "use_neighbors":net_params["use_neighbors"],
+            "offsets":training_param["offsets"],
+            "predict_smooth":prepare_param["smooth"],
+            "normalize": prepare_param["normalize"]
+
         }
         
 
@@ -302,7 +372,9 @@ def main():
         "print_every" : training_param["print_every"],
         "nb_grad_plots" : training_param["nb_grad_plots"],
         "nb_sample_plots" : training_param["nb_sample_plots"],
-        "train" : training_param["train"]
+        "train" : training_param["train"],
+        "model_name":model
+         
     }
 
     if training_param["learning_curves"]:

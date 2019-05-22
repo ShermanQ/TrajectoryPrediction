@@ -8,8 +8,8 @@
     "learning_props":[0.1,0.2,0.5,1.0],
     "batch_size":8,
     "use_neighbors":1,
-    "model_name":"s2s_attention",
-    "report_name":"s2s",
+    "model_name":"model_best",
+    "report_name":"report",
     "dynamic_threshold":0.00
     
 
