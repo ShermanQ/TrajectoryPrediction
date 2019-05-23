@@ -1,4 +1,4 @@
-from evaluation.classes.acceleration_distribution import Accelerations
+from learning.classes.acceleration_distribution import Accelerations
 import sys
 import json
 # python accelerations.py parameters/data.json parameters/prepare_training.json parameters/model_evaluation.json 

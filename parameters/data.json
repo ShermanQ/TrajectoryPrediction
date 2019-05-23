@@ -29,6 +29,7 @@
 
     "models_evaluation": "./learning/data/models_evaluation/",
     "reports_evaluation": "./learning/data/evaluation_reports/",
-    "dynamics": "./evaluation/dynamics.json"
+    "dynamics": "./learning/data/dynamics.json"
+
 
 }
