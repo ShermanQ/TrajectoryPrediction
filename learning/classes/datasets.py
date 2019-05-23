@@ -185,6 +185,7 @@ class Hdf5Dataset():
                   types = self.types_dset[ids,:max_batch] #B,N,tpred,2
             else:
                   types =  self.types_dset[ids,0] #B,1,tpred,2
+                  
 
 
             points_mask = []
@@ -288,7 +289,7 @@ class Hdf5Dataset():
 
                   y = np.multiply(y,active_mask) # put padding to 0
                   X = np.multiply(X,(X != self.padding).astype(int)) # put padding to 0
-
+            
             return X,y,(active_mask_in,active_mask)
 
       # def __get_x_y(self,coord_dset,ids,max_batch,types_dset,hdf5_file):

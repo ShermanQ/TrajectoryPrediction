@@ -128,8 +128,8 @@ def main():
     if os.path.exists(sub_dir_name):
         os.system("rm -r {}".format(sub_dir_name))
     os.system("mkdir {}".format(sub_dir_name))
-
-    for scene in scenes:
+    for z,scene in enumerate(scenes):
+        # if z == 5:
         print(scene)
 
         scene_dict = {} # save every sample in the scene
@@ -141,6 +141,8 @@ def main():
         
         sample_id = 0
         print_every = 500
+        squeeze_dimension = 0 if args_net["use_neighbors"] else 1
+
         
         for batch_idx, data in enumerate(data_loader):
                 
@@ -150,8 +152,8 @@ def main():
             inputs = inputs.to(device)
             labels =  labels.to(device)
 
-            nb_types = len(prepare_param["types_dic"].keys()) + 1
-            types = torch.FloatTensor(types_ohe(types.cpu().numpy(),nb_types)).to(device)
+            nb_types = len(prepare_param["types_dic"].keys()) 
+            # types = torch.FloatTensor(types_ohe(types.cpu().numpy(),nb_types)).to(device)
         
             imgs =  imgs.to(device)        
             active_mask = get_active_mask(points_mask[1])
@@ -160,6 +162,10 @@ def main():
             if not args_net["use_images"]:
                 imgs = imgs.repeat(inputs.size()[0],1)
 
+          
+
+            
+
 
 
             for i,l,t,p0,p1,a,img in zip(inputs,labels,types,points_mask[0],points_mask[1],active_mask,imgs):
@@ -167,17 +173,31 @@ def main():
                     i = i[a]
                     l = l[a]
                     t = t[a]
+                    t = t.unsqueeze(squeeze_dimension)
+                    t = torch.FloatTensor(types_ohe(t.cpu().numpy(),nb_types)).to(device)
+                    if not args_net["use_neighbors"]:
+                        t = t.squeeze(squeeze_dimension)
+
+
                     p0 = p0[a]
                     p1 = p1[a]
 
-                    squeeze_dimension = 0 if args_net["use_neighbors"] else 1
+                    # cse when there is no neighbors
+                    if len(a) == 1:
+                        p0 = np.expand_dims(p0,axis = 0)
+                        p1 = np.expand_dims(p1,axis = 0)
+
+
+
                     i = i.unsqueeze(squeeze_dimension)
                     l = l.unsqueeze(squeeze_dimension)
                     p0 = np.expand_dims(p0,axis = squeeze_dimension)
                     p1 = np.expand_dims(p1,axis = squeeze_dimension)
+
+                    # t = t.unsqueeze(squeeze_dimension)
+
                     
-                    if args_net["use_neighbors"]:
-                        t = t.unsqueeze(squeeze_dimension)
+                    
                     p = (p0,p1)
 
                     
@@ -203,6 +223,7 @@ def main():
 
                     # mask for loss
                     p = torch.FloatTensor(p[1]).to(device)
+                    
                     o = torch.mul(p,o)
                     l = torch.mul(p,l)
 
@@ -223,6 +244,8 @@ def main():
                     losses = {}
                     for j,c in enumerate(criterions):
                         criterion = criterions[c]
+                        
+
                         loss = criterion(o, l,p)
                         losses[c] = loss.item()
                         # if criterion not in scene of losses report add it
@@ -287,7 +310,7 @@ def main():
 
                     for thresh,pt in zip(conflict_thresholds,conflict_points):
                         scene_dict[sample_id]["conflict_points_"+str(thresh)] = pt
-                   
+                
 
                     sample_id += 1
 
@@ -304,6 +327,7 @@ def main():
         json.dump(losses_scenes, open(dir_name + "losses.json","w"),indent= 0)
 
         # count the average time per trajectory prediction
+        nb = max(1,nb)
         timer = {
             "total_time":times,
             "nb_trajectories":nb,
@@ -313,12 +337,13 @@ def main():
         json.dump(timer, open(dir_name + "time.json","w"),indent= 0)   
 
 def types_ohe(types,nb_types):       
-    cat = np.arange(nb_types).reshape(nb_types,1)
+    cat = np.arange(1,nb_types+1).reshape(nb_types,1)
     
     ohe = OneHotEncoder(sparse = False,categories = "auto")
     ohe = ohe.fit(cat)
 
     b,n = types.shape
+    # types = types - 1 
     types = ohe.transform(types.reshape(b*n,-1)) 
 
     types = types.reshape(b,n,nb_types)
@@ -408,7 +433,7 @@ def dynamic_eval(output,types,dynamics,types_dic,delta_t,dynamic_threshold = 0.0
     for a in range(output.shape[0]):
         coordinates = output[a]
         type_ = types[a]
-        type_ = types_dic[str(int(type_))]
+        type_ = types_dic[str(int(type_+1))]
 
         speeds = get_speeds(coordinates,delta_t)
         accelerations = get_accelerations(speeds,delta_t)
