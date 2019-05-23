@@ -66,7 +66,10 @@ class CustomDataLoader():
 """
 class Hdf5Dataset():
       'Characterizes a dataset for PyTorch'
-      def __init__(self,padding,images_path,hdf5_file,scene_list,t_obs,t_pred,set_type,normalize,use_images,data_type,use_neighbors,augmentation,augmentation_angles,centers,use_masks = False,reduce_batches = True,predict_offsets = 0,predict_smooth=0,smooth_suffix = ""):
+      def __init__(self,padding,images_path,hdf5_file,scene_list,t_obs,t_pred,set_type,
+                  normalize,use_images,data_type,use_neighbors,augmentation,
+                  augmentation_angles,centers,use_masks = False,reduce_batches = True,
+                  predict_offsets = 0,predict_smooth=0,smooth_suffix = "",evaluation = 0):
 
             self.images_path = images_path + "{}.jpg"
             
@@ -78,6 +81,8 @@ class Hdf5Dataset():
             self.use_neighbors = use_neighbors
             self.use_masks = use_masks
 
+            self.evaluation = evaluation
+
             
             self.centers = centers
             self.reduce_batches = reduce_batches
@@ -87,10 +92,24 @@ class Hdf5Dataset():
             # self.smooth_suffix = smooth_suffix
             self.normalize = normalize
 
+            self.hdf5_file = h5py.File(hdf5_file,"r")
 
-            self.dset_name = "samples_{}_{}".format(set_type,data_type)
-            self.dset_img_name = "images_{}_{}".format(set_type,data_type)
-            self.dset_types = "types_{}_{}".format(set_type,data_type)
+            if self.evaluation:
+                  self.dset_name = self.scene_list[0]
+                  self.dset_types = "{}_types".format(self.scene_list[0])
+                  self.coord_dset = self.hdf5_file[self.data_type][self.dset_name]
+                  self.types_dset = self.hdf5_file[self.data_type][self.dset_types]  
+
+            else: 
+                  self.dset_name = "samples_{}_{}".format(set_type,data_type)
+                  self.dset_img_name = "images_{}_{}".format(set_type,data_type)
+                  self.dset_types = "types_{}_{}".format(set_type,data_type)   
+                  self.coord_dset = self.hdf5_file[self.dset_name]            
+                  self.scenes_dset = self.hdf5_file[self.dset_img_name]   
+                  self.types_dset = self.hdf5_file[self.dset_types]  
+
+
+
 
             self.t_obs = t_obs
             self.t_pred = t_pred
@@ -107,16 +126,7 @@ class Hdf5Dataset():
                   self.images = self.__load_images()
             self.scaler = load("./data/scalers/scaler.joblib")
             # self.hdf5_file = hdf5_file
-            self.hdf5_file = h5py.File(hdf5_file,"r")
-
-            self.coord_dset = self.hdf5_file[self.dset_name]
-
-            print(self.coord_dset.chunks)
-            # if self.predict_smooth:
-            #       self.coord_dset_smooth = self.hdf5_file[self.dset_name+self.smooth_suffix]
-
-            self.scenes_dset = self.hdf5_file[self.dset_img_name]   
-            self.types_dset = self.hdf5_file[self.dset_types]  
+            
 
             self.shape = self.coord_dset.shape
             
@@ -146,8 +156,10 @@ class Hdf5Dataset():
 
             if self.augmentation:
                   ids,m_ids = self.__augmentation_ids(ids)   
-                     
-            scenes = [img.decode('UTF-8') for img in self.scenes_dset[ids]] # B
+
+            scenes = [self.scene_list[0] for _ in range(len(ids))]
+            if not self.evaluation:                             
+                  scenes = [img.decode('UTF-8') for img in self.scenes_dset[ids]] # B
 
             
             # load sequence once and for all to limit hdf5 access

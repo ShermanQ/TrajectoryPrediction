@@ -8,6 +8,9 @@ from classes.s2s_spatial_att import S2sSpatialAtt
 from classes.social_attention import SocialAttention
 from classes.spatial_attention import SpatialAttention
 from classes.cnn_mlp import CNN_MLP
+
+from sklearn.preprocessing import OneHotEncoder
+
 import time
 
 import json
@@ -33,10 +36,11 @@ def main():
     prepare_param = json.load(open("parameters/prepare_training.json"))
 
     # toy = prepare_param["toy"]
-    data_file = torch_param["split_hdf5"]
-    if prepare_param["pedestrian_only"]:
-        data_file = torch_param["ped_hdf5"] 
+    # data_file = torch_param["split_hdf5"]
+    # if prepare_param["pedestrian_only"]:
+    #     data_file = torch_param["ped_hdf5"] 
 
+    data_file = data_params["hdf5_file"]
     # report_name = args[4]
     report_name = eval_params["report_name"]
 
@@ -104,154 +108,158 @@ def main():
         scenes = train_eval_scenes
 
 
+    losses_scenes = {}
+    times = 0
+    nb = 0
+
+    for scene in scenes:
+        print(scene)
+        dataset = Hdf5Dataset(
+            images_path = data_params["prepared_images"],
+            hdf5_file= data_file,
+            scene_list= [scene], #eval_scenes
+            # scene_list= scenes, #eval_scenes
+
+            t_obs=args_net["t_obs"],
+            t_pred=args_net["t_pred"],
+            set_type = set_type_test, #eval
+            use_images = args_net["use_images"],
+            data_type = "trajectories",
+            # use_neighbors = args_net["use_neighbors"],
+            use_neighbors = 1,
+
+            use_masks = 1,
+            predict_offsets = args_net["offsets"],
+            predict_smooth= args_net["predict_smooth"],
+            smooth_suffix= prepare_param["smooth_suffix"],
+            centers = json.load(open(data_params["scene_centers"])),
+            padding = prepare_param["padding"],
+
+            augmentation = 0,
+            augmentation_angles = [],
+            normalize =args_net["normalize"],
+            evaluation=1
 
 
-    dataset = Hdf5Dataset(
-        images_path = data_params["prepared_images"],
-        hdf5_file= data_file,
-        scene_list= scenes, #eval_scenes
-        t_obs=args_net["t_obs"],
-        t_pred=args_net["t_pred"],
-        set_type = set_type_test, #eval
-        use_images = args_net["use_images"],
-        data_type = "trajectories",
-        # use_neighbors = args_net["use_neighbors"],
-        use_neighbors = 1,
+            )
 
-        use_masks = 1,
-        predict_offsets = args_net["offsets"],
-        predict_smooth= args_net["predict_smooth"],
-        smooth_suffix= prepare_param["smooth_suffix"],
-        centers = json.load(open(data_params["scene_centers"])),
-        padding = prepare_param["padding"],
+        data_loader = CustomDataLoader( batch_size = eval_params["batch_size"],shuffle = False,drop_last = False,dataset = dataset,test=0)
 
-        augmentation = 0,
-        augmentation_angles = [],
-        normalize =args_net["normalize"]
+        
 
+        for batch_idx, data in enumerate(data_loader):
+                if batch_idx % 1000 == 0:
+                    print(batch_idx)
+                
+                # Load data
+                inputs, labels,types,points_mask, active_mask, imgs = data
+                inputs = inputs.to(device)
+                labels =  labels.to(device)
 
-        )
-    print(dataset)
+                nb_types = len(prepare_param["types_dic"].keys()) + 1
+                types = torch.FloatTensor(types_ohe(types.cpu().numpy(),nb_types)).to(device)
+                # types =  types.to(device)
+                
 
-    data_loader = CustomDataLoader( batch_size = eval_params["batch_size"],shuffle = False,drop_last = False,dataset = dataset,test=0)
+                imgs =  imgs.to(device)        
+                active_mask = active_mask.to(device)
+                points_mask = list(points_mask)
 
+                if not args_net["use_images"]:
+                    imgs = imgs.repeat(inputs.size()[0],1)
 
-
-    for batch_idx, data in enumerate(data_loader):
-            
-            # Load data
-            inputs, labels,types,points_mask, active_mask, imgs = data
-            inputs = inputs.to(device)
-            labels =  labels.to(device)
-            types =  types.to(device)
-            imgs =  imgs.to(device)        
-            active_mask = active_mask.to(device)
-            points_mask = list(points_mask)
-
-            # if args_net["use_neighbors"]:
-            #     inputs = inputs.unsqueeze(1)
-            #     labels = labels.unsqueeze(1)
-            #     points_mask[0] = np.expand_dims(points_mask[0],axis = 1)
-            #     points_mask[1] = np.expand_dims(points_mask[1],axis = 1)
-            #     types = types.unsqueeze(1)
-            # else:
-            #     inputs = inputs.unsqueeze(2)
-            #     labels = labels.unsqueeze(2)
-            #     points_mask[0] = np.expand_dims(points_mask[0],axis = 2)
-            #     points_mask[1] = np.expand_dims(points_mask[1],axis = 2)
-            #     types = types.unsqueeze(2)
-
-            if not args_net["use_images"]:
-                imgs = imgs.repeat(inputs.size()[0],1)
-
-            # sample_sum = (np.sum(points_mask[1].reshape(list(points_mask[1].shape[:3])+[-1]), axis = 3) > 0).astype(int)
-            
-            sample_sum = (np.sum(points_mask[1].reshape(list(points_mask[1].shape[:2])+[-1]), axis = 2) > 0).astype(int)
-            
-            #8 1 17 12 2
-            # 8 17 12 2
-            active_mask = []
-            for b in sample_sum:
-                  ids = np.argwhere(b.flatten()).flatten()
-                  active_mask.append(torch.LongTensor(ids))
+                
+                sample_sum = (np.sum(points_mask[1].reshape(list(points_mask[1].shape[:2])+[-1]), axis = 2) > 0).astype(int)
+                
+                active_mask = []
+                for b in sample_sum:
+                    ids = np.argwhere(b.flatten()).flatten()
+                    active_mask.append(torch.LongTensor(ids))
 
 
 
-            for i,l,t,p0,p1,a,img in zip(inputs,labels,types,points_mask[0],points_mask[1],active_mask,imgs):
-            # for i,l,t,p0,p1,a in zip(inputs,labels,types,points_mask[0],points_mask[1],active_mask):
 
 
-                    print(l.size())
-                    print(i.size())
+                for i,l,t,p0,p1,a,img in zip(inputs,labels,types,points_mask[0],points_mask[1],active_mask,imgs):
 
-                    print(a.shape)
-                    
-                    # ne fonctionne pas en multi-agent
-                    i = i[a]
-                    l = l[a]
-                    t = t[a]
-                    p0 = p0[a]
-                    p1 = p1[a]
+                        i = i[a]
+                        l = l[a]
+                        t = t[a]
+                        p0 = p0[a]
+                        p1 = p1[a]
 
+                        print(t)
+                        if args_net["use_neighbors"]:
+                            i = i.unsqueeze(0)
+                            l = l.unsqueeze(0)
+                            p0 = np.expand_dims(p0,axis = 0)
+                            p1 = np.expand_dims(p1,axis = 0)
+                            t = t.unsqueeze(0)
+                        else:
+                            i = i.unsqueeze(1)
+                            l = l.unsqueeze(1)
+                            p0 = np.expand_dims(p0,axis = 1)
+                            p1 = np.expand_dims(p1,axis = 1)
+                            # t = t.unsqueeze(1)
+                        p = (p0,p1)
 
-                    if args_net["use_neighbors"]:
-                        i = i.unsqueeze(0)
-                        l = l.unsqueeze(0)
-                        p0 = np.expand_dims(p0,axis = 0)
-                        p1 = np.expand_dims(p1,axis = 0)
-                        t = t.unsqueeze(0)
-                    else:
-                        i = i.unsqueeze(1)
-                        l = l.unsqueeze(1)
-                        p0 = np.expand_dims(p0,axis = 1)
-                        p1 = np.expand_dims(p1,axis = 1)
-                        # t = t.unsqueeze(1)
-                    p = (p0,p1)
+                        # scene_dict[sample_id] = {}
+                        # losses_dict[sample_id] = {}
 
-                    # scene_dict[sample_id] = {}
-                    # losses_dict[sample_id] = {}
+                        # if sample_id % print_every == 0:
+                        #     print("sample n {}".format(sample_id))
 
-                    # if sample_id % print_every == 0:
-                    #     print("sample n {}".format(sample_id))
+                        
+                        a = a.to(device)
+                        
 
-                    
-                    a = a.to(device)
-                    
-
-                    # print(a)
-                    # print(len(a))
+                        # print(a)
+                        # print(len(a))
 
 
-                    torch.cuda.synchronize()
-                    start = time.time()
-                    o = net((i,t,a,p,img))
-                    print(o.size())
+                        torch.cuda.synchronize()
+                        start = time.time()
+                        o = net((i,t,a,p,img))
+                        
 
 
-                    torch.cuda.synchronize()
-                    end = time.time() - start
+                        torch.cuda.synchronize()
+                        end = time.time() - start
 
-                    # times += end 
-                    # nb += len(a)
+                        # times += end 
+                        # nb += len(a)
 
-                    p = torch.FloatTensor(p[1]).to(device)
-                    o = torch.mul(p,o)
-                    l = torch.mul(p,l)
-
-
-                    if args_net["normalize"]:
-                        _,_,i = helpers.revert_scaling(l,o,i,data_params["scalers"])
-
-                    o = o.view(l.size())
-                    i,l,o = helpers.offsets_to_trajectories(i.detach().cpu().numpy(),
-                                                                        l.detach().cpu().numpy(),
-                                                                        o.detach().cpu().numpy(),
-                                                                        args_net["offsets"])
-
-                    print(",,,")
+                        p = torch.FloatTensor(p[1]).to(device)
+                        o = torch.mul(p,o)
+                        l = torch.mul(p,l)
 
 
-            
+                        if args_net["normalize"]:
+                            _,_,i = helpers.revert_scaling(l,o,i,data_params["scalers"])
+
+                        o = o.view(l.size())
+                        i,l,o = helpers.offsets_to_trajectories(i.detach().cpu().numpy(),
+                                                                            l.detach().cpu().numpy(),
+                                                                            o.detach().cpu().numpy(),
+                                                                            args_net["offsets"])
+
+                        i,l,o = torch.FloatTensor(i).to(device),torch.FloatTensor(l).to(device),torch.FloatTensor(o).to(device)
+
+                        
+
+
+def types_ohe(types,nb_types):       
+    cat = np.arange(nb_types).reshape(nb_types,1)
+    print(cat)
+    ohe = OneHotEncoder(sparse = False,categories = "auto")
+    ohe = ohe.fit(cat)
+
+    b,n = types.shape
+    types = ohe.transform(types.reshape(b*n,-1)) 
+
+    types = types.reshape(b,n,nb_types)
+
+    return types
 
 
 if __name__ == "__main__":
