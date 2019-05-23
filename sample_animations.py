@@ -1,7 +1,7 @@
 
 import json
 import sys 
-from evaluation.classes.animation import Animation
+from learning.classes.animation import Animation
 
 
 

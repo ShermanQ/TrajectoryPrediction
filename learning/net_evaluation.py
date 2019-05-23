@@ -301,11 +301,13 @@ def main():
                     losses_dict[sample_id] = losses
 
                     # save sample values
+                    t = t.squeeze(squeeze_dimension).cpu().numpy()
+                    t = np.argmax(t,-1) + 1
                     scene_dict[sample_id]["inputs"] = i.squeeze(squeeze_dimension).cpu().numpy().tolist()
                     scene_dict[sample_id]["labels"] = l.squeeze(squeeze_dimension).cpu().numpy().tolist()
                     scene_dict[sample_id]["outputs"] = o.squeeze(squeeze_dimension).cpu().numpy().tolist()
                     scene_dict[sample_id]["active_mask"] = a.cpu().numpy().tolist()
-                    scene_dict[sample_id]["types"] = t.squeeze(squeeze_dimension).cpu().numpy().tolist()
+                    scene_dict[sample_id]["types"] = t.tolist()
                     scene_dict[sample_id]["points_mask"] = p.squeeze(squeeze_dimension).cpu().numpy().tolist()
 
                     for thresh,pt in zip(conflict_thresholds,conflict_points):
