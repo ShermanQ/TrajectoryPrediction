@@ -28,12 +28,67 @@ class NetTraining():
         self.plot_every = args["plot_every"]
         self.save_every = args["save_every"]
         self.offsets = args["offsets"]
+        self.offsets_input = args["offsets_input"]
+
         self.normalized = args["normalized"]
         self.net = args["net"]
         self.print_every = args["print_every"]
         self.nb_grad_plots = args["nb_grad_plots"]
         self.nb_sample_plots = args["nb_sample_plots"]
         self.train_model = args["train"]
+        self.k = args["k"]
+        self.s = args["s"]
+        self.early_stopping_thresh = args["early_stopping_thresh"]
+
+# http://page.mi.fu-berlin.de/prechelt/Biblio/stop_tricks1997.pdf
+    def generalization_loss(self,eval_losses):
+        gl = 0.
+        if len(eval_losses) > 1:
+            e_va =  eval_losses[-1]
+            e_opt =  np.min(eval_losses)
+            gl = 100.0 * ((e_va/e_opt) - 1.0)
+        return gl
+
+    def training_progress(self,train_losses,k):
+        p = 10
+        if len(train_losses) > k-1:
+            # print("test {} {}".format(len(train_losses[-k:]),k))
+            sum_ = np.sum(train_losses[-k:])/float(k)
+            min_ = np.min(train_losses[-k:])
+            ratio = sum_ / min_
+            p = 1000 * (ratio -1)
+
+        return p
+    
+    def up(self,eval_losses,s,k = 5):
+        stop1 = False
+        if len(eval_losses) > s*k-1:
+            # up1 = eval_losses[k-1]
+            # if up1 > eval_losses[0]:
+            #     stop1 = True
+            stop1 = True
+            print(eval_losses)
+            for i in range(0,s):
+                if stop1 :
+                    upi = eval_losses[-i*k-1]
+                    upim1 = eval_losses[-(i+1)*k]
+
+                    # upi = eval_losses[i*k-1]
+                    # upim1 = eval_losses[(i-1)*k]
+                    print(upi,upim1)
+                    if upi > upim1 and stop1:
+                        stop1 = True
+                    else:
+                        stop1 = False
+                else:
+                    break
+        return stop1
+    def progress_loss_generalization(self,train_losses,eval_losses,k):
+        gl = self.generalization_loss(eval_losses)
+        p = self.training_progress(train_losses,k)
+        if p == 0.:
+            return 0.
+        return gl/p
 
 
     def training_loop(self):
@@ -58,6 +113,7 @@ class NetTraining():
 
         try:
             best_harmonic_fde_ade = float('inf')
+            # train_t = []
             for epoch in range(start_epoch,self.n_epochs):
                 train_loss = 0.
                 if self.train_model:
@@ -86,6 +142,31 @@ class NetTraining():
                     best_harmonic_fde_ade = h
 
                 print(time.time()-s)
+                progress = self.training_progress(losses["train"]["loss"],self.k)                    
+
+                if progress < 0.1:
+                    print("progress {} < 0.1, early stopping, epoch: {}".format(progress,epoch))
+                    break
+
+                # early stopping
+                if epoch % self.k == 0 and epoch != 0:
+                    # loss,_,_ = self.evaluate_analysis(self.train_loader,verbose = 0)
+                    # train_t.append(loss)
+                    # generalization = self.generalization_loss(losses["eval"]["loss"])
+
+                    # progress_generalization = self.progress_loss_generalization(losses["train"]["loss"],losses["eval"]["loss"],self.k)
+                    # print("early stopping: progress: {}, progress_generalization {}".format(progress,progress_generalization))
+                
+                    # if progress_generalization > self.early_stopping_thresh:
+                    #     print("pq > {}, early stopping, epoch: {}".format(self.early_stopping_thresh,epoch))
+                    #     break
+
+
+                    up = self.up(losses["eval"]["loss"],self.s,self.k)
+                    if up:
+                        print("up early stopping, epoch: {}".format(epoch))
+                        break
+
             
         
         except Exception as e: 
@@ -119,7 +200,7 @@ class NetTraining():
         for batch_idx, data in enumerate(self.train_loader):
             
             # Load data
-            inputs, labels,types,points_mask, active_mask, imgs = data
+            inputs, labels,types,points_mask, active_mask, imgs,_,_ = data
             inputs = inputs.to(self.device)
             labels =  labels.to(self.device)
             types =  types.to(self.device)
@@ -205,7 +286,7 @@ class NetTraining():
             keep_batch = (i in kept_batches_id )
 
             # Load data
-            inputs, labels,types,points_mask, active_mask, imgs = data
+            inputs, labels,types,points_mask, active_mask, imgs,target_last,input_last = data
             inputs = inputs.to(self.device)
             labels =  labels.to(self.device)
             types =  types.to(self.device)
@@ -217,11 +298,11 @@ class NetTraining():
             if self.normalized:
                 _,_,inputs = helpers.revert_scaling(labels,outputs,inputs,self.scalers_path)            
                 outputs = outputs.view(labels.size())
-                inputs,labels,outputs = helpers.offsets_to_trajectories(inputs.detach().cpu().numpy(),
-                                                                    labels.detach().cpu().numpy(),
-                                                                    outputs.detach().cpu().numpy(),
-                                                                    self.offsets)
-           
+            inputs,labels,outputs = helpers.offsets_to_trajectories(inputs.detach().cpu().numpy(),
+                                                                labels.detach().cpu().numpy(),
+                                                                outputs.detach().cpu().numpy(),
+                                                                self.offsets,self.offsets_input,target_last,input_last)
+        
             inputs,labels,outputs = torch.FloatTensor(inputs).to(self.device),torch.FloatTensor(labels).to(self.device),torch.FloatTensor(outputs).to(self.device)
             
 
@@ -333,7 +414,7 @@ class NetTraining():
         plt.close()
 
 
-    def evaluate_analysis(self,eval_loader):
+    def evaluate_analysis(self,eval_loader,verbose = 1):
         self.net.eval()
         eval_loss = 0.
         fde = 0.
@@ -346,7 +427,7 @@ class NetTraining():
         for i,data in enumerate(eval_loader):
 
             # Load data
-            inputs, labels,types,points_mask, active_mask, imgs = data
+            inputs, labels,types,points_mask, active_mask, imgs,target_last,input_last = data
             inputs = inputs.to(self.device)
             labels =  labels.to(self.device)
             types =  types.to(self.device)
@@ -391,8 +472,8 @@ class NetTraining():
 
         ade /= eval_loader_len      
         fde /= eval_loader_len        
-
-        print('Evaluation Loss: {}, ADE: {}, FDE: {}'.format(eval_loss,ade,fde))
+        if verbose:
+            print('Evaluation Loss: {}, ADE: {}, FDE: {}'.format(eval_loss,ade,fde))
         return eval_loss,fde,ade
 
     def plot_losses(self,losses,idx,root = "./data/reports/losses/"):
@@ -428,7 +509,7 @@ class NetTraining():
         save_path = save_root + "model_{}.tar".format(name)
 
 
-        print("args {}".format(net.args))
+        # print("args {}".format(net.args))
         state = {
             'epoch': epoch,
             'state_dict': net.state_dict(),

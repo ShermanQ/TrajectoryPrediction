@@ -34,6 +34,8 @@ def load_data_loaders(data,prepare_param,training_param,net_params,data_file,sce
         use_neighbors = net_params["use_neighbors"],
         use_masks = 1,
         predict_offsets = training_param["offsets"],
+        offsets_input = training_param["offsets_input"],
+
         predict_smooth= training_param["predict_smooth"],
         smooth_suffix= prepare_param["smooth_suffix"],
         centers = json.load(open(data["scene_centers"])),
@@ -41,7 +43,7 @@ def load_data_loaders(data,prepare_param,training_param,net_params,data_file,sce
 
         augmentation = training_param["augmentation"],
         augmentation_angles = training_param["augmentation_angles"],
-        normalize =prepare_param["normalize"]
+        normalize =training_param["normalize"]
         )
 
     eval_dataset = Hdf5Dataset(
@@ -56,6 +58,8 @@ def load_data_loaders(data,prepare_param,training_param,net_params,data_file,sce
         use_neighbors = net_params["use_neighbors"],
         use_masks = 1,
         predict_offsets = training_param["offsets"],
+        offsets_input = training_param["offsets_input"],
+
         predict_smooth= training_param["predict_smooth"],
         smooth_suffix= prepare_param["smooth_suffix"],
         centers = json.load(open(data["scene_centers"])),
@@ -63,7 +67,7 @@ def load_data_loaders(data,prepare_param,training_param,net_params,data_file,sce
 
         augmentation = 0,
         augmentation_angles = [],
-        normalize =prepare_param["normalize"]
+        normalize =training_param["normalize"]
 
 
         )
@@ -555,25 +559,30 @@ def augment_scene_list(scene_list,angles):
     return new_list
     
 
-def offsets_to_trajectories(inputs,labels,outputs,offsets):
+def offsets_to_trajectories(inputs,labels,outputs,offsets,offsets_input,last_points,input_last):
     # print(inputs.shape) # B,N,obs,2
     # print(labels.shape) # B,N,pred,2
     # print(outputs.shape) # B,N,pred,2
 
+    if offsets_input == 1:
+        inputs = input_last
     
     if offsets == 1:
-        last_points = np.repeat(  np.expand_dims(inputs[:,:,-1],2),  labels.shape[2], axis=2)
+        # last_points = np.repeat(  np.expand_dims(inputs[:,:,-1],2),  labels.shape[2], axis=2)
         labels = np.add(last_points,labels)
         outputs = np.add(last_points,outputs)
         return inputs,labels,outputs
     elif offsets == 2:
-        last_points = np.repeat(  np.expand_dims(inputs[:,:,-1],2),  labels.shape[2], axis=2)# B,N,pred,2
+        print("offset 2 not allowed")
+        # # seq = np.concatenate([inputs,labels],axis = 2)
+        # # last_points = seq[:,:,inputs.shape[2]-1:seq.shape[2]-1]
+        # last_points = np.repeat(  np.expand_dims(inputs[:,:,-1],2),  labels.shape[2], axis=2)# B,N,pred,2
 
-        labels = np.concatenate([np.expand_dims( np.add(last_points[:,:,i], np.sum(labels[:,:,:i+1],axis = 2)), 2) for i in range(labels.shape[2])], axis = 2)
-        outputs = np.concatenate([np.expand_dims( np.add(last_points[:,:,i], np.sum(outputs[:,:,:i+1],axis = 2)), 2) for i in range(outputs.shape[2])], axis = 2)
+        # labels = np.concatenate([np.expand_dims( np.add(last_points[:,:,i], np.sum(labels[:,:,:i+1],axis = 2)), 2) for i in range(labels.shape[2])], axis = 2)
+        # outputs = np.concatenate([np.expand_dims( np.add(last_points[:,:,i], np.sum(outputs[:,:,:i+1],axis = 2)), 2) for i in range(outputs.shape[2])], axis = 2)
 
 
-        return inputs,labels,outputs
+        # return inputs,labels,outputs
     else :
         return inputs,labels,outputs
 

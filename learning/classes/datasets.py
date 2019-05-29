@@ -38,7 +38,7 @@ class CustomDataLoader():
             self.nb_batches = len(self.batches)
             print(self.nb_batches)
             if self.test :
-                  self.nb_batches = 100
+                  self.nb_batches = 20
 
             
 
@@ -69,7 +69,7 @@ class Hdf5Dataset():
       def __init__(self,padding,images_path,hdf5_file,scene_list,t_obs,t_pred,set_type,
                   normalize,use_images,data_type,use_neighbors,augmentation,
                   augmentation_angles,centers,use_masks = False,reduce_batches = True,
-                  predict_offsets = 0,predict_smooth=0,smooth_suffix = "",evaluation = 0):
+                  predict_offsets = 0,offsets_input = 0,predict_smooth=0,smooth_suffix = "",evaluation = 0):
 
             self.images_path = images_path + "{}.jpg"
             
@@ -87,6 +87,7 @@ class Hdf5Dataset():
             self.centers = centers
             self.reduce_batches = reduce_batches
             self.predict_offsets = predict_offsets
+            self.offsets_input = offsets_input
 
             self.predict_smooth = predict_smooth
             # self.smooth_suffix = smooth_suffix
@@ -190,11 +191,11 @@ class Hdf5Dataset():
 
             points_mask = []
             if self.use_neighbors:
-                  X,y,points_mask = self.__get_x_y_neighbors(X,y,seq)
+                  X,y,points_mask,y_last,X_last = self.__get_x_y_neighbors(X,y,seq)
 
 
             else:       
-                  X,y,points_mask = self.__get_x_y(X,y,seq)                      
+                  X,y,points_mask,y_last,X_last = self.__get_x_y(X,y,seq)                      
 
 
             sample_sum = (np.sum(points_mask[1].reshape(points_mask[1].shape[0],points_mask[1].shape[1],-1), axis = 2) > 0).astype(int)
@@ -210,12 +211,12 @@ class Hdf5Dataset():
                   x_shape = X.shape 
                   y_shape = y.shape 
 
-                  X = np.expand_dims(X.flatten(),1)
-
-
-                  X = self.scaler.transform(X).squeeze()
-
-                  X = X.reshape(x_shape)
+                  if self.offsets_input:
+                        print("need to implment normalisation for offsets inputs")
+                  else:
+                        X = np.expand_dims(X.flatten(),1)
+                        X = self.scaler.transform(X).squeeze()
+                        X = X.reshape(x_shape)
 
                   # print("normalize {}".format(time.time()-s))
                   # s = time.time()
@@ -246,6 +247,9 @@ class Hdf5Dataset():
             if self.use_images:
                   imgs = torch.stack([self.images[img] for img in scenes],dim = 0) 
             out.append(imgs)
+            out.append(y_last)
+            out.append(X_last)
+
       
             # print("data loading {}".format(time.time()-s))
             return tuple(out)
@@ -272,6 +276,8 @@ class Hdf5Dataset():
       def __get_x_y_neighbors(self,X,y,seq):
             active_mask = (y != self.padding).astype(int)    
             active_mask_in = (X != self.padding).astype(int)            
+            active_last_points = []
+            original_x = []
 
             if self.predict_offsets:
                   if self.predict_offsets == 1:
@@ -286,17 +292,30 @@ class Hdf5Dataset():
                   
                   active_last_points = np.multiply(active_mask,last_points)
                   y = np.subtract(y,active_last_points)
+            if self.offsets_input:
+                  first_points = np.concatenate([np.expand_dims(X[:,:,0],2), X[:,:,0:self.t_obs-1]], axis = 2)
+                  active_first_points = np.multiply(active_mask_in,first_points)
+                  original_x = X
+                  
+                  X = np.subtract(X,active_first_points)
 
-                  y = np.multiply(y,active_mask) # put padding to 0
-                  X = np.multiply(X,(X != self.padding).astype(int)) # put padding to 0
+
+            y = np.multiply(y,active_mask) # put padding to 0
+            X = np.multiply(X,(X != self.padding).astype(int)) # put padding to 0
             
-            return X,y,(active_mask_in,active_mask)
+            return X,y,(active_mask_in,active_mask),active_last_points,original_x 
 
       # def __get_x_y(self,coord_dset,ids,max_batch,types_dset,hdf5_file):
       def __get_x_y(self,X,y,seq):
 
             X = np.expand_dims( X[:,0] ,1) # keep only first neighbors and expand nb_agent dim 
             y = np.expand_dims( y[:,0], 1) #B,1,tpred,2 # keep only first neighbors and expand nb_agent dim 
+            seq = np.expand_dims( seq[:,0], 1) #B,1,tpred,2 # keep only first neighbors and expand nb_agent dim 
+            
+            active_last_points = []
+            original_x = []
+
+            
             active_mask = (y != self.padding).astype(int)
             active_mask_in = (X != self.padding).astype(int)            
 
@@ -307,15 +326,30 @@ class Hdf5Dataset():
                         last_points = np.repeat(  np.expand_dims(X[:,:,-1],2),  self.t_pred, axis=2) #B,1,tpred,2
                   
                   elif self.predict_offsets == 2: # y shifted left
-                        last_points = np.expand_dims( X[:,:,self.t_obs-1:self.seq_len-1], 1)
+                        last_points = seq[:,:,self.t_obs-1:self.seq_len-1]
+                        # last_points = np.expand_dims( a , 1)
 
                   active_last_points = np.multiply(active_mask,last_points)
                   y = np.subtract(y,active_last_points)
-                  y = np.multiply(y,active_mask) # put padding to 0
-                  X = np.multiply(X,(X != self.padding).astype(int)) # put padding to 0
+
+            if self.offsets_input:
+                  # first_points = seq[:,:,0:self.t_obs]
+                  first_points = np.concatenate([np.expand_dims(X[:,:,0],2), X[:,:,0:self.t_obs-1]], axis = 2)
+                  active_first_points = np.multiply(active_mask_in,first_points)
+
+                  original_x = X
+
+                  X = np.subtract(X,active_first_points)
+                  # X = np.repeat(X,)
+                  # first_points = np.repeat(  np.expand_dims(X[:,:,0],2),  self.t_obs, axis=2)#B,N,tpred,2
+                  # X = np.subtract(X,active_first_points)
 
 
-            return X,y,(active_mask_in,active_mask)
+            y = np.multiply(y,active_mask) # put padding to 0
+            X = np.multiply(X,(X != self.padding).astype(int)) # put padding to 0
+
+
+            return X,y,(active_mask_in,active_mask),active_last_points,original_x
 
       def __augmentation_ids(self,ids):
             red_ids = sorted(np.array(ids) % self.shape[0])

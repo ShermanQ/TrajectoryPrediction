@@ -158,13 +158,10 @@
     "eval_scenes":[
         "deathCircle2",
         "deathCircle4",
+        "gates4",
         "gates5",
-        "hyang4",
         "hyang2",
-        "nexus4",
-        "bookstore3"
-
-
+        "nexus4"
     ],
     "test_scenes":[
         "coupa0",

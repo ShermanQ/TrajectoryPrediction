@@ -21,8 +21,8 @@ def main():
 
     # eval_ = Animation(args[1],args[2],args[3])
     animate = Animation("parameters/data.json","parameters/prepare_training.json","parameters/model_evaluation.json")
-
-    animate.animate_sample(eval_scenes[2],16)
+    print(eval_scenes)
+    animate.animate_sample(eval_scenes[0],16)
 
     
 

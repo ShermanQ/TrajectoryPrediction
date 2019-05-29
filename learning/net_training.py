@@ -81,7 +81,9 @@ def main():
 
 
     # open data file and load correct scene lists
-    toy = prepare_param["toy"]
+    # toy = prepare_param["toy"]
+    toy = training_param["toy"]
+
     data_file = torch_param["split_hdf5"]
     if prepare_param["pedestrian_only"]:
         data_file = torch_param["ped_hdf5"] 
@@ -127,8 +129,10 @@ def main():
         "use_images":net_params["use_images"],
         "use_neighbors":net_params["use_neighbors"],
         "offsets":training_param["offsets"],
+        "offsets_input" : training_param["offsets_input"],
+
         "predict_smooth":prepare_param["smooth"],
-        "normalize": prepare_param["normalize"]
+        "normalize": training_param["normalize"]
 
 
         }
@@ -156,8 +160,10 @@ def main():
         "use_images":net_params["use_images"],
         "use_neighbors":net_params["use_neighbors"],
         "offsets":training_param["offsets"],
+        "offsets_input" : training_param["offsets_input"],
+
         "predict_smooth":prepare_param["smooth"],
-        "normalize": prepare_param["normalize"]
+        "normalize": training_param["normalize"]
 
         }
 
@@ -191,8 +197,10 @@ def main():
         "use_images":net_params["use_images"],
         "use_neighbors":net_params["use_neighbors"],
         "offsets":training_param["offsets"],
+        "offsets_input" : training_param["offsets_input"],
+
         "predict_smooth":prepare_param["smooth"],
-        "normalize": prepare_param["normalize"]
+        "normalize": training_param["normalize"]
 
         }
         net = CNN_MLP(args_net)
@@ -222,8 +230,10 @@ def main():
         "use_images":net_params["use_images"],
         "use_neighbors":net_params["use_neighbors"],
         "offsets":training_param["offsets"],
+        "offsets_input" : training_param["offsets_input"],
+
         "predict_smooth":prepare_param["smooth"],
-        "normalize": prepare_param["normalize"]
+        "normalize": training_param["normalize"]
         }
         net = S2sSocialAtt(args_net)
     
@@ -252,8 +262,10 @@ def main():
         "use_images":net_params["use_images"],
         "use_neighbors":net_params["use_neighbors"],
         "offsets":training_param["offsets"],
+        "offsets_input" : training_param["offsets_input"],
+
         "predict_smooth":prepare_param["smooth"],
-        "normalize": prepare_param["normalize"]
+        "normalize": training_param["normalize"]
 
         }
 
@@ -291,8 +303,10 @@ def main():
             "use_images":net_params["use_images"],
             "use_neighbors":net_params["use_neighbors"],
             "offsets":training_param["offsets"],
+            "offsets_input" : training_param["offsets_input"],
+
             "predict_smooth":prepare_param["smooth"],
-            "normalize": prepare_param["normalize"]
+            "normalize": training_param["normalize"]
 
         }
         
@@ -334,8 +348,10 @@ def main():
             "use_images":net_params["use_images"],
             "use_neighbors":net_params["use_neighbors"],
             "offsets":training_param["offsets"],
+            "offsets_input" : training_param["offsets_input"],
+
             "predict_smooth":prepare_param["smooth"],
-            "normalize": prepare_param["normalize"]
+            "normalize": training_param["normalize"]
 
         }
         
@@ -367,13 +383,20 @@ def main():
         "plot_every" : training_param["plot_every"],
         "save_every" : training_param["save_every"],
         "offsets" : training_param["offsets"],
-        "normalized" : prepare_param["normalize"],
+        "offsets_input" : training_param["offsets_input"],
+
+        "normalized" : training_param["normalize"],
+        # "normalized" : prepare_param["normalize"],
+
         "net" : net,
         "print_every" : training_param["print_every"],
         "nb_grad_plots" : training_param["nb_grad_plots"],
         "nb_sample_plots" : training_param["nb_sample_plots"],
         "train" : training_param["train"],
-        "model_name":model
+        "model_name":model,
+        "s":training_param["s"],
+        "k":training_param["k"],
+        "early_stopping_thresh": training_param["early_stopping_thresh"]
          
     }
 

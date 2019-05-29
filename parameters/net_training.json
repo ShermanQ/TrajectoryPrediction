@@ -1,6 +1,6 @@
 {
-    "n_epochs" : 10,
-    "batch_size": 2 ,
+    "n_epochs" : 20,
+    "batch_size": 32 ,
     "obs_length": 8,
     "pred_length"  : 12,
     "seq_length"  : 20,
@@ -13,6 +13,7 @@
     "nb_grad_plots":5,
     "nb_sample_plots":5,
     "offsets":1,
+    "offsets_input":1,
     "predict_smooth":0,
     "augmentation":0,
     "augmentation_angles":[90,180,270],
@@ -24,7 +25,12 @@
     "set_type_test": "test",
     "train":1,
     "learning_curves": 0,
-    "learning_curves_proportions":[0.10,0.20,0.50,1.0]
+    "learning_curves_proportions":[0.10,0.20,0.50,1.0],
+    "s":3,
+    "k":3,
+    "early_stopping_thresh":0.5,
+    "toy":0,
+    "normalize":0
     
 
 }
