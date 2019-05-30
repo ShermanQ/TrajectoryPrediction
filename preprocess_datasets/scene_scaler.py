@@ -6,7 +6,8 @@ import helpers
 import json
 import sys
 import joblib
-
+import json
+import time
 
 class ScalersComputer():
 
@@ -27,12 +28,13 @@ class ScalersComputer():
         #     print("done!")
 
     def __get_scaler(self):
-        mms = MinMaxScaler(feature_range=(0,1))
+        # mms = MinMaxScaler(feature_range=(0,1))
 
         min_ = 1e30
         max_ = -1e30
+        print("Computing normalization!")
         for scene in self.scene_list:
-            print(scene)
+            # print(scene)
 
             min_x,max_x,min_y,max_y = self.__get_boudaries(self.original_file.format(scene))
             
@@ -46,11 +48,13 @@ class ScalersComputer():
             max_ = max(max_scene,max_)
         print(min_,max_)
 
-        mms = mms.fit([[min_],[max_]])
-        self.scaler = mms
+        # mms = mms.fit([[min_],[max_]])
+        # self.scaler = mms
 
-        helpers.remove_file(self.scaler_dest)
-        joblib.dump(self.scaler, self.scaler_dest) 
+        # helpers.remove_file(self.scaler_dest)
+        # joblib.dump(self.scaler, self.scaler_dest) 
+        print("Done!")
+        return min_,max_
 
 
 
@@ -81,6 +85,9 @@ class ScalersComputer():
         return min_x,max_x,min_y,max_y
 
     def get_offset_scalers(self):
+
+        s = time.time()
+        min_,max_ = self.__get_scaler()
 
         print("Computing means")
         
@@ -187,12 +194,21 @@ class ScalersComputer():
         print(std_x,std_y)
         print("Done!")
 
-        scaler_x = StandardScaler()
-        scaler_x = scaler_x.fit([[min_],[max_]])
-        self.scaler = mms
+        mean_x = int(10000*mean_x)/1000.0
+        mean_y = int(10000*mean_y)/1000.0
+        std_x = int(10000*std_x)/1000.0
+        std_y = int(10000*std_y)/1000.0
+
+        scalers = {
+
+            "standardization":{"meanx":mean_x,"meany":mean_y,"stdx":std_x,"stdy":std_y},
+            "normalization":{"min":min_,"max":max_}
+        }
 
         helpers.remove_file(self.scaler_dest)
-        joblib.dump(self.scaler, self.scaler_dest) 
+        json.dump(scalers, open(self.scaler_dest,"w") )
+
+        print(time.time()-s)
 
 def main():
 
