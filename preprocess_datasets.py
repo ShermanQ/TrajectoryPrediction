@@ -130,7 +130,11 @@ def main():
     
     # center.get_centers(scene_list)
     
-    scaler = scene_scaler.ScalersComputer(data_params,scene_list,prepare_training_params["normalize"])
+
+    # sur quelles scenes? minmax sur toutes pas de problème , équivalent à fixer un rectangle de taille arbitraire
+    # offset distribution uniquement sur train eval, data leakage pendant l'évaluation mais pas le test
+    # ou faire seulement sur train pour l'évaluation, puis recalculer les stats et refaire sur test. fatiguant et personne n'en saura rien
+    scaler = scene_scaler.ScalersComputer(data_params,scene_list,train_list,prepare_training_params["normalize"])
     scaler.get_offset_scalers()
 if __name__ == "__main__":
     main()

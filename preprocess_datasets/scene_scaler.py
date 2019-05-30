@@ -11,7 +11,7 @@ import time
 
 class ScalersComputer():
 
-    def __init__(self,data,scene_list,scale = True):
+    def __init__(self,data,scene_list,train_list,scale = True):
         data = json.load(open(data))
 
         # self.center = center
@@ -19,6 +19,7 @@ class ScalersComputer():
         self.original_file = data["filtered_datasets"] + "{}.csv"
         self.scaler_dest = data["scalers"] 
         self.scene_list = scene_list
+        self.train_list = train_list
         self.scale = scale
         self.trajectories_temp = data["temp"] + "trajectories.txt"
         
@@ -93,7 +94,7 @@ class ScalersComputer():
         
         means = {}
         nb_offsets = 0
-        for scene in self.scene_list:
+        for scene in self.train_list:
             # print(scene)
             
             offsetsx_sum = 0
@@ -139,7 +140,7 @@ class ScalersComputer():
         print("Computing standard deviation")
         nb_offsets = 0
         vars = {}
-        for scene in self.scene_list:
+        for scene in self.train_list:
             # print(scene)
             offsetsx_sum = 0
             offsetsy_sum = 0
