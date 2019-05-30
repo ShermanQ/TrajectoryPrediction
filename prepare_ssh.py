@@ -17,6 +17,7 @@ os.system("mkdir {}/data/reports".format(dir_name))
 os.system("mkdir {}/data/reports/gradients".format(dir_name))
 os.system("mkdir {}/data/reports/losses".format(dir_name))
 os.system("mkdir {}/data/reports/samples".format(dir_name))
+os.system("mkdir {}/data/reports/random_search".format(dir_name))
 
 os.system("mkdir {}/data/scalers".format(dir_name))
 os.system("mkdir {}/data/prepared_datasets".format(dir_name))

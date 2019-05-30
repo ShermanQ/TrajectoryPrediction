@@ -34,8 +34,8 @@ def load_data_loaders(data,prepare_param,training_param,net_params,data_file,sce
         data_type = "trajectories",
         use_neighbors = net_params["use_neighbors"],
         use_masks = 1,
-        predict_offsets = training_param["offsets"],
-        offsets_input = training_param["offsets_input"],
+        predict_offsets = net_params["offsets"],
+        offsets_input = net_params["offsets_input"],
 
         predict_smooth= training_param["predict_smooth"],
         smooth_suffix= prepare_param["smooth_suffix"],
@@ -58,8 +58,8 @@ def load_data_loaders(data,prepare_param,training_param,net_params,data_file,sce
         data_type = "trajectories",
         use_neighbors = net_params["use_neighbors"],
         use_masks = 1,
-        predict_offsets = training_param["offsets"],
-        offsets_input = training_param["offsets_input"],
+        predict_offsets = net_params["offsets"],
+        offsets_input = net_params["offsets_input"],
 
         predict_smooth= training_param["predict_smooth"],
         smooth_suffix= prepare_param["smooth_suffix"],
@@ -147,87 +147,87 @@ def standardization(x,mean_,std_):
 def revert_standardization(x_std,mean_,std_):
     return std_ * x_std + mean_
 # def revert_scaling(ids,labels,outputs,inputs,scalers_root,multiple_scalers = 0):
-def revert_scaling(labels,outputs,inputs,scalers_root):
+# def revert_scaling(labels,outputs,inputs,scalers_root):
 
-    # if multiple_scalers:
-    #     scaler_ids = ["_".join(id_.split("_")[:-1]) for id_ in ids]
-    #     scalers_path = [scalers_root + id_ +".joblib" for id_ in scaler_ids]
+#     # if multiple_scalers:
+#     #     scaler_ids = ["_".join(id_.split("_")[:-1]) for id_ in ids]
+#     #     scalers_path = [scalers_root + id_ +".joblib" for id_ in scaler_ids]
        
-    #     scaler_sample = {}
-    #     for scaler in scalers_path:
-    #         if scaler not in scaler_sample:
-    #             scaler_sample[scaler] = []
+#     #     scaler_sample = {}
+#     #     for scaler in scalers_path:
+#     #         if scaler not in scaler_sample:
+#     #             scaler_sample[scaler] = []
 
-    #             for i,scaler1 in enumerate(scalers_path):
-    #                 if scaler == scaler1:
-    #                     scaler_sample[scaler].append(i)
+#     #             for i,scaler1 in enumerate(scalers_path):
+#     #                 if scaler == scaler1:
+#     #                     scaler_sample[scaler].append(i)
 
-    #     for scaler_id in scaler_sample:
-    #         scaler = load(scaler_id)
-    #         samples_ids = scaler_sample[scaler_id]
+#     #     for scaler_id in scaler_sample:
+#     #         scaler = load(scaler_id)
+#     #         samples_ids = scaler_sample[scaler_id]
 
-    #         sub_labels_torch = labels[samples_ids]
-    #         # b,a,s,i = sub_labels.size()
+#     #         sub_labels_torch = labels[samples_ids]
+#     #         # b,a,s,i = sub_labels.size()
 
-    #         sub_labels = sub_labels_torch.contiguous().view(-1,1).cpu().numpy()
-    #         inv_sub_labels = torch.FloatTensor(scaler.inverse_transform(sub_labels)).view(sub_labels_torch.size()).cuda()
-    #         labels[samples_ids] = inv_sub_labels
+#     #         sub_labels = sub_labels_torch.contiguous().view(-1,1).cpu().numpy()
+#     #         inv_sub_labels = torch.FloatTensor(scaler.inverse_transform(sub_labels)).view(sub_labels_torch.size()).cuda()
+#     #         labels[samples_ids] = inv_sub_labels
 
-    #         sub_outputs_torch = outputs[samples_ids]
-    #         # b,a,s,i = sub_outputs.size()
+#     #         sub_outputs_torch = outputs[samples_ids]
+#     #         # b,a,s,i = sub_outputs.size()
 
-    #         sub_outputs = sub_outputs_torch.contiguous().view(-1,1).cpu().detach().numpy()
-    #         inv_sub_outputs = torch.FloatTensor(scaler.inverse_transform(sub_outputs)).view(sub_outputs_torch.size()).cuda()
-    #         outputs[samples_ids] = inv_sub_outputs
-    #     return labels,outputs
-    # else:
+#     #         sub_outputs = sub_outputs_torch.contiguous().view(-1,1).cpu().detach().numpy()
+#     #         inv_sub_outputs = torch.FloatTensor(scaler.inverse_transform(sub_outputs)).view(sub_outputs_torch.size()).cuda()
+#     #         outputs[samples_ids] = inv_sub_outputs
+#     #     return labels,outputs
+#     # else:
 
-    scaler = load(scalers_root)
-    torch_labels = labels.contiguous().cpu().numpy()
-    torch_outputs = outputs.contiguous().cpu().detach().numpy()
-    torch_inputs = inputs.contiguous().cpu().detach().numpy()
+#     scaler = load(scalers_root)
+#     torch_labels = labels.contiguous().cpu().numpy()
+#     torch_outputs = outputs.contiguous().cpu().detach().numpy()
+#     torch_inputs = inputs.contiguous().cpu().detach().numpy()
 
-    torch_labels = np.expand_dims(torch_labels.flatten(),1)
-    torch_outputs = np.expand_dims(torch_outputs.flatten(),1)
-    torch_inputs = np.expand_dims(torch_inputs.flatten(),1)
+#     torch_labels = np.expand_dims(torch_labels.flatten(),1)
+#     torch_outputs = np.expand_dims(torch_outputs.flatten(),1)
+#     torch_inputs = np.expand_dims(torch_inputs.flatten(),1)
 
 
 
-    # non_zeros_labels = np.argwhere(torch_labels.reshape(-1))
-    # non_zeros_outputs = np.argwhere(torch_outputs.reshape(-1))
+#     # non_zeros_labels = np.argwhere(torch_labels.reshape(-1))
+#     # non_zeros_outputs = np.argwhere(torch_outputs.reshape(-1))
 
         
-    # torch_labels[non_zeros_labels] = np.expand_dims( scaler.inverse_transform(torch_labels[non_zeros_labels].squeeze(-1)) ,axis = 1)
+#     # torch_labels[non_zeros_labels] = np.expand_dims( scaler.inverse_transform(torch_labels[non_zeros_labels].squeeze(-1)) ,axis = 1)
     
-    # torch_outputs[non_zeros_outputs] = np.expand_dims( scaler.inverse_transform(torch_outputs[non_zeros_outputs].squeeze(-1)),axis = 1)
-    # torch_outputs[non_zeros_outputs] = np.expand_dims( scaler.inverse_transform(torch_outputs[non_zeros_outputs].squeeze(-1)),axis = 1)
+#     # torch_outputs[non_zeros_outputs] = np.expand_dims( scaler.inverse_transform(torch_outputs[non_zeros_outputs].squeeze(-1)),axis = 1)
+#     # torch_outputs[non_zeros_outputs] = np.expand_dims( scaler.inverse_transform(torch_outputs[non_zeros_outputs].squeeze(-1)),axis = 1)
 
 
         
-    torch_labels =  scaler.inverse_transform(torch_labels) 
+#     torch_labels =  scaler.inverse_transform(torch_labels) 
 
-    torch_outputs = scaler.inverse_transform(torch_outputs)
-    torch_inputs =  scaler.inverse_transform(torch_inputs)
+#     torch_outputs = scaler.inverse_transform(torch_outputs)
+#     torch_inputs =  scaler.inverse_transform(torch_inputs)
 
-    torch_labels = torch_labels.reshape(labels.size())
-    torch_outputs = torch_outputs.reshape(outputs.size())
-    torch_inputs = torch_inputs.reshape(inputs.size())
-
-
-
-
-    inv_labels = torch.FloatTensor(torch_labels).cuda()
-    inv_outputs = torch.FloatTensor(torch_outputs).cuda()
-    inv_inputs = torch.FloatTensor(torch_inputs).cuda()
-
-
-    inv_labels = inv_labels.view(labels.size())
-    inv_outputs = inv_outputs.view(outputs.size())
-    inv_inputs = inv_inputs.view(inputs.size())
+#     torch_labels = torch_labels.reshape(labels.size())
+#     torch_outputs = torch_outputs.reshape(outputs.size())
+#     torch_inputs = torch_inputs.reshape(inputs.size())
 
 
 
-    return inv_labels,inv_outputs,inv_inputs
+
+#     inv_labels = torch.FloatTensor(torch_labels).cuda()
+#     inv_outputs = torch.FloatTensor(torch_outputs).cuda()
+#     inv_inputs = torch.FloatTensor(torch_inputs).cuda()
+
+
+#     inv_labels = inv_labels.view(labels.size())
+#     inv_outputs = inv_outputs.view(outputs.size())
+#     inv_inputs = inv_inputs.view(inputs.size())
+
+
+
+#     return inv_labels,inv_outputs,inv_inputs
 
 
 # def mask_loss(targets):

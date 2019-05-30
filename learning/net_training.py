@@ -12,6 +12,7 @@ from sklearn.model_selection import train_test_split
 
 import numpy as np
 import time
+import os
 
 from classes.datasets import Hdf5Dataset,CustomDataLoader
 from classes.rnn_mlp import RNN_MLP
@@ -22,6 +23,7 @@ from classes.social_attention import SocialAttention
 from classes.spatial_attention import SpatialAttention
 from classes.cnn_mlp import CNN_MLP
 import random
+import copy
 
 
 from helpers.training_class import NetTraining
@@ -363,7 +365,7 @@ def main():
 
     net = net_type(args_net)
 
-    train_loader,eval_loader,train_dataset,eval_dataset = helpers.load_data_loaders(data,prepare_param,training_param,net_params,data_file,scenes,training_param["batch_size"])
+    train_loader,eval_loader,train_dataset,eval_dataset = helpers.load_data_loaders(data,prepare_param,training_param,args_net,data_file,scenes,training_param["batch_size"])
     # train_loader,eval_loader,train_dataset,eval_dataset = helpers.load_data_loaders(data,prepare_param,training_param,net_params,data_file,scenes)
     
     print(net)
@@ -414,27 +416,42 @@ def main():
         trainer.training_loop()
     elif training_param["training_program"] == 2:
         print("Starting random search")
+
+        report_random_search = data["reports"]+"random_search/random_search.json"
+        if os.path.exists(report_random_search):
+            os.remove(report_random_search)
+
+
+        parameters_ = []
+        results = []
         for i in range(training_param["nb_run_random_search"]):
             print("-----{}th search".format(i))
-
+            
+            args_net_c = copy.deepcopy(args_net)
             hyper_parameters = net_params["hyperparameters"]
             r_hyper = helpers.random_hyperparameters(hyper_parameters)
             for key in r_hyper:
-                args_net[key] = r_hyper[key]
+                args_net_c[key] = r_hyper[key]
             print("-----net parameters")
-            print(args_net)
-            net = net_type(args_net)
+            print(r_hyper)
+            parameters_.append(args_net_c)
+            
 
-            train_loader,eval_loader,train_dataset,eval_dataset = helpers.load_data_loaders(data,prepare_param,training_param,net_params,data_file,scenes,args_net["batch_size"])
+            net = net_type(args_net_c)
+           
+            
+
+
+            train_loader,eval_loader,train_dataset,eval_dataset = helpers.load_data_loaders(data,prepare_param,training_param,args_net_c,data_file,scenes,args_net_c["batch_size"])
     
     
             net = net.to(device)
-            optimizer = optim.Adam(net.parameters(),lr = args_net["lr"])
+            optimizer = optim.Adam(net.parameters(),lr = args_net_c["lr"])
             criterion = helpers.MaskedLoss(nn.MSELoss(reduction="none"))
 
             args_training = {
                 "n_epochs" : training_param["n_epochs"],
-                "batch_size" : args_net["batch_size"],
+                "batch_size" : args_net_c["batch_size"],
                 "device" : device,
                 "train_loader" : train_loader,
                 "eval_loader" : eval_loader,
@@ -442,23 +459,31 @@ def main():
                 "optimizer" : optimizer,
                 "use_neighbors" : net_params["use_neighbors"],
                 "scalers_path" : data["scalers"],
-                "plot" : training_param["plot"],
+                # "plot" : training_param["plot"],
+                "plot" : 0,
+
                 "load_path" : net_params["load_path"],
                 "plot_every" : training_param["plot_every"],
-                "save_every" : training_param["save_every"],
-                "offsets" : args_net["offsets"],
-                "offsets_input" : args_net["offsets_input"],
+                # "save_every" : training_param["save_every"],
+                "save_every" : 10000,
 
-                "normalized" : args_net["normalize"],
+                "offsets" : args_net_c["offsets"],
+                "offsets_input" : args_net_c["offsets_input"],
+
+                "normalized" : args_net_c["normalize"],
                 # "normalized" : prepare_param["normalize"],
 
                 "net" : net,
                 "print_every" : training_param["print_every"],
-                "nb_grad_plots" : training_param["nb_grad_plots"],
-                "nb_sample_plots" : training_param["nb_sample_plots"],
+                # "nb_grad_plots" : training_param["nb_grad_plots"],
+                "nb_grad_plots" : 0,
+
+                "nb_sample_plots" : 0,
+                # "nb_sample_plots" : training_param["nb_sample_plots"],
+
                 "train" : training_param["train"],
                 "model_name":model,
-                "s":args_net["s"],
+                "s":args_net_c["s"],
                 "k":training_param["k"],
                 "early_stopping_thresh": training_param["early_stopping_thresh"]
                 
@@ -467,9 +492,23 @@ def main():
             print("-----{}th training".format(i))
 
             trainer = NetTraining(args_training)
-            trainer.training_loop()
+            best_harmonic_fde_ade = trainer.training_loop()
+            results.append(best_harmonic_fde_ade)
+
+            print("harmonic fde ade {}".format(best_harmonic_fde_ade))
             print("-----{}th training done!".format(i))
 
+            # file_ = open(data["reports"]+"random_search.json","rw+")
+            if not os.path.exists(report_random_search):
+                random_search_dict = {}
+            else:  
+                random_search_dict = json.load(open(report_random_search,"r"))
+
+            random_search_dict[i] = {"h_ade_fde":best_harmonic_fde_ade,"params":r_hyper}
+            print(random_search_dict)
+            json.dump(random_search_dict,open(report_random_search,"w+"))
+
+        
 
 
 
