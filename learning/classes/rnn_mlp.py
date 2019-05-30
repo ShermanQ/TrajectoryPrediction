@@ -37,14 +37,18 @@ class RNN_MLP(nn.Module):
         self.recurrent_layer = args["recurrent_layer"]
         self.mlp_layers = args["mlp_layers"]
         self.output_size = args["output_size"]
+        self.coord_embedding_size = args["coord_embedding_size"]
+
 
         self.nb_cat = args["nb_cat"]
         self.use_types = args["use_types"]
         self.word_embedding_size = args["word_embedding_size"]
 
-
-
-        self.encoder = nn.LSTM(input_size = self.input_dim,hidden_size = self.hidden_size,num_layers = self.recurrent_layer,batch_first = True)
+        if self.coord_embedding_size > 0:
+            self.coord_embedding_layer = nn.Linear(self.input_dim,self.coord_embedding_size)
+            self.encoder = nn.LSTM(input_size = self.coord_embedding_size,hidden_size = self.hidden_size,num_layers = self.recurrent_layer,batch_first = True)
+        else:
+            self.encoder = nn.LSTM(input_size = self.input_dim,hidden_size = self.hidden_size,num_layers = self.recurrent_layer,batch_first = True)
 
         self.mlp = nn.Sequential()
 
@@ -77,6 +81,10 @@ class RNN_MLP(nn.Module):
         types = x[1]
         x = x[0]
         x = x.squeeze(1)
+
+        if self.coord_embedding_size > 0:
+            x = self.coord_embedding_layer(x)
+            x = f.relu(x)
 
         
 
