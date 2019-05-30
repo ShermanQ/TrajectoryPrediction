@@ -214,23 +214,24 @@ class Hdf5Dataset():
                   y_shape = y.shape 
 
                   if self.offsets_input:
-                        print("need to implment normalisation for offsets inputs")
+                        # print("need to implment normalisation for offsets inputs")
+                        meanx =  self.scaler["standardization"]["meanx"]
+                        meany =  self.scaler["standardization"]["meany"]
+                        stdx =  self.scaler["standardization"]["stdx"]
+                        stdy =  self.scaler["standardization"]["stdy"]
+
+                        X[:,:,:,0] = helpers.helpers_training.standardization(X[:,:,:,0],meanx,stdx)
+                        X[:,:,:,1] = helpers.helpers_training.standardization(X[:,:,:,1],meany,stdy)
+                        
+
+
                   else:
-                        # X = np.expand_dims(X.flatten(),1)
-                        # X = self.scaler.transform(X).squeeze()
-                        # X = X.reshape(x_shape)
+                        
                         min_ =  self.scaler["normalization"]["min"]
                         max_ =  self.scaler["normalization"]["max"]
                         X = helpers.helpers_training.min_max_scale(X,min_,max_)
 
-                  # print("normalize {}".format(time.time()-s))
-                  # s = time.time()
-
-
-            #       y = np.expand_dims(y.flatten(),1)
-            #       y = self.scaler.transform(y).squeeze()
-            #       y = y.reshape(y_shape)
-
+            
 
 
 

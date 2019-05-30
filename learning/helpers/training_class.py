@@ -302,7 +302,18 @@ class NetTraining():
                 # _,_,inputs = helpers.revert_scaling(labels,outputs,inputs,self.scalers_path)            
                 # outputs = outputs.view(labels.size())
                 if self.offsets_input:
-                    pass
+                    meanx =  scaler["standardization"]["meanx"]
+                    meany =  scaler["standardization"]["meany"]
+                    stdx =  scaler["standardization"]["stdx"]
+                    stdy =  scaler["standardization"]["stdy"]
+                    inputs = inputs.detach().cpu().numpy()
+
+                    inputs[:,:,:,0] = helpers.revert_standardization(inputs[:,:,:,0],meanx,stdx)
+                    inputs[:,:,:,1] = helpers.revert_standardization(inputs[:,:,:,1],meany,stdy)
+                    inputs = torch.FloatTensor(inputs).to(self.device)
+
+                        
+                    
                 else:
                     min_ =  scaler["normalization"]["min"]
                     max_ =  scaler["normalization"]["max"]

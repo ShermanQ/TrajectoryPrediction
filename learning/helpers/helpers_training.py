@@ -130,7 +130,11 @@ def revert_min_max_scale(x_scaled,min_,max_,frange = (0,1)):
     x = x_std * (max_-min_) + min_  
     return x
 
+def standardization(x,mean_,std_):
+    return (x - mean_) / std_
 
+def revert_standardization(x_std,mean_,std_):
+    return std_ * x_std + mean_
 # def revert_scaling(ids,labels,outputs,inputs,scalers_root,multiple_scalers = 0):
 def revert_scaling(labels,outputs,inputs,scalers_root):
 
