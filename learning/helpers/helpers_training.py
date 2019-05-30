@@ -9,9 +9,10 @@ import matplotlib.cm as cm
 import json
 from classes.datasets import Hdf5Dataset,CustomDataLoader
 from matplotlib.lines import Line2D
+import random 
 
 
-def load_data_loaders(data,prepare_param,training_param,net_params,data_file,scenes):
+def load_data_loaders(data,prepare_param,training_param,net_params,data_file,scenes,batch_size):
     train_eval_scenes,train_scenes,test_scenes,eval_scenes = scenes
 
        
@@ -72,8 +73,13 @@ def load_data_loaders(data,prepare_param,training_param,net_params,data_file,sce
 
         )
 
-    train_loader = CustomDataLoader( batch_size = training_param["batch_size"],shuffle = True,drop_last = True,dataset = train_dataset,test=training_param["test"])
-    eval_loader = CustomDataLoader( batch_size = training_param["batch_size"],shuffle = False,drop_last = True,dataset = eval_dataset,test=training_param["test"])
+    # train_loader = CustomDataLoader( batch_size = training_param["batch_size"],shuffle = True,drop_last = True,dataset = train_dataset,test=training_param["test"])
+    # eval_loader = CustomDataLoader( batch_size = training_param["batch_size"],shuffle = False,drop_last = True,dataset = eval_dataset,test=training_param["test"])
+    
+    train_loader = CustomDataLoader( batch_size = batch_size,shuffle = True,drop_last = True,dataset = train_dataset,test=training_param["test"])
+    eval_loader = CustomDataLoader( batch_size = batch_size,shuffle = False,drop_last = False,dataset = eval_dataset,test=training_param["test"])
+    
+    
     return train_loader,eval_loader,train_dataset,eval_dataset
 
 
@@ -95,6 +101,11 @@ class MaskedLoss(nn.Module):
             loss = torch.mean(loss)
             return loss 
 
+def random_hyperparameters(hyperparameters):
+    selected_params = {}
+    for key in hyperparameters:
+        selected_params[key] = random.sample(hyperparameters[key],1)[0]
+    return selected_params
 
 def split_train_eval_test(ids,train_scenes,test_scenes, eval_prop = 0.8):
     test_ids,train_ids,eval_ids = [],[],[]

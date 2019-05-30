@@ -11,7 +11,20 @@
     "use type: 0 non, 1:ohe, 2:word_embedding":-1,
     "use_neighbors": 0,
     "use_images": 0,
-    "coord_embedding_size":0
+    "coord_embedding_size":0,
+
+    "hyperparameters":{
+        "lr" : [0.1,0.01,0.001,0.0001],
+        "s" : [4,6],
+        "batch_size":[8,16,32],
+        "offsets": [0,1],
+        "offsets_input":[0,1],
+        "normalize":[0,1],
+        "hidden_size":[32,64,128],
+        "recurrent_layer":[1,2,3],
+        "mlp_layers":[[100],[100,100],[200]],
+        "embedding_size":[0,16,32]
+    }
 
     
 }

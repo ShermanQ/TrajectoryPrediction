@@ -21,6 +21,7 @@ from classes.s2s_spatial_att import S2sSpatialAtt
 from classes.social_attention import SocialAttention
 from classes.spatial_attention import SpatialAttention
 from classes.cnn_mlp import CNN_MLP
+import random
 
 
 from helpers.training_class import NetTraining
@@ -64,6 +65,8 @@ def main():
           
     # set pytorch
     torch.manual_seed(10)
+    random.seed(42)
+
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")    
     print(device)
     print(torch.cuda.is_available())
@@ -108,7 +111,8 @@ def main():
     
     # select model
     net_params = {}
-    net = None
+    net_type = None
+    
     if model == "rnn_mlp":
         net_params = json.load(open(parameters_path.format(model)))
         args_net = {
@@ -134,10 +138,8 @@ def main():
 
         "predict_smooth":prepare_param["smooth"],
         "normalize": training_param["normalize"]
-
-
         }
-        net = RNN_MLP(args_net)
+        net_type = RNN_MLP
     elif model == "tcn_mlp":
         net_params = json.load(open(parameters_path.format(model)))
         
@@ -168,7 +170,7 @@ def main():
 
         }
 
-        net = TCN_MLP(args_net)
+        net_type= TCN_MLP
     elif model == "cnn_mlp":
         net_params = json.load(open(parameters_path.format(model)))
         
@@ -204,7 +206,7 @@ def main():
         "normalize": training_param["normalize"]
 
         }
-        net = CNN_MLP(args_net)
+        net_type = CNN_MLP
 
     
     elif model == "s2s_social_attention":
@@ -236,7 +238,7 @@ def main():
         "predict_smooth":prepare_param["smooth"],
         "normalize": training_param["normalize"]
         }
-        net = S2sSocialAtt(args_net)
+        net_type = S2sSocialAtt
     
     elif model == "s2s_spatial_attention":
         net_params = json.load(open(parameters_path.format(model)))
@@ -270,7 +272,7 @@ def main():
 
         }
 
-        net = S2sSpatialAtt(args_net)
+        net_type = S2sSpatialAtt
     
     elif model == "social_attention":
         net_params = json.load(open(parameters_path.format(model)))
@@ -312,7 +314,7 @@ def main():
         }
         
 
-        net = SocialAttention(args_net)
+        net_type = SocialAttention
     elif model == "spatial_attention":
         net_params = json.load(open(parameters_path.format(model)))
         args_net = {
@@ -357,12 +359,12 @@ def main():
         }
         
 
-        net = SpatialAttention(args_net)
+        net_type = SpatialAttention
 
+    net = net_type(args_net)
 
-
-
-    train_loader,eval_loader,train_dataset,eval_dataset = helpers.load_data_loaders(data,prepare_param,training_param,net_params,data_file,scenes)
+    train_loader,eval_loader,train_dataset,eval_dataset = helpers.load_data_loaders(data,prepare_param,training_param,net_params,data_file,scenes,training_param["batch_size"])
+    # train_loader,eval_loader,train_dataset,eval_dataset = helpers.load_data_loaders(data,prepare_param,training_param,net_params,data_file,scenes)
     
     print(net)
     net = net.to(device)
@@ -401,15 +403,73 @@ def main():
          
     }
 
-    if training_param["learning_curves"]:
+    if training_param["training_program"] == 1:
         batch_props = training_param["learning_curves_proportions"]
         nb_samples = train_dataset.get_len()
         trainer = NetTraining(args_training)
         trainer.analysis_curves(nb_samples,batch_props,args_training)
 
-    else:
+    elif training_param["training_program"] == 0:
         trainer = NetTraining(args_training)
         trainer.training_loop()
+    elif training_param["training_program"] == 2:
+        print("Starting random search")
+        for i in range(training_param["nb_run_random_search"]):
+            print("-----{}th search".format(i))
+
+            hyper_parameters = net_params["hyperparameters"]
+            r_hyper = helpers.random_hyperparameters(hyper_parameters)
+            for key in r_hyper:
+                args_net[key] = r_hyper[key]
+            print("-----net parameters")
+            print(args_net)
+            net = net_type(args_net)
+
+            train_loader,eval_loader,train_dataset,eval_dataset = helpers.load_data_loaders(data,prepare_param,training_param,net_params,data_file,scenes,args_net["batch_size"])
+    
+    
+            net = net.to(device)
+            optimizer = optim.Adam(net.parameters(),lr = args_net["lr"])
+            criterion = helpers.MaskedLoss(nn.MSELoss(reduction="none"))
+
+            args_training = {
+                "n_epochs" : training_param["n_epochs"],
+                "batch_size" : args_net["batch_size"],
+                "device" : device,
+                "train_loader" : train_loader,
+                "eval_loader" : eval_loader,
+                "criterion" : criterion,
+                "optimizer" : optimizer,
+                "use_neighbors" : net_params["use_neighbors"],
+                "scalers_path" : data["scalers"],
+                "plot" : training_param["plot"],
+                "load_path" : net_params["load_path"],
+                "plot_every" : training_param["plot_every"],
+                "save_every" : training_param["save_every"],
+                "offsets" : args_net["offsets"],
+                "offsets_input" : args_net["offsets_input"],
+
+                "normalized" : args_net["normalize"],
+                # "normalized" : prepare_param["normalize"],
+
+                "net" : net,
+                "print_every" : training_param["print_every"],
+                "nb_grad_plots" : training_param["nb_grad_plots"],
+                "nb_sample_plots" : training_param["nb_sample_plots"],
+                "train" : training_param["train"],
+                "model_name":model,
+                "s":args_net["s"],
+                "k":training_param["k"],
+                "early_stopping_thresh": training_param["early_stopping_thresh"]
+                
+            }
+
+            print("-----{}th training".format(i))
+
+            trainer = NetTraining(args_training)
+            trainer.training_loop()
+            print("-----{}th training done!".format(i))
+
 
 
 
