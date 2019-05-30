@@ -119,6 +119,18 @@ def split_train_eval_test(ids,train_scenes,test_scenes, eval_prop = 0.8):
     return train_ids,eval_ids,test_ids
 
 
+def min_max_scale(x,min_,max_,frange = (0,1)):
+    x_std = (x - min_ )/(max_-min_)
+    x_scaled = x_std * (frange[1]-frange[0]) + frange[0]
+    return x_scaled
+
+def revert_min_max_scale(x_scaled,min_,max_,frange = (0,1)):
+
+    x_std = (x_scaled - frange[0]) / (frange[1]-frange[0]) 
+    x = x_std * (max_-min_) + min_  
+    return x
+
+
 # def revert_scaling(ids,labels,outputs,inputs,scalers_root,multiple_scalers = 0):
 def revert_scaling(labels,outputs,inputs,scalers_root):
 

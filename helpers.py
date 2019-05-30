@@ -8,6 +8,21 @@ import numpy as np
 from scipy.spatial.distance import euclidean
 
 
+# X_std = (X - X.min(axis=0)) / (X.max(axis=0) - X.min(axis=0))
+
+# X_scaled = X_std * (max - min) + min
+
+def min_max_scale(x,min_,max_,frange = (0,1)):
+    x_std = (x - min_ )/(max_-min_)
+    x_scaled = x_std * (frange[1]-frange[0]) + frange[0]
+    return x_scaled
+
+def revert_min_max_scale(x_scaled,min_,max_,frange = (0,1)):
+
+    x_std = (x_scaled - frange[0]) / (frange[1]-frange[0]) 
+    x = x_std * (max_-min_) + min_  
+    return x
+
 
 def get_speed(point1,point2,deltat):
     d = euclidean(point1,point2)

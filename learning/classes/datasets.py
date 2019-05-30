@@ -125,7 +125,9 @@ class Hdf5Dataset():
                   self.scene_list = helpers.helpers_training.augment_scene_list(self.scene_list,self.augmentation_angles)
             if self.use_images:
                   self.images = self.__load_images()
-            self.scaler = load("./data/scalers/scaler.joblib")
+            # self.scaler = load("./data/scalers/scaler.joblib")
+            self.scaler = json.load(open("./data/scalers/scaler.json"))
+
             # self.hdf5_file = hdf5_file
             
 
@@ -164,15 +166,15 @@ class Hdf5Dataset():
 
             
             # load sequence once and for all to limit hdf5 access
-            if self.predict_smooth:
-                  X = self.coord_dset[ids,:,:self.t_obs]
-                  y = self.coord_dset_smooth[ids,:,self.t_obs:self.seq_len]   
-                  seq = np.concatenate([X,y],axis = 2)              
+            # if self.predict_smooth:
+            #       X = self.coord_dset[ids,:,:self.t_obs]
+            #       y = self.coord_dset_smooth[ids,:,self.t_obs:self.seq_len]   
+            #       seq = np.concatenate([X,y],axis = 2)              
 
-            else:
-                  seq = self.coord_dset[ids]
-                  X = seq[:,:,:self.t_obs]
-                  y = seq[:,:,self.t_obs:self.seq_len]
+            # else:
+            seq = self.coord_dset[ids]
+            X = seq[:,:,:self.t_obs]
+            y = seq[:,:,self.t_obs:self.seq_len]
 
             # compute max nb of agents in a frame
             if self.reduce_batches:
@@ -214,9 +216,12 @@ class Hdf5Dataset():
                   if self.offsets_input:
                         print("need to implment normalisation for offsets inputs")
                   else:
-                        X = np.expand_dims(X.flatten(),1)
-                        X = self.scaler.transform(X).squeeze()
-                        X = X.reshape(x_shape)
+                        # X = np.expand_dims(X.flatten(),1)
+                        # X = self.scaler.transform(X).squeeze()
+                        # X = X.reshape(x_shape)
+                        min_ =  self.scaler["normalization"]["min"]
+                        max_ =  self.scaler["normalization"]["max"]
+                        X = helpers.helpers_training.min_max_scale(X,min_,max_)
 
                   # print("normalize {}".format(time.time()-s))
                   # s = time.time()

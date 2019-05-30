@@ -6,6 +6,7 @@ import torch.nn as nn
 import numpy as np
 from joblib import load
 import helpers.helpers_training as helpers
+import json
 import os
 from scipy import stats
 # from tensorboardX import SummaryWriter
@@ -296,8 +297,18 @@ class NetTraining():
             outputs = self.net((inputs,types,active_mask,points_mask,imgs))
             
             if self.normalized:
-                _,_,inputs = helpers.revert_scaling(labels,outputs,inputs,self.scalers_path)            
-                outputs = outputs.view(labels.size())
+                scaler = json.load(open(self.scalers_path))
+
+                # _,_,inputs = helpers.revert_scaling(labels,outputs,inputs,self.scalers_path)            
+                # outputs = outputs.view(labels.size())
+                if self.offsets_input:
+                    pass
+                else:
+                    min_ =  scaler["normalization"]["min"]
+                    max_ =  scaler["normalization"]["max"]
+                    inputs = helpers.revert_min_max_scale(inputs.detach().cpu().numpy(),min_,max_)
+                    inputs = torch.FloatTensor(inputs).to(self.device)
+
             inputs,labels,outputs = helpers.offsets_to_trajectories(inputs.detach().cpu().numpy(),
                                                                 labels.detach().cpu().numpy(),
                                                                 outputs.detach().cpu().numpy(),
