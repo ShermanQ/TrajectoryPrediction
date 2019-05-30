@@ -33,7 +33,12 @@ def main():
     scene_list,train_list,test_list = None, None, None
 
     # prepare_training_params = json.load(open(args[3]))
+    # data_params = json.load(open(args[2]))
+
     prepare_training_params = json.load(open("parameters/prepare_training.json"))
+    data_params = "parameters/data.json"
+
+    
 
 
 
@@ -74,7 +79,7 @@ def main():
     #     rate_manager.change_rate(scene)
     
 
-    # # q.join()
+    # # # q.join()
     # print("DOne!")
 
     # print(time.time() - s)
@@ -121,12 +126,12 @@ def main():
     #     # data_augmenter.augment_scene(scene)
     #     data_augmenter.augment_scene_images(scene)
 
-    center = SceneCenters(args[1],args[2],args[3])
+    # center = SceneCenters(args[1],args[2],args[3])
     
-    center.get_centers(scene_list)
+    # center.get_centers(scene_list)
     
-    # scaler = scene_scaler.SceneScalerMultiScene(args[2],False,scene_list,prepare_training_params["normalize"])
-
+    scaler = scene_scaler.ScalersComputer(data_params,scene_list,prepare_training_params["normalize"])
+    scaler.get_offset_scalers()
 if __name__ == "__main__":
     main()
 

@@ -19,6 +19,12 @@ def get_speeds(coordinates,framerate):
         speed = get_speed(coordinates[i-1],coordinates[i],framerate)
         speeds.append(speed)
     return speeds
+def get_offsets(values):
+    offsets = []
+    for i in range(1,len(values)):
+        offset = values[i] - values[i-1]
+        offsets.append(offset)
+    return offsets
 
 def get_acceleration(v1,v2,deltat):
     a = (v2-v1)/deltat
