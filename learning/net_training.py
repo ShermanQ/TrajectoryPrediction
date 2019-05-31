@@ -155,9 +155,14 @@ def main():
         "mlp_layers" : net_params["mlp_layers"],
         "output_size" : net_params["output_size"],
         # nb_cat: len(prepare_param["types_dic"]),
-        "nb_cat": 0,
+        "nb_cat": len(prepare_param["types_dic"]),
+        "use_types": training_param["use_type"],
+        "word_embedding_size": net_params["word_embedding_size"],
         "kernel_size": net_params["kernel_size"],
         "dropout" : net_params["dropout"],
+
+        "coord_embedding_size": net_params["coord_embedding_size"],
+
 
         "model_name":model,
         "t_pred":training_param["pred_length"],

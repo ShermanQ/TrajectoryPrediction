@@ -91,6 +91,7 @@ class RNN_MLP(nn.Module):
         h = self.init_hidden_state(x.size()[0])
         output,h = self.encoder(x,h)
         output = output[:,-1]
+        
         if self.use_types == 1:        
             output = torch.cat([output,types],dim = 1)
         elif self.use_types == 2:
