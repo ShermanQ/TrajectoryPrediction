@@ -13,6 +13,9 @@ from sklearn.preprocessing import OneHotEncoder
 from scipy.spatial import distance_matrix,distance
 from scipy.stats import norm
 
+from scipy.spatial.distance import euclidean
+
+
 import matplotlib.image as mpimg
 import cv2
 
@@ -48,6 +51,8 @@ def main():
     images = data_params["original_images"]+"{}.jpg"
     types_to_spatial = eval_params["types2spatial"]
     spatial_profiles = eval_params["spatial_profiles"]
+    correspondences_trajnet = json.load(open(data_params["pixel2meters_trajnet"]))
+    correspondences_manual = json.load(open(data_params["pixel2meters_manual"]))
 
     #########################
 
@@ -145,6 +150,8 @@ def main():
 
         #compute mask for spatial structure
         spatial_masks = scene_mask(scene,images,spatial_annotations,spatial_profiles)
+        #get rtio for meter to pixel conversion
+        pixel2meters = get_factor(scene,correspondences_trajnet,correspondences_manual)
         
         for batch_idx, data in enumerate(data_loader):
                 
@@ -153,6 +160,9 @@ def main():
             inputs, labels,types,points_mask, active_mask, imgs,target_last,input_last = data
             inputs = inputs.to(device)
             labels =  labels.to(device)
+
+
+
 
             nb_types = len(prepare_param["types_dic"].keys()) 
             # types = torch.FloatTensor(types_ohe(types.cpu().numpy(),nb_types)).to(device)
@@ -165,6 +175,10 @@ def main():
                 imgs = imgs.repeat(inputs.size()[0],1)
 
             # penser au cas où target_last et input_last sont des listes vides
+            # if not args_net["offsets"]:
+            #     target_last = target_last.repeat(inputs.size()[0],1)
+            # if not args_net["offsets_input"]:
+            #     input_last = input_last.repeat(inputs.size()[0],1)
 
             # if not args_net["use_images"]:
             #     imgs = imgs.repeat(inputs.size()[0],1)
@@ -175,13 +189,11 @@ def main():
 
             for i,l,t,p0,p1,a,img,tl,il in zip(inputs,labels,types,points_mask[0],points_mask[1],active_mask,imgs,target_last,input_last):
 
+                    
                     i = i[a]
                     l = l[a]
                     t = t[a]
                     t = t.unsqueeze(squeeze_dimension)
-
-                    tl = tl[a]
-                    il = il[a]
 
                     #spatial loss
                     spatial_profile_ids = [ types_to_spatial[str(key)] for key in   t.cpu().numpy().astype(int).flatten() ]
@@ -194,13 +206,19 @@ def main():
                         t = t.squeeze(squeeze_dimension)
 
 
+
                     p0 = p0[a]
                     p1 = p1[a]
+                    tl = tl[a]
+                    il = il[a]
 
-                    # cse when there is no neighbors
+                    # cse when there is no neighbors for np arrays
                     if len(a) == 1:
                         p0 = np.expand_dims(p0,axis = 0)
                         p1 = np.expand_dims(p1,axis = 0)
+                        tl = np.expand_dims(tl,axis = 0)
+                        il = np.expand_dims(il,axis = 0)
+
 
 
 
@@ -208,6 +226,8 @@ def main():
                     il = np.expand_dims(il,squeeze_dimension)
 
                     l = l.unsqueeze(squeeze_dimension)
+                    tl = np.expand_dims(tl,squeeze_dimension)
+
                     p0 = np.expand_dims(p0,axis = squeeze_dimension)
                     p1 = np.expand_dims(p1,axis = squeeze_dimension)
 
@@ -225,10 +245,6 @@ def main():
                     
                     a = a.to(device)
                     
-
-                    # print(a)
-                    # print(len(a))
-
                     #predict and count time
                     torch.cuda.synchronize()
                     start = time.time()
@@ -242,7 +258,7 @@ def main():
                     p = torch.FloatTensor(p[1]).to(device)
                     
                     o = torch.mul(p,o)
-                    l = torch.mul(p,l)
+                    l = torch.mul(p,l) # bon endroit?
 
 
                     #non testé
@@ -270,7 +286,7 @@ def main():
                             i = helpers.revert_min_max_scale(i.detach().cpu().numpy(),min_,max_)
                             i = torch.FloatTensor(i).to(device)
 
-                    # revert offset
+                   
                     o = o.view(l.size())
                     i,l,o = helpers.offsets_to_trajectories(i.detach().cpu().numpy(),
                                                                         l.detach().cpu().numpy(),
@@ -281,6 +297,8 @@ def main():
 
                     # compute every standard criterion
                     losses = {}
+                   
+
                     for j,c in enumerate(criterions):
                         criterion = criterions[c]
                         
@@ -337,7 +355,9 @@ def main():
                     # spatial_profile_ids
                     #convert back to pixel
                     spatial_losses = []
-                    for id_,trajectory_p in zip(spatial_profile_ids,o):
+                    for id_,trajectory_p in zip(spatial_profile_ids,o.squeeze(squeeze_dimension).cpu().numpy()):
+                        trajectory_p *= pixel2meters
+                        trajectory_p = trajectory_p.astype(np.int32)
                         res = spatial_conflicts(spatial_masks[id_],trajectory_p)
                         spatial_losses.append(res)
                     spatial_loss = np.mean(spatial_losses)
@@ -578,12 +598,28 @@ def scene_mask(scene,img_path,annotations_path,spatial_profiles):
 
 def spatial_conflicts(mask,trajectory_p):
         ctr = 0
+        # print(mask.shape)
         for point in trajectory_p:
-                print(point)
-                if mask[point[0],point[1]]:
-                        ctr += 1
+                #case out of frame
+                if point[1] in range(0,mask.shape[0]) and point[0] in range(0,mask.shape[1]):
+                    if mask[point[1],point[0]]:
+                            ctr += 1
         return ctr / float(len(trajectory_p))
 
+def get_factor(scene,correspondences_trajnet,correspondences_manual):
+    if scene in correspondences_trajnet:
+        row = correspondences_trajnet[scene]
+        pixel2meter_ratio = row["pixel2meter"]
+        meter2pixel_ratio = 1/pixel2meter_ratio
+    else:
+        row = correspondences_manual[scene]
+        meter_dist = row["meter_distance"]
+        pixel_coord = row["pixel_coordinates"]
+        pixel_dist = euclidean(pixel_coord[0],pixel_coord[1])
+        pixel2meter_ratio = meter_dist/float(pixel_dist)
+        meter2pixel_ratio = float(pixel_dist)/meter_dist
+
+    return meter2pixel_ratio
 
 
 

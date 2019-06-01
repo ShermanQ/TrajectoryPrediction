@@ -302,12 +302,14 @@ class Hdf5Dataset():
                   first_points = np.concatenate([np.expand_dims(X[:,:,0],2), X[:,:,0:self.t_obs-1]], axis = 2)
                   active_first_points = np.multiply(active_mask_in,first_points)
                   original_x = X
+                  original_x = np.multiply(original_x,active_mask_in) # put padding to 0
+
                   
                   X = np.subtract(X,active_first_points)
 
 
             y = np.multiply(y,active_mask) # put padding to 0
-            X = np.multiply(X,(X != self.padding).astype(int)) # put padding to 0
+            X = np.multiply(X,active_mask_in) # put padding to 0
             
             return X,y,(active_mask_in,active_mask),active_last_points,original_x 
 
@@ -340,11 +342,18 @@ class Hdf5Dataset():
 
             if self.offsets_input:
                   # first_points = seq[:,:,0:self.t_obs]
+                  # concatenate the first point of X to X in order to get as many offsets as position
                   first_points = np.concatenate([np.expand_dims(X[:,:,0],2), X[:,:,0:self.t_obs-1]], axis = 2)
+
+                  # apply active mask of input points
                   active_first_points = np.multiply(active_mask_in,first_points)
 
+                  # keep original inputs
                   original_x = X
+                  # apply the input active mask on the original inputs to remove the padding
+                  original_x = np.multiply(original_x,active_mask_in) # put padding to 0
 
+                  # subtract x shifted right to x in order to get offsets, offsets[0] = 0
                   X = np.subtract(X,active_first_points)
                   # X = np.repeat(X,)
                   # first_points = np.repeat(  np.expand_dims(X[:,:,0],2),  self.t_obs, axis=2)#B,N,tpred,2
@@ -352,7 +361,7 @@ class Hdf5Dataset():
 
 
             y = np.multiply(y,active_mask) # put padding to 0
-            X = np.multiply(X,(X != self.padding).astype(int)) # put padding to 0
+            X = np.multiply(X,active_mask_in) # put padding to 0
 
 
             return X,y,(active_mask_in,active_mask),active_last_points,original_x
