@@ -1,7 +1,7 @@
 {
-    "model":"tcn_mlp",
-    "set_type_train": "train",
-    "set_type_test": "eval",
+    "model":"s2s_social_attention",
+    "set_type_train": "train_eval",
+    "set_type_test": "test",
     "load_path" : "",  
 
     "toy":0,
@@ -17,8 +17,8 @@
     "pred_length"  : 12,
     "seq_length"  : 20,
 
-    "n_epochs" : 10,
-    "batch_size": 32 ,    
+    "n_epochs" : 50,
+    "batch_size": 1 ,    
     "lr" : 0.001, 
 
     
@@ -36,8 +36,8 @@
 
     "normalize":0,
     "offsets":1,
-    "offsets_input":0,
-    "use_type":2,    
+    "offsets_input":1,
+    "use_type":0,    
     "use type: 0 non, 1:ohe, 2:word_embedding":-1,
     
     "predict_smooth":0,

@@ -51,9 +51,11 @@ class CNN_MLP(nn.Module):
         self.word_embedding_size = args["word_embedding_size"]
 
 
-        self.coord_embedding = nn.Linear(self.input_dim,self.coord_embedding_size)
-
-        self.cnn = CNN(num_inputs = self.coord_embedding_size,nb_kernel = self.nb_kernel,cnn_feat_size = self.cnn_feat_size,obs_len = self.obs_len,kernel_size = self.kernel_size,nb_conv = self.nb_conv)
+        if self.coord_embedding_size > 0:
+            self.coord_embedding = nn.Linear(self.input_dim,self.coord_embedding_size)
+            self.cnn = CNN(num_inputs = self.coord_embedding_size,nb_kernel = self.nb_kernel,cnn_feat_size = self.cnn_feat_size,obs_len = self.obs_len,kernel_size = self.kernel_size,nb_conv = self.nb_conv)
+        else:
+            self.cnn = CNN(num_inputs = self.input_dim,nb_kernel = self.nb_kernel,cnn_feat_size = self.cnn_feat_size,obs_len = self.obs_len,kernel_size = self.kernel_size,nb_conv = self.nb_conv)
         # self.cnn = nn.Sequential()
         # padding = int((self.kernel_size-1)/2.0)
         # for i in range(self.nb_conv):
@@ -97,8 +99,12 @@ class CNN_MLP(nn.Module):
         x = x[0]# B,1,Obs,2  
         x = x.squeeze(1)# B,Obs,2 
 
-        x = self.coord_embedding(x) # B,Obs,e        
-        x = f.relu(x)
+        if self.coord_embedding_size > 0:
+            x = self.coord_embedding(x)
+            x = f.relu(x)
+
+        # x = self.coord_embedding(x) # B,Obs,e        
+        # x = f.relu(x)
 
         # x = x.squeeze(1)
         x = x.permute(0,2,1) # x: B,e,Tobs

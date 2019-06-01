@@ -15,11 +15,22 @@ class CNN(nn.Module):
 
         print(self.nb_conv)
         self.cnn = nn.Sequential()
+        
+        # if self.kernel_size % 2 == 1:
         padding = int((self.kernel_size-1)/2.0)
+        # else:
+        #     pg = int((self.kernel_size)/2.0)
+        #     padding = (pg,pg-1)
+        # padding = 0
+        # self.padding_layer = nn.ConstantPad1d(padding, 0)
         for i in range(self.nb_conv):
             conv = nn.Conv1d(self.nb_kernel , self.nb_kernel , self.kernel_size, padding=padding)
+            # conv = nn.Conv1d(self.nb_kernel , self.nb_kernel , self.kernel_size)
+
 
             if i == 0:
+                # conv = nn.Conv1d(self.num_inputs, self.nb_kernel , self.kernel_size)
+
                 conv = nn.Conv1d(self.num_inputs, self.nb_kernel , self.kernel_size, padding=padding)
             self.cnn.add_module("conv{}".format(i),conv)
             # self.cnn.add_module("relu{}".format(i),nn.ReLU())
@@ -27,6 +38,7 @@ class CNN(nn.Module):
         
         self.project_cnn = nn.Linear(self.obs_len*self.nb_kernel,self.cnn_feat_size)
     def forward(self, x):
+        # x = self.padding_layer(x)
         x = self.cnn(x)# x: B,n_kernels,Tobs
         x = x.permute(0,2,1).contiguous() # x: B,Tobs,n_kernels
         batch_size = x.size()[0]

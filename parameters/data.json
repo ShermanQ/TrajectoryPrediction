@@ -29,7 +29,8 @@
 
     "models_evaluation": "./learning/data/models_evaluation/",
     "reports_evaluation": "./learning/data/evaluation_reports/",
-    "dynamics": "./learning/data/dynamics.json"
+    "dynamics": "./learning/data/dynamics.json",
+    "spatial_annotations": "./data/original_datasets/spatial_annotations/"
 
 
 }

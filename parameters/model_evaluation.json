@@ -10,8 +10,22 @@
     "use_neighbors":1,
     "model_name":"model_best",
     "report_name":"report",
-    "set_type_test":"eval",
-    "dynamic_threshold":0.00
+    "set_type_test":"test",
+    "dynamic_threshold":0.00,
+    "types2spatial":{
+        "3":1,
+        "5":1,
+        "6":1,
+        "1":0,
+        "4":2,
+        "2":2
+
+    },
+    "spatial_profiles":{
+        "obstacle_ped":0,
+        "obstacle_car":1,
+        "obstacle_bicycle":2
+    }
     
 
 }

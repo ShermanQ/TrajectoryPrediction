@@ -23,7 +23,7 @@
         "hidden_size":[32,64,128],
         "recurrent_layer":[1,2,3],
         "mlp_layers":[[100],[100,100],[200]],
-        "embedding_size":[0,16,32]
+        "coord_embedding_size":[0,16,32]
     }
 
     

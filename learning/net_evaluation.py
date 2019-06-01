@@ -13,6 +13,8 @@ from sklearn.preprocessing import OneHotEncoder
 from scipy.spatial import distance_matrix,distance
 from scipy.stats import norm
 
+import matplotlib.image as mpimg
+import cv2
 
 
 import time
@@ -40,10 +42,16 @@ def main():
 
     prepare_param = json.load(open("parameters/prepare_training.json"))
 
-    # toy = prepare_param["toy"]
-    # data_file = torch_param["split_hdf5"]
-    # if prepare_param["pedestrian_only"]:
-    #     data_file = torch_param["ped_hdf5"] 
+
+    # spatial loss variables
+    spatial_annotations = data_params["spatial_annotations"]+"{}.jpg.json"
+    images = data_params["original_images"]+"{}.jpg"
+    types_to_spatial = eval_params["types2spatial"]
+    spatial_profiles = eval_params["spatial_profiles"]
+
+    #########################
+
+  
 
     data_file = data_params["hdf5_file"]
     # report_name = args[4]
@@ -55,14 +63,6 @@ def main():
     train_scenes = [scene for scene in train_eval_scenes if scene not in eval_scenes]
     test_scenes = prepare_param["test_scenes"]
 
-    # load toy scenes
-    # toy = prepare_param["toy"]
-    # if toy:
-    #     print("toy dataset")
-    #     train_scenes = prepare_param["toy_train_scenes"]
-    #     test_scenes = prepare_param["toy_test_scenes"] 
-    #     eval_scenes = test_scenes
-    #     train_eval_scenes = train_scenes
 
     criterions = {
         "loss":helpers.MaskedLoss(nn.MSELoss(reduction="none")),
@@ -143,12 +143,14 @@ def main():
         print_every = 500
         squeeze_dimension = 0 if args_net["use_neighbors"] else 1
 
+        #compute mask for spatial structure
+        spatial_masks = scene_mask(scene,images,spatial_annotations,spatial_profiles)
         
         for batch_idx, data in enumerate(data_loader):
                 
                 
             # Load data
-            inputs, labels,types,points_mask, active_mask, imgs = data
+            inputs, labels,types,points_mask, active_mask, imgs,target_last,input_last = data
             inputs = inputs.to(device)
             labels =  labels.to(device)
 
@@ -162,18 +164,31 @@ def main():
             if not args_net["use_images"]:
                 imgs = imgs.repeat(inputs.size()[0],1)
 
+            # penser au cas où target_last et input_last sont des listes vides
+
+            # if not args_net["use_images"]:
+            #     imgs = imgs.repeat(inputs.size()[0],1)
+
           
 
-            
 
 
-
-            for i,l,t,p0,p1,a,img in zip(inputs,labels,types,points_mask[0],points_mask[1],active_mask,imgs):
+            for i,l,t,p0,p1,a,img,tl,il in zip(inputs,labels,types,points_mask[0],points_mask[1],active_mask,imgs,target_last,input_last):
 
                     i = i[a]
                     l = l[a]
                     t = t[a]
                     t = t.unsqueeze(squeeze_dimension)
+
+                    tl = tl[a]
+                    il = il[a]
+
+                    #spatial loss
+                    spatial_profile_ids = [ types_to_spatial[str(key)] for key in   t.cpu().numpy().astype(int).flatten() ]
+                    
+                    
+
+
                     t = torch.FloatTensor(types_ohe(t.cpu().numpy(),nb_types)).to(device)
                     if not args_net["use_neighbors"]:
                         t = t.squeeze(squeeze_dimension)
@@ -190,6 +205,8 @@ def main():
 
 
                     i = i.unsqueeze(squeeze_dimension)
+                    il = np.expand_dims(il,squeeze_dimension)
+
                     l = l.unsqueeze(squeeze_dimension)
                     p0 = np.expand_dims(p0,axis = squeeze_dimension)
                     p1 = np.expand_dims(p1,axis = squeeze_dimension)
@@ -227,16 +244,38 @@ def main():
                     o = torch.mul(p,o)
                     l = torch.mul(p,l)
 
-                    # revert scaling
+
+                    #non testé
                     if args_net["normalize"]:
-                        _,_,i = helpers.revert_scaling(l,o,i,data_params["scalers"])
+                        scaler = json.load(open(data_params["scalers"]))
+
+                        # _,_,inputs = helpers.revert_scaling(labels,outputs,inputs,self.scalers_path)            
+                        # outputs = outputs.view(labels.size())
+                        if args_net["offsets_input"]:
+                            meanx =  scaler["standardization"]["meanx"]
+                            meany =  scaler["standardization"]["meany"]
+                            stdx =  scaler["standardization"]["stdx"]
+                            stdy =  scaler["standardization"]["stdy"]
+                            i = i.detach().cpu().numpy()
+
+                            i[:,:,:,0] = helpers.revert_standardization(i[:,:,:,0],meanx,stdx)
+                            i[:,:,:,1] = helpers.revert_standardization(i[:,:,:,1],meany,stdy)
+                            i = torch.FloatTensor(i).to(device)
+
+                                
+                            
+                        else:
+                            min_ =  scaler["normalization"]["min"]
+                            max_ =  scaler["normalization"]["max"]
+                            i = helpers.revert_min_max_scale(i.detach().cpu().numpy(),min_,max_)
+                            i = torch.FloatTensor(i).to(device)
 
                     # revert offset
                     o = o.view(l.size())
                     i,l,o = helpers.offsets_to_trajectories(i.detach().cpu().numpy(),
                                                                         l.detach().cpu().numpy(),
                                                                         o.detach().cpu().numpy(),
-                                                                        args_net["offsets"])
+                                                                        args_net["offsets"],args_net["offsets_input"],tl,il)
 
                     i,l,o = torch.FloatTensor(i).to(device),torch.FloatTensor(l).to(device),torch.FloatTensor(o).to(device)
 
@@ -294,6 +333,19 @@ def main():
                     losses_scenes[scene]["dynamic_acceleration"].append(acc_len)
                     losses["dynamic_acceleration"] = acc_len
 
+                    # spatial loss
+                    # spatial_profile_ids
+                    #convert back to pixel
+                    spatial_losses = []
+                    for id_,trajectory_p in zip(spatial_profile_ids,o):
+                        res = spatial_conflicts(spatial_masks[id_],trajectory_p)
+                        spatial_losses.append(res)
+                    spatial_loss = np.mean(spatial_losses)
+
+                    if "spatial_loss" not in losses_scenes[scene]:
+                        losses_scenes[scene]["spatial_loss"] = []
+                    losses_scenes[scene]["spatial_loss"].append(spatial_loss)
+                    losses["spatial_loss"] = spatial_loss
 
                     scene_dict[sample_id] = {} # init sample dict in the scene
                     losses_dict[sample_id] = {} # init losses dict for sample in scene
@@ -378,6 +430,9 @@ def get_data_loader(data_params,data_file,scene,args_net,set_type_test,prepare_p
 
             use_masks = 1,
             predict_offsets = args_net["offsets"],
+            offsets_input = args_net["offsets_input"],
+
+
             predict_smooth= args_net["predict_smooth"],
             smooth_suffix= prepare_param["smooth_suffix"],
             centers = json.load(open(data_params["scene_centers"])),
@@ -482,6 +537,55 @@ def get_accelerations(speeds,framerate):
         acceleration = get_acceleration(speeds[i-1],speeds[i],framerate)
         accelerations.append(acceleration)
     return accelerations
+
+
+# def scene_mask(scene,img_path,class_category,annotations_path):
+#         img = mpimg.imread(img_path.format(scene))
+#         empty_mask = np.zeros_like(img[:,:,0]).astype(np.int32)
+#         annotations = json.load(open(annotations_path.format(scene)))
+#         polygons = []
+#         for object_ in annotations["objects"]:
+#                 if object_["classTitle"] == class_category:
+#                         pts = object_["points"]["exterior"]
+#                         a3 = np.array( [pts] ).astype(np.int32)          
+#                         cv2.fillPoly( empty_mask, a3, 1 )
+#         return empty_mask
+
+# returns array of two masks, first one is pedestrian, second one is wheels
+def scene_mask(scene,img_path,annotations_path,spatial_profiles):
+        img = mpimg.imread(img_path.format(scene))
+
+        masks = []
+        masks_ids = []
+
+        for spatial_profile in spatial_profiles:
+        
+            empty_mask = np.zeros_like(img[:,:,0]).astype(np.int32)
+            annotations = json.load(open(annotations_path.format(scene)))
+            polygons = []
+            for object_ in annotations["objects"]:
+                    if object_["classTitle"] == spatial_profile:
+                            pts = object_["points"]["exterior"]
+                            a3 = np.array( [pts] ).astype(np.int32)          
+                            cv2.fillPoly( empty_mask, a3, 1 )
+            masks.append(empty_mask)
+            masks_ids.append(spatial_profiles[spatial_profile])
+
+        arg_ids = np.argsort(masks_ids)
+        masks = [masks[i] for i in arg_ids]
+        
+        return masks
+
+def spatial_conflicts(mask,trajectory_p):
+        ctr = 0
+        for point in trajectory_p:
+                print(point)
+                if mask[point[0],point[1]]:
+                        ctr += 1
+        return ctr / float(len(trajectory_p))
+
+
+
 
 
 if __name__ == "__main__":
