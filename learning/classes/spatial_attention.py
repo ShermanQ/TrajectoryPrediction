@@ -12,6 +12,8 @@ from classes.tcn import TemporalConvNet
 
 from classes.pretrained_vgg import customCNN
 from classes.pretrained_vgg import customCNN2
+from classes.cnn import CNN
+
 
 
 from classes.soft_attention import SoftAttention
@@ -28,50 +30,74 @@ class SpatialAttention(nn.Module):
         self.input_dim =  args["input_dim"]
         self.input_length =  args["input_length"]
         self.output_length =  args["output_length"]
+        self.pred_dim =  args["pred_dim"]
 
-        self.kernel_size =  args["kernel_size"]
-        self.nb_blocks_transformer =  args["nb_blocks_transformer"]
+        
+        # self.nb_blocks_transformer =  args["nb_blocks_transformer"]
         self.h =  args["h"]
         self.dmodel =  args["dmodel"]
-        self.d_ff_hidden =  args["d_ff_hidden"]
+        # self.d_ff_hidden =  args["d_ff_hidden"]
         self.dk =  args["dk"]
         self.dv =  args["dv"]
         self.predictor_layers =  args["predictor_layers"]
-        self.pred_dim =  args["pred_dim"]
-        self.dropout_tcn =  args["dropout_tcn"]
+        # self.pred_dim =  args["pred_dim"]
+        # self.dropout_tcn =  args["dropout_tcn"]
         self.dropout_tfr =  args["dropout_tfr"]
 
-        self.convnet_embedding =  args["convnet_embedding"]
-        self.coordinates_embedding =  args["coordinates_embedding"]
+        # self.convnet_embedding =  args["convnet_embedding"]
+        # self.coordinates_embedding =  args["coordinates_embedding"]
+        self.coordinates_embedding_size =  args["coordinates_embedding_size"]
 
-        self.convnet_nb_layers =  args["convnet_nb_layers"]
-        self.projection_layers = args["projection_layers"]
+
+        # self.convnet_nb_layers =  args["convnet_nb_layers"]
         self.spatial_projection = args["spatial_projection"]
-        self.vgg_feature_size = args["vgg_feature_size"]
+        
 
-        self.use_tcn =  args["use_tcn"]
+        # cnn parameters
+        self.nb_conv = args["nb_conv"] # depth
+        self.nb_kernel = args["nb_kernel"] # nb kernel per layer
+        self.cnn_feat_size = args["cnn_feat_size"] # projection size of output
+        self.kernel_size =  args["kernel_size"] 
+
+
+
+
+
+        # self.vgg_feature_size = args["vgg_feature_size"]
+        self.projection_layers = args["projection_layers"]
+
+
+        # self.use_tcn =  args["use_tcn"]
         self.use_mha =  args["use_mha"]
 
 
 ######## Dynamic part #####################################
 ############# x/y embedding ###############################
-        self.coord_embedding = nn.Linear(self.input_dim,self.coordinates_embedding)
+        # self.coord_embedding = nn.Linear(self.input_dim,self.coordinates_embedding)
 ############# TCN #########################################
         # compute nb temporal blocks
 
        
-        self.nb_temporal_blocks = self.__get_nb_blocks(self.input_length,self.kernel_size)        
-        self.num_channels = [self.convnet_embedding for _ in range(self.nb_temporal_blocks)]
+        # self.nb_temporal_blocks = self.__get_nb_blocks(self.input_length,self.kernel_size)        
+        # self.num_channels = [self.convnet_embedding for _ in range(self.nb_temporal_blocks)]
 
         # init network
-        self.tcn = TemporalConvNet(self.device, self.coordinates_embedding, self.num_channels, self.kernel_size, self.dropout_tcn)
+        # self.tcn = TemporalConvNet(self.device, self.coordinates_embedding, self.num_channels, self.kernel_size, self.dropout_tcn)
+
+        if self.coordinates_embedding_size > 0:
+            self.coord_embedding = nn.Linear(self.input_dim,self.coordinates_embedding_size)
+            self.tcn = CNN(num_inputs = self.coordinates_embedding_size,nb_kernel = self.nb_kernel,cnn_feat_size = self.cnn_feat_size,obs_len = self.input_length ,kernel_size = self.kernel_size,nb_conv = self.nb_conv)
+        else:
+            self.tcn = CNN(num_inputs = self.input_dim,nb_kernel = self.nb_kernel,cnn_feat_size = self.cnn_feat_size,obs_len = self.input_length ,kernel_size = self.kernel_size,nb_conv = self.nb_conv)
+
+
 
 
         # project conv features to dmodel
-        self.conv2att = nn.Linear(self.convnet_embedding,self.dmodel)
+        self.conv2att = nn.Linear(self.cnn_feat_size,self.dmodel)
 
         # self.conv2pred = nn.Linear(self.input_length*self.convnet_embedding,self.dmodel)
-        self.conv2pred = nn.Linear(self.convnet_embedding,self.dmodel)
+        self.conv2pred = nn.Linear(self.cnn_feat_size,self.dmodel)
 
 
 #########################################################
@@ -129,8 +155,12 @@ class SpatialAttention(nn.Module):
 
         #### DYnamic branch ####
         # project 2d spatial coordinates into embedding space of dimension coordinates_embedding
-        x = self.coord_embedding(x)
-        x = torch.nn.functional.relu(x)
+        # x = self.coord_embedding(x)
+        # x = torch.nn.functional.relu(x)
+
+        if self.coordinates_embedding_size > 0:
+            x = self.coord_embedding(x)
+            x = f.relu(x)
 
         # permute channels and sequence length
         B,Nmax,Tobs,Nfeat = x.size()
@@ -138,32 +168,36 @@ class SpatialAttention(nn.Module):
         x = x.view(-1,x.size()[2],x.size()[3]) # [B*Nmax],Nfeat,Tobs
 
         # filter active agents
-        y = torch.zeros(B*Nmax,self.convnet_embedding,Tobs).to(self.device) # [B*Nmax],Nfeat,Tobs
+        # y = torch.zeros(B*Nmax,self.convnet_embedding,Tobs).to(self.device) # [B*Nmax],Nfeat,Tobs
+        y = torch.zeros(B*Nmax,self.cnn_feat_size).to(self.device) # [B*Nmax],Nfeat,
+
 
         # compute sequence feature vector
         y[active_agents] = self.tcn(x[active_agents]) # [B*Nmax],Nfeat,Tobs
-        y = y.permute(0,2,1) # [B*Nmax],Tobs,Nfeat
-        conv_features = y.view(B,Nmax,Tobs,y.size()[2]).contiguous() # B,Nmax,Tobs,Nfeat
+        # y = y.permute(0,2,1) # [B*Nmax],Tobs,Nfeat
+        # conv_features = y.view(B,Nmax,Tobs,y.size()[2]).contiguous() # B,Nmax,Tobs,Nfeat
+
+        conv_features = y.view(B,Nmax,y.size()[1]).contiguous() # B,Nmax,Tobs,Nfeat
         # select last hidden state
-        y_last = conv_features[:,:,-1]       
+        # y_last = conv_features[:,:,-1]       
 
         # project trajectory features to be used as query in spatial attention module to dmodel dimension
-        x = self.conv2att(y_last) # B,Nmax,dmodel    
-        x = nn.functional.relu(x)
+        x = self.conv2att(conv_features) # B,Nmax,dmodel    
+        x = f.relu(x)
 
         # project trajectory features to be used as is, in predictor (to be concatenated to att spatial features)
-        conv_features = self.conv2pred(y_last)
-        conv_features = nn.functional.relu(conv_features)
+        conv_features = self.conv2pred(conv_features)
+        conv_features = f.relu(conv_features)
 
 
         # ######################################
         ### Spatial ##############
 
         spatial_features = self.cnn(imgs)
-        b,f,w,h = spatial_features.size()
-        spatial_features = spatial_features.view(b,f,w*h).permute(0,2,1)# B,Nfeaturevectors,spatial projection
+        b,n,w,h = spatial_features.size()
+        spatial_features = spatial_features.view(b,n,w*h).permute(0,2,1)# B,Nfeaturevectors,spatial projection
         spatial_features = self.spatt2att(spatial_features)
-        spatial_features = nn.functional.relu(spatial_features) # B,Nfeaturevectors,dmodel
+        spatial_features = f.relu(spatial_features) # B,Nfeaturevectors,dmodel
 
         ##########################
         #### Attention ###########

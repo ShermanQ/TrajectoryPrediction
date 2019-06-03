@@ -108,8 +108,8 @@ class AttentionHead(nn.Module):
 class MultiHeadAttention(nn.Module):
     def __init__(self,device,h,dmodel,dk,dv,dropout = 0.1):
         super(MultiHeadAttention,self).__init__()
-        assert dmodel == h*dv
-        assert dk == dv
+        # assert dmodel == h*dv
+        # assert dk == dv
         self.device = device
         self.heads  = nn.ModuleList()
         for i in range(h):
