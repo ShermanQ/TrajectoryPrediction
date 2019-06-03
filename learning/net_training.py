@@ -288,21 +288,25 @@ def main():
             "input_dim" : net_params["input_dim"],
             "input_length" : training_param["obs_length"],
             "output_length" : training_param["pred_length"],
-            "kernel_size" : net_params["kernel_size"],
-            "nb_blocks_transformer" : net_params["nb_blocks"],
+            
+            # "nb_blocks_transformer" : net_params["nb_blocks"],
             "h" : net_params["h"],
             "dmodel" : net_params["dmodel"],
-            "d_ff_hidden" : 4 * net_params["dmodel"],
+            # "d_ff_hidden" : 4 * net_params["dmodel"],
             "dk" : int(net_params["dmodel"]/net_params["h"]),
             "dv" : int(net_params["dmodel"]/net_params["h"]),
             "predictor_layers" : net_params["predictor_layers"],
             "pred_dim" : training_param["pred_length"] * net_params["input_dim"] ,
             
-            "convnet_embedding" : net_params["convnet_embedding"],
-            "coordinates_embedding" : net_params["coordinates_embedding"],
-            "convnet_nb_layers" : net_params["convnet_nb_layers"],
-            "use_tcn" : net_params["use_tcn"],
-            "dropout_tcn" : net_params["dropout_tcn"],
+            # "convnet_embedding" : net_params["convnet_embedding"],
+            "coordinates_embedding_size" : net_params["coordinates_embedding_size"],
+            # "convnet_nb_layers" : net_params["convnet_nb_layers"],
+
+            "nb_conv": net_params["nb_conv"],
+            "nb_kernel": net_params["nb_kernel"],
+            "cnn_feat_size": net_params["cnn_feat_size"],
+            "kernel_size" : net_params["kernel_size"],
+            
             "dropout_tfr" : net_params["dropout_tfr"],
             "projection_layers":net_params["projection_layers"],
             "use_mha":net_params["use_mha"],
@@ -497,7 +501,7 @@ def main():
             print("-----{}th training".format(i))
 
             trainer = NetTraining(args_training)
-            best_harmonic_fde_ade = trainer.training_loop()
+            best_harmonic_fde_ade,best_ade,best_fde = trainer.training_loop()
             results.append(best_harmonic_fde_ade)
 
             print("harmonic fde ade {}".format(best_harmonic_fde_ade))
@@ -509,7 +513,7 @@ def main():
             else:  
                 random_search_dict = json.load(open(report_random_search,"r"))
 
-            random_search_dict[i] = {"h_ade_fde":best_harmonic_fde_ade,"params":r_hyper}
+            random_search_dict[i] = {"h_ade_fde":best_harmonic_fde_ade,"ade":best_ade,"fde":best_fde,"params":r_hyper}
             print(random_search_dict)
             json.dump(random_search_dict,open(report_random_search,"w+"))
 

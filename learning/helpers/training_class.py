@@ -114,6 +114,8 @@ class NetTraining():
 
         try:
             best_harmonic_fde_ade = float('inf')
+            best_ade = 0
+            best_fde = 0
             # train_t = []
             for epoch in range(start_epoch,self.n_epochs):
                 train_loss = 0.
@@ -141,6 +143,8 @@ class NetTraining():
                     print("harmonic mean {} is better than {}, saving new best model!".format(h,best_harmonic_fde_ade))
                     self.save_model(epoch,"best",self.net,self.optimizer,losses,remove=0)
                     best_harmonic_fde_ade = h
+                    best_ade = ade
+                    best_fde = fde
 
                 print(time.time()-s)
                 progress = self.training_progress(losses["train"]["loss"],self.k)                    
@@ -174,7 +178,7 @@ class NetTraining():
             print(e)
 
    
-        return best_harmonic_fde_ade
+        return best_harmonic_fde_ade,best_ade,best_fde
 
 
 

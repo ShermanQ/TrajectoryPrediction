@@ -3,22 +3,21 @@
     "load_path" : "",    
     
     "input_dim":2,
+
     "dmodel":32,
-    "d_ff_hidden": 2048,
-    
-    "kernel_size":3,
-    "dropout_tcn" : 0.2,
     "dropout_tfr" : 0.1,
     "h":1,
-    "nb_blocks":1,
+    
+    
     "predictor_layers": [128,64],
     
 
-    "convnet_embedding":32,
-    "coordinates_embedding":16,
-
-    "convnet_nb_layers":4,
-    "use_tcn": 1,
+    "coordinates_embedding_size":16,
+    "nb_conv":4,
+    "nb_kernel":32,
+    "cnn_feat_size":128,
+    "kernel_size":3,
+    
     
     "projection_layers":[128,256,128,64],
     "use_mha":0,

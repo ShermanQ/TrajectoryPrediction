@@ -17,20 +17,18 @@
     "nb_kernel":32,
     "cnn_feat_size":128,
     "hyperparameters":{
-        "lr" : [0.1,0.01,0.001,0.0001],
-        "s" : [4,6],
-        "batch_size":[8,16,32],
+        "lr" : [0.001,0.0001],
+        "s" : [6],
+        "batch_size":[32],
         "offsets": [0,1],
-        "offsets_input":[0,1],
+        "offsets_input":[0],
         "normalize":[0,1],
-        "nb_kernel":[32,64,128],
+        "nb_kernel":[32,128],
         "kernel_size":[3,5,7],
-        "cnn_feat_size":[64,128,256],
+        "cnn_feat_size":[128,256],
         "nb_conv":[2,4,6],
-
-
-        "mlp_layers":[[100],[100,100],[200]],
-        "coord_embedding_size":[0,16,32]
+        "mlp_layers":[[100],[200]],
+        "coord_embedding_size":[0,32]
     }
   
 

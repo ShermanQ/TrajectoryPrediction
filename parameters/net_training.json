@@ -1,7 +1,7 @@
 {
-    "model":"s2s_social_attention",
-    "set_type_train": "train_eval",
-    "set_type_test": "test",
+    "model":"social_attention",
+    "set_type_train": "train",
+    "set_type_test": "eval",
     "load_path" : "",  
 
     "toy":0,
@@ -9,7 +9,7 @@
     "test":1,
     "training_program": 0,
     "training_program: 0 regular, 1:learning curves, 2:hyperparameters tuning":-1,
-    "nb_run_random_search":15,
+    "nb_run_random_search":20,
 
     "learning_curves_proportions":[0.10,0.20,0.50,1.0],
 
@@ -30,7 +30,7 @@
     "nb_sample_plots":5,
 
 
-    "s":3,
+    "s":6,
     "k":5,
     "early_stopping_thresh":0.5,    
 
