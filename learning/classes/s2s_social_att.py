@@ -84,8 +84,12 @@ class S2sSocialAtt(nn.Module):
         self.input_dim = args["input_dim"]
         self.enc_hidden_size = args["enc_hidden_size"]
         self.enc_num_layers = args["enc_num_layers"]
-        self.dec_hidden_size = args["dec_hidden_size"]
-        self.dec_num_layer = args["dec_num_layer"]
+        # self.dec_hidden_size = args["dec_hidden_size"]
+        self.dec_hidden_size = self.enc_hidden_size
+
+        # self.dec_num_layer = args["dec_num_layer"]
+        self.dec_num_layer = self.enc_num_layers
+
         self.embedding_size = args["embedding_size"]
         self.output_size = args["output_size"]
         self.pred_length = args["pred_length"]
@@ -94,7 +98,7 @@ class S2sSocialAtt(nn.Module):
         self.condition_decoder_on_outputs = args["condition_decoder_on_outputs"]
 
         # assert(self.enc_hidden_size == self.dec_hidden_size)
-        assert(self.embedding_size == self.encoder_features_embedding)
+        # assert(self.embedding_size == self.encoder_features_embedding)
 
         self.coordinates_embedding = nn.Linear(self.input_dim,self.embedding_size) # input 2D coordinates to embedding dim
         self.hdec2coord = nn.Linear(self.dec_hidden_size,self.output_size) # decoder hidden to 2D coordinates space
@@ -103,6 +107,8 @@ class S2sSocialAtt(nn.Module):
 
 
         self.encoder = encoderLSTM(self.device,self.embedding_size,self.enc_hidden_size,self.enc_num_layers)
+
+        # self.encoder2decoder = nn.Linear(self.enc_hidden_size,self.dec_hidden_size)
 
         if self.condition_decoder_on_outputs:
             self.decoder = decoderLSTM(self.device,self.encoder_features_embedding + self.embedding_size,self.dec_hidden_size,self.dec_num_layer)
@@ -146,7 +152,7 @@ class S2sSocialAtt(nn.Module):
         # reverse ordering of encoded sequence
 
         encoder_hiddens = encoder_hiddens[rev_arg_ids]
-        hidden = (hidden[0][rev_arg_ids].permute(2,0,1), hidden[1][rev_arg_ids].permute(2,0,1))
+        hidden = (hidden[0][rev_arg_ids].permute(2,0,1).contiguous(), hidden[1][rev_arg_ids].permute(2,0,1).contiguous())
 
         # embed encoder hidden states features
         encoder_hiddens = self.k_embedding(encoder_hiddens)
@@ -172,7 +178,9 @@ class S2sSocialAtt(nn.Module):
 
             ########## Attention #############################
             # set query to last decoder hidden state
-            q = hidden[0].view(B,N,self.enc_hidden_size)
+            # q = hidden[0].view(B,N,self.enc_hidden_size)
+            q = hidden[0][0].view(B,N,self.enc_hidden_size)
+
             q = self.q_embedding(q) # B N encoder_features_embedding
             q = f.relu(q)
 

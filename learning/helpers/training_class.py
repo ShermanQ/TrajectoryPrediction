@@ -112,70 +112,70 @@ class NetTraining():
             losses = checkpoint["losses"]
             start_epoch = checkpoint["epoch"]
 
-        try:
-            best_harmonic_fde_ade = float('inf')
-            best_ade = 0
-            best_fde = 0
-            # train_t = []
-            for epoch in range(start_epoch,self.n_epochs):
-                train_loss = 0.
-                if self.train_model:
-                    train_loss,_ = self.train(epoch)
-                eval_loss,fde,ade = self.evaluate(epoch)
-                    
+        # try:
+        best_harmonic_fde_ade = float('inf')
+        best_ade = 0
+        best_fde = 0
+        # train_t = []
+        for epoch in range(start_epoch,self.n_epochs):
+            train_loss = 0.
+            if self.train_model:
+                train_loss,_ = self.train(epoch)
+            eval_loss,fde,ade = self.evaluate(epoch)
                 
+            
 
-                losses["train"]["loss"].append(train_loss)
-                losses["eval"]["loss"].append(eval_loss)
-                losses["eval"]["ade"].append(ade)
-                losses["eval"]["fde"].append(fde)
+            losses["train"]["loss"].append(train_loss)
+            losses["eval"]["loss"].append(eval_loss)
+            losses["eval"]["ade"].append(ade)
+            losses["eval"]["fde"].append(fde)
 
 
-                if self.plot and epoch % self.plot_every == 0:
-                    self.plot_losses(losses,s,root = "./data/reports/losses/")
+            if self.plot and epoch % self.plot_every == 0:
+                self.plot_losses(losses,s,root = "./data/reports/losses/")
 
-                if epoch % self.save_every == 0:
-                    self.save_model(epoch,epoch,self.net,self.optimizer,losses)
+            if epoch % self.save_every == 0:
+                self.save_model(epoch,epoch,self.net,self.optimizer,losses)
 
-                h = stats.hmean([ade,fde])
+            h = stats.hmean([ade,fde])
 
-                if h < best_harmonic_fde_ade:
-                    print("harmonic mean {} is better than {}, saving new best model!".format(h,best_harmonic_fde_ade))
-                    self.save_model(epoch,"best",self.net,self.optimizer,losses,remove=0)
-                    best_harmonic_fde_ade = h
-                    best_ade = ade
-                    best_fde = fde
+            if h < best_harmonic_fde_ade:
+                print("harmonic mean {} is better than {}, saving new best model!".format(h,best_harmonic_fde_ade))
+                self.save_model(epoch,"best",self.net,self.optimizer,losses,remove=0)
+                best_harmonic_fde_ade = h
+                best_ade = ade
+                best_fde = fde
 
-                print(time.time()-s)
-                progress = self.training_progress(losses["train"]["loss"],self.k)                    
+            print(time.time()-s)
+            progress = self.training_progress(losses["train"]["loss"],self.k)                    
 
-                if progress < 0.1:
-                    print("progress {} < 0.1, early stopping, epoch: {}".format(progress,epoch))
+            if progress < 0.1:
+                print("progress {} < 0.1, early stopping, epoch: {}".format(progress,epoch))
+                break
+
+            # early stopping
+            if epoch % self.k == 0 and epoch != 0:
+                # loss,_,_ = self.evaluate_analysis(self.train_loader,verbose = 0)
+                # train_t.append(loss)
+                # generalization = self.generalization_loss(losses["eval"]["loss"])
+
+                # progress_generalization = self.progress_loss_generalization(losses["train"]["loss"],losses["eval"]["loss"],self.k)
+                # print("early stopping: progress: {}, progress_generalization {}".format(progress,progress_generalization))
+            
+                # if progress_generalization > self.early_stopping_thresh:
+                #     print("pq > {}, early stopping, epoch: {}".format(self.early_stopping_thresh,epoch))
+                #     break
+
+
+                up = self.up(losses["eval"]["loss"],self.s,self.k)
+                if up:
+                    print("up early stopping, epoch: {}".format(epoch))
                     break
 
-                # early stopping
-                if epoch % self.k == 0 and epoch != 0:
-                    # loss,_,_ = self.evaluate_analysis(self.train_loader,verbose = 0)
-                    # train_t.append(loss)
-                    # generalization = self.generalization_loss(losses["eval"]["loss"])
-
-                    # progress_generalization = self.progress_loss_generalization(losses["train"]["loss"],losses["eval"]["loss"],self.k)
-                    # print("early stopping: progress: {}, progress_generalization {}".format(progress,progress_generalization))
-                
-                    # if progress_generalization > self.early_stopping_thresh:
-                    #     print("pq > {}, early stopping, epoch: {}".format(self.early_stopping_thresh,epoch))
-                    #     break
-
-
-                    up = self.up(losses["eval"]["loss"],self.s,self.k)
-                    if up:
-                        print("up early stopping, epoch: {}".format(epoch))
-                        break
-
-            
         
-        except Exception as e: 
-            print(e)
+        
+        # except Exception as e: 
+        #     print(e)
 
    
         return best_harmonic_fde_ade,best_ade,best_fde
