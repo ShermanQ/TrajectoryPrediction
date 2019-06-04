@@ -80,7 +80,7 @@ class ScaledDotProduct(nn.Module):
         # eyes = eyes.repeat(mha_mask.shape[0],0)
 
         # mha_mask = np.logical_or(mha_mask,eyes).astype(int)
-        return torch.ByteTensor(mha_mask).to(self.device)
+        return torch.ByteTensor(mha_mask).to(self.device).detach()
         
 
 class AttentionHead(nn.Module):

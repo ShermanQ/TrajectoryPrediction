@@ -88,8 +88,10 @@ class S2sSpatialAtt(nn.Module):
         self.input_dim = args["input_dim"]
         self.enc_hidden_size = args["enc_hidden_size"]
         self.enc_num_layers = args["enc_num_layers"]
-        self.dec_hidden_size = args["dec_hidden_size"]
-        self.dec_num_layer = args["dec_num_layer"]
+        # self.dec_hidden_size = args["dec_hidden_size"]
+        # self.dec_num_layer = args["dec_num_layer"]
+        self.dec_hidden_size = self.enc_hidden_size
+        self.dec_num_layer = self.enc_num_layers
         self.embedding_size = args["embedding_size"]
         self.output_size = args["output_size"]
         self.pred_length = args["pred_length"]
@@ -126,7 +128,7 @@ class S2sSpatialAtt(nn.Module):
         # self.cnn = customCNN(self.device,nb_channels_projection= self.spatial_projection)
         self.cnn = customCNN2(self.device,nb_channels_projection= self.spatial_projection)
 
-        self.spatt2att = nn.Linear(self.spatial_projection,self.att_features_embedding)
+        # self.spatt2att = nn.Linear(self.spatial_projection,self.att_features_embedding)
 
 
     def forward(self,x):
@@ -164,14 +166,14 @@ class S2sSpatialAtt(nn.Module):
         rev_arg_ids = np.argsort(arg_ids)
         # reverse ordering of encoded sequence
 
-        hidden = (hidden[0][rev_arg_ids].permute(2,0,1), hidden[1][rev_arg_ids].permute(2,0,1))
+        hidden = (hidden[0][rev_arg_ids].permute(2,0,1).contiguous(), hidden[1][rev_arg_ids].permute(2,0,1).contiguous())
 
         ### Spatial ##############
 
         spatial_features = self.cnn(imgs)
         b,f,w,h = spatial_features.size()
         spatial_features = spatial_features.view(b,f,w*h).permute(0,2,1)# B,Nfeaturevectors,spatial projection
-        spatial_features = self.spatt2att(spatial_features)
+        # spatial_features = self.spatt2att(spatial_features)
         spatial_features = nn.functional.relu(spatial_features) # B,Nfeaturevectors,dmodel
 
         ##########################
@@ -192,7 +194,7 @@ class S2sSpatialAtt(nn.Module):
         for _ in range(self.pred_length):
             ########## Attention #############################
             # set query to last decoder hidden state
-            q = hidden[0].view(B,N,self.dec_hidden_size)
+            q = hidden[0][0].view(B,N,self.dec_hidden_size)
             q = self.q_embedding(q) # B N att_features_embedding
             q = nn.functional.relu(q)
 

@@ -31,6 +31,8 @@ class NetTraining():
         self.offsets = args["offsets"]
         self.offsets_input = args["offsets_input"]
 
+        self.joint_optimisation = args["joint_optimisation"]
+
         self.normalized = args["normalized"]
         self.net = args["net"]
         self.print_every = args["print_every"]
@@ -172,7 +174,7 @@ class NetTraining():
                     print("up early stopping, epoch: {}".format(epoch))
                     break
 
-        
+            
         
         # except Exception as e: 
         #     print(e)
@@ -211,6 +213,7 @@ class NetTraining():
             types =  types.to(self.device)
             imgs =  imgs.to(self.device)        
             active_mask = active_mask.to(self.device)
+
             
             # gradients to zero
             self.optimizer.zero_grad()
@@ -219,14 +222,15 @@ class NetTraining():
     
             # keep mask for prediction part only
             points_mask = points_mask[1]
-            points_mask = torch.FloatTensor(points_mask).to(self.device)
+            points_mask = torch.FloatTensor(points_mask).to(self.device).detach()
 
-            # mask output and label si that padding not used for prediction, no gradients
-            outputs = torch.mul(points_mask,outputs)
-            labels = torch.mul(points_mask,labels)
+            # mask output and label si that padding not used for prediction, no gradients 
+            # commented because it is already done in the loss
+            # outputs = torch.mul(points_mask,outputs)
+            # labels = torch.mul(points_mask,labels)
 
             # compute loss and backprop
-            loss = self.criterion(outputs, labels,points_mask)
+            loss = self.criterion(outputs, labels,points_mask,self.joint_optimisation)
             loss.backward()
 
             if batch_idx in ids_grads:
@@ -343,7 +347,7 @@ class NetTraining():
             labels = torch.mul(points_mask,labels)#
 
 
-            loss = self.criterion(outputs, labels,points_mask)
+            loss = self.criterion(outputs, labels,points_mask,self.joint_optimisation)
             batch_losses.append(loss.item())
 
             if keep_batch:
@@ -377,8 +381,8 @@ class NetTraining():
                     o.detach().cpu().numpy()
                     ))
 
-            ade += helpers.ade_loss(outputs,labels,points_mask).item() ######
-            fde += helpers.fde_loss(outputs,labels,points_mask).item()
+            ade += helpers.ade_loss(outputs,labels,points_mask,self.joint_optimisation).item() ######
+            fde += helpers.fde_loss(outputs,labels,points_mask,self.joint_optimisation).item()
         
             eval_loss += loss.item()
         
@@ -488,13 +492,13 @@ class NetTraining():
             labels = torch.mul(points_mask,labels)#
 
 
-            loss = self.criterion(outputs, labels,points_mask)
+            loss = self.criterion(outputs, labels,points_mask,self.joint_optimisation)
             batch_losses.append(loss.item())
 
             
 
-            ade += helpers.ade_loss(outputs,labels,points_mask).item() ######
-            fde += helpers.fde_loss(outputs,labels,points_mask).item()
+            ade += helpers.ade_loss(outputs,labels,points_mask,self.joint_optimisation).item() ######
+            fde += helpers.fde_loss(outputs,labels,points_mask,self.joint_optimisation).item()
         
             eval_loss += loss.item()
        

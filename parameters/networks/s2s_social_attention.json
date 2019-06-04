@@ -40,10 +40,8 @@
 
         "condition_decoder_on_outputs": [0,1],
 
-
+        "mlp_layers": [[100,100],[100]],
         
-        "predictor_layers":[[100],[100,100]],
-        "dmodel":[32,64,128],
         "projection_layers":[[128,256,128,64],[128,64,1]]
        
     }

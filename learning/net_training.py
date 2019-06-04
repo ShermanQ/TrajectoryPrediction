@@ -405,6 +405,7 @@ def main():
         "save_every" : training_param["save_every"],
         "offsets" : training_param["offsets"],
         "offsets_input" : training_param["offsets_input"],
+        "joint_optimisation": training_param["joint_optimisation"],
 
         "normalized" : training_param["normalize"],
         # "normalized" : prepare_param["normalize"],
