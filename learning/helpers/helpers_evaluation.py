@@ -138,16 +138,29 @@ def dynamic_eval(output,types,dynamics,types_dic,delta_t,dynamic_threshold = 0.0
         type_ = types[a]
         type_ = types_dic[str(int(type_+1))]
 
-        speeds = get_speeds(coordinates,delta_t)
-        accelerations = get_accelerations(speeds,delta_t)
+        speeds = np.array(get_speeds(coordinates,delta_t))
+        accelerations = np.array(get_accelerations(speeds,delta_t))
         dynamic_type = dynamics[type_]
 
-        acc_props = norm.pdf(accelerations, loc = dynamic_type["accelerations"]["mean"], scale=dynamic_type["accelerations"]["std"]) 
-        speed_props = norm.pdf(accelerations, loc = dynamic_type["speeds"]["mean"], scale=dynamic_type["speeds"]["std"]) 
+        speed_range = [
+            dynamic_type["speeds"]["mean"] - 3*dynamic_type["speeds"]["std"],
+            dynamic_type["speeds"]["mean"] + 3*dynamic_type["speeds"]["std"]
+        ]
+
+        acc_range = [
+            dynamic_type["accelerations"]["mean"] - 3*dynamic_type["accelerations"]["std"],
+            dynamic_type["accelerations"]["mean"] + 3*dynamic_type["accelerations"]["std"]
+        ]
+        # acc_props = norm.pdf(accelerations, loc = dynamic_type["accelerations"]["mean"], scale=dynamic_type["accelerations"]["std"]) 
+        # speed_props = norm.pdf(accelerations, loc = dynamic_type["speeds"]["mean"], scale=dynamic_type["speeds"]["std"]) 
+
+        nb_outliers_speeds = ((speeds < speed_range[0]) & (speeds > speed_range[1])).astype(int).sum() 
+        nb_outliers_accs = ((accelerations < acc_range[0]) & (accelerations > acc_range[1])).astype(int).sum() 
 
 
-        nb_outliers_speeds = (speed_props < dynamic_threshold).astype(int).sum()    
-        nb_outliers_accs = (acc_props < dynamic_threshold).astype(int).sum()        
+
+        # nb_outliers_speeds = (speed_props < dynamic_threshold).astype(int).sum()    
+        # nb_outliers_accs = (acc_props < dynamic_threshold).astype(int).sum()        
 
         percentage_outlier_points_speed = nb_outliers_speeds/len(speeds) * 100
         percentage_outlier_points_accs = nb_outliers_accs/len(accelerations) * 100
