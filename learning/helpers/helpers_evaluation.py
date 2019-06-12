@@ -89,19 +89,32 @@ def get_data_loader(data_params,data_file,scene,args_net,set_type_test,prepare_p
 #    returns conflicts coordinates without specifying their timestep
 def conflicts(output,threshold = 0.5):
     timesteps = []
+    timesteps_disjoint = []
+
     conflict_points = np.array([])
     for t in range(output.shape[1]):
         points = np.array(output[:,t])
         d = distance_matrix(points,points)
 
         m = (d < threshold).astype(int) - np.eye(len(points))
+        total_count = np.ones_like(m)
+        m = np.triu(m,1)
+        total_count = np.triu(total_count,1)
 
-        nb_agents_in_conflict = m.sum() / 2.0 # matrix is symmetric
-        nb_agents = len(points)**2
-
-        conflict_prop = nb_agents_in_conflict / float(nb_agents) * 100
+        # disjoint (only first trajectory)
+        if float(total_count[0].sum()) > 0.:
+            conflict_prop_disjoint = m[0].sum() / float(total_count[0].sum())
+        else:
+            conflict_prop_disjoint = 0
+        # joint
+        if float(total_count.sum()) > 0.:           
+            conflict_prop = m.sum() / float(total_count.sum())
+        else:
+            conflict_prop = 0
 
         timesteps.append(conflict_prop)
+        timesteps_disjoint.append(conflict_prop_disjoint)
+
 
         # select points where conflict happens
         ids = np.unique( np.argwhere(m)[:,0] ) 
@@ -114,7 +127,7 @@ def conflicts(output,threshold = 0.5):
 
 
 
-    return np.mean(timesteps),conflict_points.tolist()
+    return np.mean(timesteps),np.mean(timesteps_disjoint),conflict_points.tolist()
 
 def dynamic_eval(output,types,dynamics,types_dic,delta_t,dynamic_threshold = 0.0):
     count_per_traj_speed = []

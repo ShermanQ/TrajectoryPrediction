@@ -306,22 +306,25 @@ def main():
 
                     # social loss
                     conflict_thresholds = [0.1,0.5,1.0]
-                    social_losses = []
                     conflict_points = []
 
                     # social loss
                     for thresh in conflict_thresholds:
-                        ls,pts = helpers_evaluation.conflicts(o.squeeze(squeeze_dimension).cpu().numpy(),thresh)
-                        social_losses.append(ls)
+                        social_loss,social_loss_disjoint,pts = helpers_evaluation.conflicts(o.squeeze(squeeze_dimension).cpu().numpy(),thresh)
                         conflict_points.append(pts)
-
-                        # print("social_".format(thresh))
                         key = "social_" + str(thresh)
                         
                         if key not in losses_scenes[scene]:
                             losses_scenes[scene][key] = []
-                        losses_scenes[scene][key].append(ls)
-                        losses[key] = ls
+                        losses_scenes[scene][key].append(social_loss)
+                        losses[key] = social_loss
+
+                        key = "social_disjoint_" + str(thresh)
+                        
+                        if key not in losses_scenes[scene]:
+                            losses_scenes[scene][key] = []
+                        losses_scenes[scene][key].append(social_loss_disjoint)
+                        losses[key] = social_loss_disjoint
                     
                     # dynamic loss
                     speed_len,acc_len = helpers_evaluation.dynamic_eval(
@@ -347,14 +350,7 @@ def main():
                     # spatial_profile_ids
                     #convert back to pixel
                     spatial_unjoint,spatial_joint = helpers_evaluation.spatial_loss(spatial_profile_ids,spatial_masks,o.squeeze(squeeze_dimension).cpu().numpy(),pixel2meters)
-                    
-                    # spatial_losses = []
-                    # for id_,trajectory_p in zip(spatial_profile_ids,o.squeeze(squeeze_dimension).cpu().numpy()):
-                    #     trajectory_p *= pixel2meters
-                    #     trajectory_p = trajectory_p.astype(np.int32)
-                    #     res = helpers_evaluation.spatial_conflicts(spatial_masks[id_],trajectory_p)
-                    #     spatial_losses.append(res)
-                    # spatial_loss = np.mean(spatial_losses)
+                
 
                     if "spatial_joint" not in losses_scenes[scene]:
                         losses_scenes[scene]["spatial_joint"] = []
