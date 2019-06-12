@@ -405,7 +405,7 @@ def main():
         "save_every" : training_param["save_every"],
         "offsets" : training_param["offsets"],
         "offsets_input" : training_param["offsets_input"],
-        "joint_optimisation": training_param["joint_optimisation"],
+        "unjoint_optimisation": training_param["unjoint_optimisation"],
 
         "normalized" : training_param["normalize"],
         # "normalized" : prepare_param["normalize"],
@@ -502,7 +502,9 @@ def main():
                 "model_name":model,
                 "s":args_net_c["s"],
                 "k":training_param["k"],
-                "early_stopping_thresh": training_param["early_stopping_thresh"]
+                "early_stopping_thresh": training_param["early_stopping_thresh"],
+                "unjoint_optimisation": training_param["unjoint_optimisation"]
+
                 
             }
 

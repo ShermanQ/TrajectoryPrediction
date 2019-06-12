@@ -19,7 +19,6 @@ from scipy.spatial.distance import euclidean
 import matplotlib.image as mpimg
 import cv2
 
-import copy
 
 import time
 
@@ -119,14 +118,14 @@ def main():
     elif set_type_test == "train_eval":
         scenes = train_eval_scenes
 
-    scenes = ["coupa0"]#########################################################################
+    scenes = ["coupa0"]#########################################################################""
     losses_scenes = {}
     times = 0 # sum time for every prediction
     nb = 0 # number of predictions
 
 
 #############################################################################################
-#############################################################################################
+#############################################################################################""
     dir_name = data_params["reports_evaluation"] + "{}/".format(report_name)
     sub_dir_name = data_params["reports_evaluation"] + "{}/scene_reports/".format(report_name) 
 
@@ -173,6 +172,7 @@ def main():
 
 
             nb_types = len(prepare_param["types_dic"].keys()) 
+            # types = torch.FloatTensor(types_ohe(types.cpu().numpy(),nb_types)).to(device)
         
             imgs =  imgs.to(device)        
             active_mask = helpers_evaluation.get_active_mask(points_mask[1])
@@ -180,6 +180,19 @@ def main():
 
             if not args_net["use_images"]:
                 imgs = imgs.repeat(inputs.size()[0],1)
+
+            # penser au cas où target_last et input_last sont des listes vides
+            # if not args_net["offsets"]:
+            #     target_last = target_last.repeat(inputs.size()[0],1)
+            # if not args_net["offsets_input"]:
+            #     input_last = input_last.repeat(inputs.size()[0],1)
+
+            # if not args_net["use_images"]:
+            #     imgs = imgs.repeat(inputs.size()[0],1)
+
+          
+
+
 
             for i,l,t,p0,p1,a,img,tl,il in zip(inputs,labels,types,points_mask[0],points_mask[1],active_mask,imgs,target_last,input_last):
 
@@ -224,10 +237,18 @@ def main():
 
                     p0 = np.expand_dims(p0,axis = squeeze_dimension)
                     p1 = np.expand_dims(p1,axis = squeeze_dimension)
+
+                    # t = t.unsqueeze(squeeze_dimension)
+
+                    
+                    
                     p = (p0,p1)
+
+                    
 
                     if sample_id % print_every == 0:
                         print("sample n {}".format(sample_id))
+
                     
                     a = a.to(device)
                     
@@ -241,7 +262,8 @@ def main():
                     nb += len(a)
 
                     # mask for loss
-                    p = torch.FloatTensor(p[1]).to(device)                    
+                    p = torch.FloatTensor(p[1]).to(device)
+                    
                     o = torch.mul(p,o)
                     l = torch.mul(p,l) # bon endroit?
 
@@ -261,14 +283,17 @@ def main():
 
                             i[:,:,:,0] = helpers.revert_standardization(i[:,:,:,0],meanx,stdx)
                             i[:,:,:,1] = helpers.revert_standardization(i[:,:,:,1],meany,stdy)
-                            i = torch.FloatTensor(i).to(device)        
+                            i = torch.FloatTensor(i).to(device)
+
+                                
+                            
                         else:
                             min_ =  scaler["normalization"]["min"]
                             max_ =  scaler["normalization"]["max"]
                             i = helpers.revert_min_max_scale(i.detach().cpu().numpy(),min_,max_)
                             i = torch.FloatTensor(i).to(device)
 
-                   # revert offsets for inputs and outputs
+                   
                     o = o.view(l.size())
                     i,l,o = helpers.offsets_to_trajectories(i.detach().cpu().numpy(),
                                                                         l.detach().cpu().numpy(),
@@ -278,29 +303,23 @@ def main():
                     i,l,o = torch.FloatTensor(i).to(device),torch.FloatTensor(l).to(device),torch.FloatTensor(o).to(device)
 
                     # compute every standard criterion
-                    losses = {}     
+                    losses = {}
+                   
+
                     for j,c in enumerate(criterions):
-                        criterion = criterions[c]                        
+                        criterion = criterions[c]
+                        
                         ########################"""
                         # #########################
                         # for those criterion if we want to evaluate we juste pass the parameter to select only first loss"
 
-                        loss = criterion(o.clone(), l.clone(),p.clone(),first_only = 0)
-                        loss_unjoint = criterion(o.clone(), l.clone(),p.clone(),first_only = 1)
-
-                        # print(loss,loss_unjoint)
+                        loss = criterion(o, l,p)
                         losses[c] = loss.item()
-                        losses[c+"_unjoint"] = loss_unjoint.item()
-
                         # if criterion not in scene of losses report add it
                         if c not in losses_scenes[scene]:
                             losses_scenes[scene][c] = []
-                        if c+"_unjoint" not in losses_scenes[scene]:
-                            losses_scenes[scene][c+"_unjoint"] = []
                         # append value of criterion in scene/criterion list
                         losses_scenes[scene][c].append(loss.item())
-                        losses_scenes[scene][c+"_unjoint"].append(loss_unjoint.item())
-
 
 
                     # social loss
