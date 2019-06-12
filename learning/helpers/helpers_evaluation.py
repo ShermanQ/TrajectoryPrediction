@@ -159,7 +159,7 @@ def dynamic_eval(output,types,dynamics,types_dic,delta_t,dynamic_threshold = 0.0
     acc_len = np.mean(count_per_traj_acc)
     speed_len = np.mean(count_per_traj_speed)
 
-    return speed_len,acc_len
+    return speed_len,acc_len,count_per_traj_speed[0],count_per_traj_acc[0]
 
 
 def get_speed(point1,point2,deltat):
