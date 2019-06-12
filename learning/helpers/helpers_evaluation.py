@@ -219,6 +219,15 @@ def spatial_conflicts(mask,trajectory_p):
                             ctr += 1
         return ctr / float(len(trajectory_p))
 
+def spatial_loss(spatial_profile_ids,spatial_masks,outputs,pixel2meters):
+    spatial_losses = []
+    for id_,trajectory_p in zip(spatial_profile_ids,outputs):
+        trajectory_p *= pixel2meters
+        trajectory_p = trajectory_p.astype(np.int32)
+        res = spatial_conflicts(spatial_masks[id_],trajectory_p)
+        spatial_losses.append(res)
+    return spatial_losses[0], np.mean(spatial_losses)
+
 def get_factor(scene,correspondences_trajnet,correspondences_manual):
     if scene in correspondences_trajnet:
         row = correspondences_trajnet[scene]

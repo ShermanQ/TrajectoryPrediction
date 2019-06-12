@@ -37,6 +37,7 @@ def main():
     args = sys.argv
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")    
+    torch.manual_seed(42)
     # device = torch.device("cpu")
     print(device)
     print(torch.cuda.is_available())
@@ -345,18 +346,25 @@ def main():
                     # spatial loss
                     # spatial_profile_ids
                     #convert back to pixel
-                    spatial_losses = []
-                    for id_,trajectory_p in zip(spatial_profile_ids,o.squeeze(squeeze_dimension).cpu().numpy()):
-                        trajectory_p *= pixel2meters
-                        trajectory_p = trajectory_p.astype(np.int32)
-                        res = helpers_evaluation.spatial_conflicts(spatial_masks[id_],trajectory_p)
-                        spatial_losses.append(res)
-                    spatial_loss = np.mean(spatial_losses)
+                    spatial_unjoint,spatial_joint = helpers_evaluation.spatial_loss(spatial_profile_ids,spatial_masks,o.squeeze(squeeze_dimension).cpu().numpy(),pixel2meters)
+                    
+                    # spatial_losses = []
+                    # for id_,trajectory_p in zip(spatial_profile_ids,o.squeeze(squeeze_dimension).cpu().numpy()):
+                    #     trajectory_p *= pixel2meters
+                    #     trajectory_p = trajectory_p.astype(np.int32)
+                    #     res = helpers_evaluation.spatial_conflicts(spatial_masks[id_],trajectory_p)
+                    #     spatial_losses.append(res)
+                    # spatial_loss = np.mean(spatial_losses)
 
-                    if "spatial_loss" not in losses_scenes[scene]:
-                        losses_scenes[scene]["spatial_loss"] = []
-                    losses_scenes[scene]["spatial_loss"].append(spatial_loss)
-                    losses["spatial_loss"] = spatial_loss
+                    if "spatial_joint" not in losses_scenes[scene]:
+                        losses_scenes[scene]["spatial_joint"] = []
+                    losses_scenes[scene]["spatial_joint"].append(spatial_joint)
+                    losses["spatial_joint"] = spatial_joint
+
+                    if "spatial_unjoint" not in losses_scenes[scene]:
+                        losses_scenes[scene]["spatial_unjoint"] = []
+                    losses_scenes[scene]["spatial_unjoint"].append(spatial_unjoint)
+                    losses["spatial_unjoint"] = spatial_unjoint
 
                     scene_dict[sample_id] = {} # init sample dict in the scene
                     losses_dict[sample_id] = {} # init losses dict for sample in scene
