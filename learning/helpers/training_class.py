@@ -230,7 +230,7 @@ class NetTraining():
             # labels = torch.mul(points_mask,labels)
 
             # compute loss and backprop
-            loss = self.criterion(outputs, labels,points_mask,self.unjoint_optimisation)
+            loss = self.criterion(outputs.clone(), labels.clone(),points_mask.clone(),self.unjoint_optimisation)
             loss.backward()
 
             if batch_idx in ids_grads:
@@ -302,7 +302,7 @@ class NetTraining():
             imgs =  imgs.to(self.device)        
             active_mask = active_mask.to(self.device)
             
-            outputs = self.net((inputs,types,active_mask,points_mask,imgs))
+            outputs = self.net((inputs.clone(),types,active_mask,points_mask,imgs))
             
             if self.normalized:
                 scaler = json.load(open(self.scalers_path))
@@ -347,7 +347,7 @@ class NetTraining():
             labels = torch.mul(points_mask,labels)#
 
 
-            loss = self.criterion(outputs, labels,points_mask,self.unjoint_optimisation)
+            loss = self.criterion(outputs.clone(), labels.clone(),points_mask.clone(),self.unjoint_optimisation)
             batch_losses.append(loss.item())
 
             if keep_batch:
@@ -381,8 +381,8 @@ class NetTraining():
                     o.detach().cpu().numpy()
                     ))
 
-            ade += helpers.ade_loss(outputs,labels,points_mask,self.unjoint_optimisation).item() ######
-            fde += helpers.fde_loss(outputs,labels,points_mask,self.unjoint_optimisation).item()
+            ade += helpers.ade_loss(outputs.clone(),labels.clone(),points_mask.clone(),self.unjoint_optimisation).item() ######
+            fde += helpers.fde_loss(outputs.clone(),labels.clone(),points_mask.clone(),self.unjoint_optimisation).item()
         
             eval_loss += loss.item()
         
@@ -492,13 +492,13 @@ class NetTraining():
             labels = torch.mul(points_mask,labels)#
 
 
-            loss = self.criterion(outputs, labels,points_mask,self.unjoint_optimisation)
+            loss = self.criterion(outputs.clone(), labels.clone(),points_mask.clone(),self.unjoint_optimisation)
             batch_losses.append(loss.item())
 
             
 
-            ade += helpers.ade_loss(outputs,labels,points_mask,self.unjoint_optimisation).item() ######
-            fde += helpers.fde_loss(outputs,labels,points_mask,self.unjoint_optimisation).item()
+            ade += helpers.ade_loss(outputs.clone(),labels.clone(),points_mask.clone(),self.unjoint_optimisation).item() ######
+            fde += helpers.fde_loss(outputs.clone(),labels.clone(),points_mask.clone(),self.unjoint_optimisation).item()
         
             eval_loss += loss.item()
        

@@ -196,11 +196,18 @@ class Animate():
 
         for i in range(self.nb_agents):
             tup = self.ax[0][0].plot([], [], color = self.colors[i],marker = 'o',markersize = 2,linewidth = 0.5)[0]
+
+            if i == 0:
+                tup = self.ax[0][0].plot([], [], color = self.colors[i],marker = '^',markersize = 2,linewidth = 0.5)[0]
+
             
                 
             self.plots1.append(tup)
 
             tup = self.ax[0][1].plot([], [], color = self.colors[i],marker = 'o',markersize = 2,linewidth = 0.5)[0]
+
+            if i == 0:
+                tup = self.ax[0][1].plot([], [], color = self.colors[i],marker = '^',markersize = 2,linewidth = 0.5)[0]
             
             self.plots2.append(tup)
         

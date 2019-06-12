@@ -162,9 +162,9 @@ def main():
         
         for batch_idx, data in enumerate(data_loader):
                 
-            if batch_idx  > 1:
-                print("break")
-                break
+            # if batch_idx  > 1:
+            #     print("break")
+            #     break
             # Load data
             inputs, labels,types,points_mask, active_mask, imgs,target_last,input_last = data
             inputs = inputs.to(device)

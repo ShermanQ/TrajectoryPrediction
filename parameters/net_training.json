@@ -1,12 +1,12 @@
 {
-    "model":"spatial_attention",
+    "model":"social_attention",
     "set_type_train": "train",
     "set_type_test": "eval",
     "load_path" : "",  
 
     "toy":0,
-    "train":1,
-    "test":0,
+    "train":0,
+    "test":1,
     "training_program": 2,
     "training_program: 0 regular, 1:learning curves, 2:hyperparameters tuning":-1,
     "nb_run_random_search":15,
