@@ -25,7 +25,8 @@
         "obstacle_ped":0,
         "obstacle_car":1,
         "obstacle_bicycle":2
-    }
+    },
+    "disjoint_evaluation":1
     
 
 }

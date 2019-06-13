@@ -162,9 +162,9 @@ def main():
         
         for batch_idx, data in enumerate(data_loader):
                 
-            # if batch_idx  > 1:
-            #     print("break")
-            #     break
+            if batch_idx  > 1:
+                print("break")
+                break
             # Load data
             inputs, labels,types,points_mask, active_mask, imgs,target_last,input_last = data
             inputs = inputs.to(device)
@@ -184,29 +184,16 @@ def main():
 
             for i,l,t,p0,p1,a,img,tl,il in zip(inputs,labels,types,points_mask[0],points_mask[1],active_mask,imgs,target_last,input_last):
 
-                    
+                    # selecting active agents
                     i = i[a]
                     l = l[a]
                     t = t[a]
-                    t = t.unsqueeze(squeeze_dimension)
-
-                    #spatial loss
-                    spatial_profile_ids = [ types_to_spatial[str(key)] for key in   t.cpu().numpy().astype(int).flatten() ]
-                    
-                    
-
-
-                    t = torch.FloatTensor(helpers_evaluation.types_ohe(t.cpu().numpy(),nb_types)).to(device)
-                    if not args_net["use_neighbors"]:
-                        t = t.squeeze(squeeze_dimension)
-
-
 
                     p0 = p0[a]
                     p1 = p1[a]
                     tl = tl[a]
                     il = il[a]
-
+                    
                     # cse when there is no neighbors for np arrays
                     if len(a) == 1:
                         p0 = np.expand_dims(p0,axis = 0)
@@ -214,32 +201,133 @@ def main():
                         tl = np.expand_dims(tl,axis = 0)
                         il = np.expand_dims(il,axis = 0)
 
+                    #######################################################################################
+                    ######################################################################################
+                    if eval_params["disjoint_evaluation"] and squeeze_dimension == 0:
+                        
+                        n_agent = i.size()[0]
+                        ids_perm = np.arange(n_agent)
+                        # batch_i, batch_l, batch_t, batch_p0, batch_p1,batch_tl, batch_il = [], [], [], [], [], [], []
+                        # batch_i, batch_t, batch_p0, batch_p1 = [], [], [], []
+                        batch_i,  batch_p0, batch_p1 = [], [], []
+                        
+                        for ix in range(n_agent):
+                            ids_perm = np.roll(ids_perm,-ix)
+                            batch_i.append(i[torch.LongTensor(ids_perm)])
+                            # batch_l.append(l[torch.LongTensor(ids_perm)])
+                            # batch_t.append(t[torch.LongTensor(ids_perm)])
+                            batch_p0.append(p0[ids_perm])
+                            batch_p1.append(p1[ids_perm])
+                            # batch_tl.append(tl[ids_perm])
+                            # batch_il.append(il[ids_perm])
 
 
 
-                    i = i.unsqueeze(squeeze_dimension)
-                    il = np.expand_dims(il,squeeze_dimension)
 
-                    l = l.unsqueeze(squeeze_dimension)
-                    tl = np.expand_dims(tl,squeeze_dimension)
+                        i = torch.stack(batch_i)
+                        # l = torch.stack(batch_l)
+                        # t = torch.stack(batch_t)
+                        p0 = np.array(batch_p0)
+                        p1 = np.array(batch_p1)
+                        # tl = np.array(batch_tl)
+                        # il = np.array(batch_il)
 
-                    p0 = np.expand_dims(p0,axis = squeeze_dimension)
-                    p1 = np.expand_dims(p1,axis = squeeze_dimension)
-                    p = (p0,p1)
+                        p = (p0,p1)
+
+                        a = a.to(device)
+                        #predict and count time
+                        torch.cuda.synchronize()
+                        start = time.time()
+                        o = net((i,t,a,p,img))       #img pas traité mais balek dans ce cas là (social disjoint)         
+                        torch.cuda.synchronize()
+                        end = time.time() - start
+                        times += end 
+                        nb += len(a)
+                        o = o[:,0].unsqueeze(squeeze_dimension)
+                        # p0 = p0[:,0] # chaque agent est prédit comme agent principal, on garde uniquement la première prédiction
+                        # p1 = p1[:,0]
+
+                        p0 = np.expand_dims(p0[:,0],axis = squeeze_dimension)
+                        p1 = np.expand_dims(p1[:,0],axis = squeeze_dimension)
+                        
+                        p = (p0,p1)
+
+
+                    else:
+                        # i = i[a]
+                        # l = l[a]
+                        # t = t[a]
+                        
+                        t = t.unsqueeze(squeeze_dimension)
+
+                        #spatial loss
+                        spatial_profile_ids = [ types_to_spatial[str(key)] for key in   t.cpu().numpy().astype(int).flatten() ]
+                        
+                        
+
+
+                        t = torch.FloatTensor(helpers_evaluation.types_ohe(t.cpu().numpy(),nb_types)).to(device)
+                        if not args_net["use_neighbors"]:
+                            t = t.squeeze(squeeze_dimension)
+
+
+
+                        # p0 = p0[a]
+                        # p1 = p1[a]
+                        # tl = tl[a]
+                        # il = il[a]
+
+                        # cse when there is no neighbors for np arrays
+                        # if len(a) == 1:
+                        #     p0 = np.expand_dims(p0,axis = 0)
+                        #     p1 = np.expand_dims(p1,axis = 0)
+                        #     tl = np.expand_dims(tl,axis = 0)
+                        #     il = np.expand_dims(il,axis = 0)
+
+
+
+
+                        i = i.unsqueeze(squeeze_dimension)
+                        il = np.expand_dims(il,squeeze_dimension)
+
+                        l = l.unsqueeze(squeeze_dimension)
+                        tl = np.expand_dims(tl,squeeze_dimension)
+
+                        p0 = np.expand_dims(p0,axis = squeeze_dimension)
+                        p1 = np.expand_dims(p1,axis = squeeze_dimension)
+                    
+                    
+                        p = (p0,p1)
+
+                        a = a.to(device)
+
+                        #predict and count time
+                        torch.cuda.synchronize()
+                        start = time.time()
+                        o = net((i,t,a,p,img))                 
+                        torch.cuda.synchronize()
+                        end = time.time() - start
+                        times += end 
+                        nb += len(a)
+
+                    ###############################################################################"
+                    # #######################################################################""####
 
                     if sample_id % print_every == 0:
                         print("sample n {}".format(sample_id))
                     
-                    a = a.to(device)
+                    # a = a.to(device)
                     
                     #predict and count time
-                    torch.cuda.synchronize()
-                    start = time.time()
-                    o = net((i,t,a,p,img))                 
-                    torch.cuda.synchronize()
-                    end = time.time() - start
-                    times += end 
-                    nb += len(a)
+                    # torch.cuda.synchronize()
+                    # start = time.time()
+                    # o = net((i,t,a,p,img))                 
+                    # torch.cuda.synchronize()
+                    # end = time.time() - start
+                    # times += end 
+                    # nb += len(a)
+
+
 
                     # mask for loss
                     p = torch.FloatTensor(p[1]).to(device)                    
