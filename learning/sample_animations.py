@@ -23,7 +23,7 @@ def main():
     animate = Animation("parameters/data.json","parameters/prepare_training.json","parameters/model_evaluation.json")
     # print(eval_scenes)
     # animate.animate_sample(eval_scenes[0],16)
-    animate.animate_sample("coupa0",16)
+    animate.animate_sample("coupa0",99)
 
 
     

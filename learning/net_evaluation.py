@@ -120,7 +120,7 @@ def main():
     elif set_type_test == "train_eval":
         scenes = train_eval_scenes
 
-    scenes = ["coupa0"]#########################################################################
+    # scenes = ["coupa0"]#########################################################################
     losses_scenes = {}
     times = 0 # sum time for every prediction
     nb = 0 # number of predictions
@@ -202,7 +202,6 @@ def main():
                         il = np.expand_dims(il,axis = 0)
 
                     t = t.unsqueeze(squeeze_dimension)
-                    t = torch.FloatTensor(helpers_evaluation.types_ohe(t.cpu().numpy(),nb_types)).to(device)
                     il = np.expand_dims(il,squeeze_dimension)
                     tl = np.expand_dims(tl,squeeze_dimension)
                     a = a.to(device)
@@ -210,6 +209,7 @@ def main():
 
                     #spatial loss
                     spatial_profile_ids = [ types_to_spatial[str(key)] for key in   t.cpu().numpy().astype(int).flatten() ]
+                    t = torch.FloatTensor(helpers_evaluation.types_ohe(t.cpu().numpy(),nb_types)).to(device)
 
                     #######################################################################################
                     ######################################################################################
