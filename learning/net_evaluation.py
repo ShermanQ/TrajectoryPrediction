@@ -199,6 +199,9 @@ def main():
                     p1 = p1[a]
                     tl = tl[a]
                     il = il[a]
+
+                    # always only one image per sample, set batchsize to 1
+                    img = img.unsqueeze(0).repeat(len(a),1,1,1)   
                     
                     # cse when there is no neighbors for np arrays
                     if len(a) == 1:
