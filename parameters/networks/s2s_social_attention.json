@@ -12,18 +12,18 @@
 
 
     "enc_hidden_size" : 32,
-    "enc_num_layers" : 1, 
-    "embedding_size" : 16,
+    "enc_num_layers" : 3, 
+    "embedding_size" : 64,
     "dec_hidden_size" : 64,
     "dec_num_layer" : 1,
-    "projection_layers": [64,128,64],
-    "enc_feat_embedding": 16,
+    "projection_layers": [128,64],
+    "enc_feat_embedding": 32,
 
     
     "use_neighbors": 1,
     "use_images": 0,
 
-    "condition_decoder_on_outputs":0,
+    "condition_decoder_on_outputs":1,
 
     "hyperparameters":{
         "lr" : [0.001,0.0001],

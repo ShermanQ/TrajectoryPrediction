@@ -2,7 +2,7 @@
     "load_path" : "",       
     "input_dim":2,
     
-    "mlp_layers":[100,100],
+    "mlp_layers":[200],
     "output_size":24,
       
     
@@ -11,11 +11,11 @@
     "use_neighbors": 0,
     "use_images": 0,
 
-    "kernel_size":3,
-    "coord_embedding_size":32,
+    "kernel_size":5,
+    "coord_embedding_size":0,
     "nb_conv":4,
     "nb_kernel":32,
-    "cnn_feat_size":128,
+    "cnn_feat_size":256,
     "hyperparameters":{
         "lr" : [0.001,0.0001],
         "s" : [6],

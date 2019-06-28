@@ -4,22 +4,22 @@
     
     "input_dim":2,
 
-    "dmodel":32,
+    "dmodel":128,
     "dropout_tfr" : 0.1,
     "h":1,
     
     
-    "predictor_layers": [128,64],
+    "predictor_layers": [100,100],
     
 
-    "coordinates_embedding_size":16,
-    "nb_conv":4,
+    "coordinates_embedding_size":0,
+    "nb_conv":2,
     "nb_kernel":32,
-    "cnn_feat_size":128,
+    "cnn_feat_size":256,
     "kernel_size":3,
     
     
-    "projection_layers":[128,256,128,64],
+    "projection_layers":[128,64],
     "use_mha":0,
 
     "use_neighbors": 1,

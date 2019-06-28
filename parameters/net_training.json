@@ -1,16 +1,16 @@
 {
-    "model":"social_attention",
-    "set_type_train": "train",
-    "set_type_test": "eval",
+    "model":"spatial_attention",
+    "set_type_train": "train_eval",
+    "set_type_test": "test",
     "load_path" : "",  
 
     "toy":0,
-    "train":0,
-    "test":1,
-    "training_program": 2,
+    "train":1,
+    "test":0,
+    "training_program": 0,
     "training_program: 0 regular, 1:learning curves, 2:hyperparameters tuning":-1,
     "nb_run_random_search":15,
-    "unjoint_optimisation":1,
+    "unjoint_optimisation":0,
 
     "learning_curves_proportions":[0.10,0.20,0.50,1.0],
 
@@ -18,8 +18,8 @@
     "pred_length"  : 12,
     "seq_length"  : 20,
 
-    "n_epochs" : 20,
-    "batch_size": 2 ,    
+    "n_epochs" : 200,
+    "batch_size": 16 ,    
     "lr" : 0.001, 
 
     
@@ -27,7 +27,7 @@
     "plot_every": 5,
     "save_every":1,
     "print_every":10,
-    "nb_grad_plots":5,
+    "nb_grad_plots":200,
     "nb_sample_plots":5,
 
 
@@ -35,9 +35,9 @@
     "k":5,
     "early_stopping_thresh":0.5,    
 
-    "normalize":0,
+    "normalize":1,
     "offsets":1,
-    "offsets_input":1,
+    "offsets_input":0,
     "use_type":0,    
     "use type: 0 non, 1:ohe, 2:word_embedding":-1,
     

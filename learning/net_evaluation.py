@@ -181,6 +181,12 @@ def main():
 
             if not args_net["use_images"]:
                 imgs = imgs.repeat(inputs.size()[0],1)
+            if not args_net["offsets_input"]:
+                input_last = np.zeros_like(inputs.cpu().numpy())
+                # input_last = input_last.repeat(inputs.size()[0],1)
+                # input_last = torch.FloatTensor(input_last)
+                
+                # input_last.repeat(inputs.size()[0],1)
 
             for i,l,t,p0,p1,a,img,tl,il in zip(inputs,labels,types,points_mask[0],points_mask[1],active_mask,imgs,target_last,input_last):
 

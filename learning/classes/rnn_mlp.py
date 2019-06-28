@@ -102,12 +102,12 @@ class RNN_MLP(nn.Module):
             # plt.show()
             output = torch.cat([output,embedded_types],dim = 1)
 
-        x = self.mlp(output).view(self.batch_size,1,int(self.output_size/self.input_dim),self.input_dim)       
+        x = self.mlp(output).view(x.size()[0],1,int(self.output_size/self.input_dim),self.input_dim)       
         return x
 
     def init_hidden_state(self,batch_size):
         # print(self.batch_size)
-        h_0 = torch.rand(self.recurrent_layer,self.batch_size,self.hidden_size).to(self.device)
-        c_0 = torch.rand(self.recurrent_layer,self.batch_size,self.hidden_size).to(self.device)
+        h_0 = torch.rand(self.recurrent_layer,batch_size,self.hidden_size).to(self.device)
+        c_0 = torch.rand(self.recurrent_layer,batch_size,self.hidden_size).to(self.device)
 
         return (h_0,c_0)
