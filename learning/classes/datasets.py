@@ -11,6 +11,8 @@ import time
 import helpers
 from joblib import load
 import sys
+from PIL import Image
+from torchvision import transforms
 
 class CustomDataLoader():
       def __init__(self,batch_size,shuffle,drop_last,dataset,test = 0):
@@ -439,22 +441,68 @@ class Hdf5Dataset():
       #             images[scene] = img
       #       return images
 
-      def __load_images(self):
+      def __load_images(self):#cuda
             images = {}
             print("loading images features")
             cnn = customCNN1()
-            for scene in self.scene_list:
-                  img = torch.FloatTensor(cv2.imread(self.images_path.format(scene)))
-                  img = img.permute(2,0,1)
+            cnn.eval()
+            cnn = cnn.cuda()
+            paddings = self.__get_paddings()
+            for scene,pad in zip(self.scene_list,paddings):
+                  img = Image.open(self.images_path.format(scene))
+                  transform = transforms.Compose([
+                        transforms.Pad(pad),
+                        transforms.ToTensor(),
+                        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+                  ])
+
+                  img = transform(img)
+                  img = img.cuda()
+                  print(img.size())
+                  
                   img = img.unsqueeze(0)
                   img = cnn(img)
                   img = img.squeeze(0)
 
+                  print(img.size())
+
+                  img = img.cpu()
                   images[scene] = img
+                  
+
             print("Done!")
             
             return images
+      def __get_paddings(self):
+            widths,heights = [],[]
+            for scene in self.scene_list:
+                  img = np.array(Image.open(self.images_path.format(scene)))
+                  height,width,_ = img.shape
+                  heights.append(height)
+                  widths.append(width)
+            max_height = np.max(heights)
+            max_width = np.max(widths)
+            
+            paddings = []
+            for scene in self.scene_list:
+                  img = np.array(Image.open(self.images_path.format(scene)))
+                  height,width,_ = img.shape
+                  pad_height = max_height - height
+                  pad_width = max_width  - width 
 
+                  pad_height = self.__get_pad(pad_height)
+                  pad_width = self.__get_pad(pad_width)
+                  padding = (pad_width[0],pad_height[0],pad_width[1],pad_height[1])
+                  paddings.append(padding)
+            return paddings
+
+      def __get_pad(self,v):
+            if v % 2 == 0:
+                  v = int(v/2)
+                  return (v,v)
+            else:
+                  v = int(v/2)
+                  return (v,v+1)
 
       def __get_matrices(self):
 

@@ -45,27 +45,60 @@ class customCNN(nn.Module):
         projected_features = self.projection(cnn_features)
         return projected_features
 
+# class customCNN1(nn.Module):
+#     def __init__(self,weights_path = "./learning/data/pretrained_models/fcn32s_from_caffe.pth"):
+
+        
+#         super(customCNN1,self).__init__()
+
+#         self.weights_path = weights_path
+
+#         self.cnn = FCN32s()
+
+#         pretrained_dict = torch.load(weights_path)
+#         new_dict = OrderedDict()
+#         for k,v in pretrained_dict.items():
+#             if k in self.cnn.state_dict():
+#                 new_dict[k] = v
+#         self.cnn.load_state_dict(new_dict)
+
+#         for param in self.cnn.parameters():
+#             param.requires_grad = False
+ 
+
+#     def forward(self,x):
+#         cnn_features = self.cnn(x)        
+#         return cnn_features
+class Identity(nn.Module):
+    def __init__(self):
+        super(Identity, self).__init__()
+        
+    def forward(self, x):
+        return x
+
 class customCNN1(nn.Module):
     def __init__(self,weights_path = "./learning/data/pretrained_models/fcn32s_from_caffe.pth"):
 
         
         super(customCNN1,self).__init__()
 
-        self.weights_path = weights_path
+        
 
-        self.cnn = FCN32s()
+        self.cnn = torchvision.models.mobilenet_v2(pretrained=True)
 
-        pretrained_dict = torch.load(weights_path)
-        new_dict = OrderedDict()
-        for k,v in pretrained_dict.items():
-            if k in self.cnn.state_dict():
-                new_dict[k] = v
-        self.cnn.load_state_dict(new_dict)
+        # self.cnn = torchvision.models.resnet50(pretrained=True)
 
+        # self.cnn.avgpool = Identity()
+
+        # self.cnn.fc = Identity()
+        print(self.cnn)
+        # self.cnn = torchvision.models.segmentation.fcn_resnet101(pretrained = True)  
+        
         for param in self.cnn.parameters():
             param.requires_grad = False
+        
  
-
+    
     def forward(self,x):
         cnn_features = self.cnn(x)        
         return cnn_features
