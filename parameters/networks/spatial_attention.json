@@ -11,7 +11,7 @@
     "predictor_layers": [100],
     
 
-    "spatial_projection": 64,
+    "spatial_projection": 512,
     "vgg_feature_size": 512,
     
     
@@ -29,27 +29,24 @@
     "hyperparameters":{
         "lr" : [0.001,0.0001],
         "s" : [6],
-        "batch_size":[8,16,32],
+        "batch_size":[1,8,32],
         "offsets": [0,1],
         "offsets_input":[0],
         "normalize":[0,1],
         "coordinates_embedding_size":[0,32],
         "nb_kernel":[32,128],
-        "kernel_size":[3,5],
+        "kernel_size":[5],
         "cnn_feat_size":[128,256],
-        "nb_conv":[2,4],
-        "use_mha":[1],
-        "predictor_layers":[[100],[100,100]],
+        "nb_conv":[2],
+        "use_mha":[0],
+        "predictor_layers":[[100]],
         "dmodel":[32,64,128],
-        "projection_layers":[[128,256,128,64],[128,64,1]],
-        "spatial_projection": [32,64,128,256],
-        "dropout_tfr" : [0,0.1],
-        "h":[1,4]
- 
-     
+        "projection_layers":[[128,256,128,64]],
+        "spatial_projection": [64,128,256,512]
     }
- 
- 
+     
+    
+
  
  
 }

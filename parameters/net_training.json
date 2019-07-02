@@ -1,7 +1,7 @@
 {
-    "model":"spatial_attention",
-    "set_type_train": "train_eval",
-    "set_type_test": "test",
+    "model":"social_attention",
+    "set_type_train": "train",
+    "set_type_test": "eval",
     "load_path" : "",  
 
     "toy":0,
@@ -9,8 +9,8 @@
     "test":0,
     "training_program": 0,
     "training_program: 0 regular, 1:learning curves, 2:hyperparameters tuning":-1,
-    "nb_run_random_search":15,
-    "unjoint_optimisation":0,
+    "nb_run_random_search":12,
+    "unjoint_optimisation":1,
 
     "learning_curves_proportions":[0.10,0.20,0.50,1.0],
 
@@ -18,7 +18,7 @@
     "pred_length"  : 12,
     "seq_length"  : 20,
 
-    "n_epochs" : 200,
+    "n_epochs" : 10,
     "batch_size": 16 ,    
     "lr" : 0.001, 
 

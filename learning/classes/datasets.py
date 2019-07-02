@@ -458,13 +458,10 @@ class Hdf5Dataset():
 
                   img = transform(img)
                   img = img.cuda()
-                  print(img.size())
                   
                   img = img.unsqueeze(0)
                   img = cnn(img)
                   img = img.squeeze(0)
-
-                  print(img.size())
 
                   img = img.cpu()
                   images[scene] = img
@@ -473,6 +470,29 @@ class Hdf5Dataset():
             print("Done!")
             
             return images
+      # def __get_paddings(self):
+      #       widths,heights = [],[]
+      #       for scene in self.scene_list:
+      #             img = np.array(Image.open(self.images_path.format(scene)))
+      #             height,width,_ = img.shape
+      #             heights.append(height)
+      #             widths.append(width)
+      #       max_height = np.max(heights)
+      #       max_width = np.max(widths)
+            
+      #       paddings = []
+      #       for scene in self.scene_list:
+      #             img = np.array(Image.open(self.images_path.format(scene)))
+      #             height,width,_ = img.shape
+      #             pad_height = max_height - height
+      #             pad_width = max_width  - width 
+
+      #             pad_height = self.__get_pad(pad_height)
+      #             pad_width = self.__get_pad(pad_width)
+      #             padding = (pad_width[0],pad_height[0],pad_width[1],pad_height[1])
+      #             paddings.append(padding)
+      #       return paddings
+
       def __get_paddings(self):
             widths,heights = [],[]
             for scene in self.scene_list:
@@ -482,13 +502,13 @@ class Hdf5Dataset():
                   widths.append(width)
             max_height = np.max(heights)
             max_width = np.max(widths)
-            
+            max_dim = max(max_height,max_width)
             paddings = []
             for scene in self.scene_list:
                   img = np.array(Image.open(self.images_path.format(scene)))
                   height,width,_ = img.shape
-                  pad_height = max_height - height
-                  pad_width = max_width  - width 
+                  pad_height = max_dim - height
+                  pad_width = max_dim  - width 
 
                   pad_height = self.__get_pad(pad_height)
                   pad_width = self.__get_pad(pad_width)

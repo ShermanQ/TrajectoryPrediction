@@ -447,6 +447,11 @@ def main():
             args_net_c = copy.deepcopy(args_net)
             hyper_parameters = net_params["hyperparameters"]
             r_hyper = helpers.random_hyperparameters(hyper_parameters)
+
+            while r_hyper["normalize"] == 1 and r_hyper["coordinates_embedding_size"] > 0:
+                r_hyper = helpers.random_hyperparameters(hyper_parameters)
+
+
             for key in r_hyper:
                 args_net_c[key] = r_hyper[key]
             print("-----net parameters")
@@ -504,8 +509,7 @@ def main():
                 "k":training_param["k"],
                 "early_stopping_thresh": training_param["early_stopping_thresh"],
                 "unjoint_optimisation": training_param["unjoint_optimisation"]
-
-                
+               
             }
 
             print("-----{}th training".format(i))
