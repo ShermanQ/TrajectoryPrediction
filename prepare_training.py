@@ -32,6 +32,7 @@ def main():
         scene_list = prepare_training_params["toy_scenes"]
     else:
         scene_list = prepare_training_params["selected_scenes"]
+        test_list = prepare_training_params["test_scenes"]
 
         # scene_list = helpers.augment_scene_list(scene_list,preprocessing["augmentation_angles"])
         # train_list = helpers.augment_scene_list(train_list,preprocessing["augmentation_angles"])
@@ -56,12 +57,20 @@ def main():
    
     print(time.time()-s)
     sampler = prepare_training_hdf5.PrepareTrainingHdf5(data_params_path,args[2],prep_toy,smooth = False)
-    
+
+    # For the test scenes, we increase the shift value and set it to the duration
+    # of the observation duration
     print("sampling trajectories")
     for scene in scene_list:
         print(scene)
-
-        sampler.extract_data(scene)
+        if scene in test_list:
+            print("scene in test: changing shift value")
+            shift_temp = sampler.shift
+            sampler.shift = prepare_training_params["t_obs"]
+            sampler.extract_data(scene)
+            sampler.shift = shift_temp
+        else:
+            sampler.extract_data(scene)
         print("DOne!")
 
     print(time.time()-s)
