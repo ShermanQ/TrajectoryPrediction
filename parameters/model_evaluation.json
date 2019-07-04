@@ -6,10 +6,10 @@
     "augmentation_angles":[90,180,270],
     "learning_curves":0,
     "learning_props":[0.1,0.2,0.5,1.0],
-    "batch_size":1000,
+    "batch_size":100,
     "use_neighbors":1,
-    "model_name":"social_soft_joint_final",
-    "report_name":"social_soft_joint_final",
+    "model_name":"social_soft_joint_eval_nl",
+    "report_name":"social_soft_joint_eval_nl",
     "set_type_test":"test",
     "dynamic_threshold":0.001,
     "types2spatial":{
@@ -26,7 +26,7 @@
         "obstacle_car":1,
         "obstacle_bicycle":2
     },
-    "disjoint_evaluation":0
+    "disjoint_evaluation":1
     
 
 }
