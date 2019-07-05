@@ -19,6 +19,7 @@ from scipy.spatial.distance import euclidean
 import matplotlib.image as mpimg
 import cv2
 
+import copy
 
 import time
 
@@ -36,6 +37,7 @@ def main():
     args = sys.argv
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")    
+    torch.manual_seed(42)
     # device = torch.device("cpu")
     print(device)
     print(torch.cuda.is_available())
@@ -118,14 +120,14 @@ def main():
     elif set_type_test == "train_eval":
         scenes = train_eval_scenes
 
-    scenes = ["coupa0"]#########################################################################""
+    # scenes = ["coupa0"]#########################################################################
     losses_scenes = {}
     times = 0 # sum time for every prediction
     nb = 0 # number of predictions
 
 
 #############################################################################################
-#############################################################################################""
+#############################################################################################
     dir_name = data_params["reports_evaluation"] + "{}/".format(report_name)
     sub_dir_name = data_params["reports_evaluation"] + "{}/scene_reports/".format(report_name) 
 
@@ -160,9 +162,9 @@ def main():
         
         for batch_idx, data in enumerate(data_loader):
                 
-            if batch_idx  > 1:
-                print("break")
-                break
+            # if batch_idx  > 1:
+            #     print("break")
+            #     break
             # Load data
             inputs, labels,types,points_mask, active_mask, imgs,target_last,input_last = data
             inputs = inputs.to(device)
@@ -172,7 +174,6 @@ def main():
 
 
             nb_types = len(prepare_param["types_dic"].keys()) 
-            # types = torch.FloatTensor(types_ohe(types.cpu().numpy(),nb_types)).to(device)
         
             imgs =  imgs.to(device)        
             active_mask = helpers_evaluation.get_active_mask(points_mask[1])
@@ -180,45 +181,28 @@ def main():
 
             if not args_net["use_images"]:
                 imgs = imgs.repeat(inputs.size()[0],1)
-
-            # penser au cas où target_last et input_last sont des listes vides
-            # if not args_net["offsets"]:
-            #     target_last = target_last.repeat(inputs.size()[0],1)
-            # if not args_net["offsets_input"]:
-            #     input_last = input_last.repeat(inputs.size()[0],1)
-
-            # if not args_net["use_images"]:
-            #     imgs = imgs.repeat(inputs.size()[0],1)
-
-          
-
-
+            if not args_net["offsets_input"]:
+                input_last = np.zeros_like(inputs.cpu().numpy())
+                # input_last = input_last.repeat(inputs.size()[0],1)
+                # input_last = torch.FloatTensor(input_last)
+                
+                # input_last.repeat(inputs.size()[0],1)
 
             for i,l,t,p0,p1,a,img,tl,il in zip(inputs,labels,types,points_mask[0],points_mask[1],active_mask,imgs,target_last,input_last):
 
-                    
+                    # selecting active agents
                     i = i[a]
                     l = l[a]
                     t = t[a]
-                    t = t.unsqueeze(squeeze_dimension)
-
-                    #spatial loss
-                    spatial_profile_ids = [ types_to_spatial[str(key)] for key in   t.cpu().numpy().astype(int).flatten() ]
-                    
-                    
-
-
-                    t = torch.FloatTensor(helpers_evaluation.types_ohe(t.cpu().numpy(),nb_types)).to(device)
-                    if not args_net["use_neighbors"]:
-                        t = t.squeeze(squeeze_dimension)
-
-
 
                     p0 = p0[a]
                     p1 = p1[a]
                     tl = tl[a]
                     il = il[a]
 
+                    # always only one image per sample, set batchsize to 1
+                    img = img.unsqueeze(0).repeat(len(a),1,1,1)   
+                    
                     # cse when there is no neighbors for np arrays
                     if len(a) == 1:
                         p0 = np.expand_dims(p0,axis = 0)
@@ -226,44 +210,88 @@ def main():
                         tl = np.expand_dims(tl,axis = 0)
                         il = np.expand_dims(il,axis = 0)
 
-
-
-
-                    i = i.unsqueeze(squeeze_dimension)
+                    t = t.unsqueeze(squeeze_dimension)
                     il = np.expand_dims(il,squeeze_dimension)
-
-                    l = l.unsqueeze(squeeze_dimension)
                     tl = np.expand_dims(tl,squeeze_dimension)
+                    a = a.to(device)
 
-                    p0 = np.expand_dims(p0,axis = squeeze_dimension)
-                    p1 = np.expand_dims(p1,axis = squeeze_dimension)
 
-                    # t = t.unsqueeze(squeeze_dimension)
+                    #spatial loss
+                    spatial_profile_ids = [ types_to_spatial[str(key)] for key in   t.cpu().numpy().astype(int).flatten() ]
+                    t = torch.FloatTensor(helpers_evaluation.types_ohe(t.cpu().numpy(),nb_types)).to(device)
 
-                    
-                    
-                    p = (p0,p1)
+                    #######################################################################################
+                    ######################################################################################
+                    if eval_params["disjoint_evaluation"] and squeeze_dimension == 0:
+                        
+                        n_agent = i.size()[0]
+                        ids_perm = np.arange(n_agent)
+                        # batch_i, batch_t, batch_p0, batch_p1 = [], [], [], []
+                        batch_i,  batch_p0, batch_p1 = [], [], []
+                        
+                        for ix in range(n_agent):
+                            ids_perm = np.roll(ids_perm,-ix)
+                            batch_i.append(i[torch.LongTensor(ids_perm)])
+                            # batch_t.append(t[torch.LongTensor(ids_perm)])
+                            batch_p0.append(p0[ids_perm])
+                            batch_p1.append(p1[ids_perm])
 
-                    
+
+
+
+                        i = torch.stack(batch_i)
+                        p0 = np.array(batch_p0)
+                        p1 = np.array(batch_p1)
+
+                        p = (p0,p1)
+                        # t = torch.FloatTensor(helpers_evaluation.types_ohe(t.cpu().numpy(),nb_types)).to(device)
+
+                        #predict and count time
+                        torch.cuda.synchronize()
+                        start = time.time()
+                        o = net((i,t,a,p,img))       #img et type pas traité mais balek dans ce cas là (social disjoint)         
+                        torch.cuda.synchronize()
+                        end = time.time() - start
+                        times += end 
+                        nb += len(a)
+                        o = o[:,0].unsqueeze(squeeze_dimension)
+                         # chaque agent est prédit comme agent principal, on garde uniquement la première prédiction
+                        
+
+                        p0 = np.expand_dims(p0[:,0],axis = squeeze_dimension)
+                        p1 = np.expand_dims(p1[:,0],axis = squeeze_dimension)
+                        
+                        p = (p0,p1)
+
+
+                    else:
+                        
+                        if not args_net["use_neighbors"]:
+                            t = t.squeeze(squeeze_dimension)
+
+                        i = i.unsqueeze(squeeze_dimension)
+                        l = l.unsqueeze(squeeze_dimension)
+                        p0 = np.expand_dims(p0,axis = squeeze_dimension)
+                        p1 = np.expand_dims(p1,axis = squeeze_dimension)      
+                        p = (p0,p1)
+
+                        #predict and count time
+                        torch.cuda.synchronize()
+                        start = time.time()
+                        o = net((i,t,a,p,img))                 
+                        torch.cuda.synchronize()
+                        end = time.time() - start
+                        times += end 
+                        nb += len(a)
+
+                    ###############################################################################"
+                    # #######################################################################""####
 
                     if sample_id % print_every == 0:
                         print("sample n {}".format(sample_id))
-
-                    
-                    a = a.to(device)
-                    
-                    #predict and count time
-                    torch.cuda.synchronize()
-                    start = time.time()
-                    o = net((i,t,a,p,img))                 
-                    torch.cuda.synchronize()
-                    end = time.time() - start
-                    times += end 
-                    nb += len(a)
-
+         
                     # mask for loss
-                    p = torch.FloatTensor(p[1]).to(device)
-                    
+                    p = torch.FloatTensor(p[1]).to(device)                    
                     o = torch.mul(p,o)
                     l = torch.mul(p,l) # bon endroit?
 
@@ -283,17 +311,14 @@ def main():
 
                             i[:,:,:,0] = helpers.revert_standardization(i[:,:,:,0],meanx,stdx)
                             i[:,:,:,1] = helpers.revert_standardization(i[:,:,:,1],meany,stdy)
-                            i = torch.FloatTensor(i).to(device)
-
-                                
-                            
+                            i = torch.FloatTensor(i).to(device)        
                         else:
                             min_ =  scaler["normalization"]["min"]
                             max_ =  scaler["normalization"]["max"]
                             i = helpers.revert_min_max_scale(i.detach().cpu().numpy(),min_,max_)
                             i = torch.FloatTensor(i).to(device)
 
-                   
+                   # revert offsets for inputs and outputs
                     o = o.view(l.size())
                     i,l,o = helpers.offsets_to_trajectories(i.detach().cpu().numpy(),
                                                                         l.detach().cpu().numpy(),
@@ -303,46 +328,55 @@ def main():
                     i,l,o = torch.FloatTensor(i).to(device),torch.FloatTensor(l).to(device),torch.FloatTensor(o).to(device)
 
                     # compute every standard criterion
-                    losses = {}
-                   
-
+                    losses = {}     
                     for j,c in enumerate(criterions):
-                        criterion = criterions[c]
-                        
+                        criterion = criterions[c]                        
                         ########################"""
                         # #########################
                         # for those criterion if we want to evaluate we juste pass the parameter to select only first loss"
 
-                        loss = criterion(o, l,p)
+                        loss = criterion(o.clone(), l.clone(),p.clone(),first_only = 0)
+                        loss_unjoint = criterion(o.clone(), l.clone(),p.clone(),first_only = 1)
+
+                        # print(loss,loss_unjoint)
                         losses[c] = loss.item()
+                        losses[c+"_unjoint"] = loss_unjoint.item()
+
                         # if criterion not in scene of losses report add it
                         if c not in losses_scenes[scene]:
                             losses_scenes[scene][c] = []
+                        if c+"_unjoint" not in losses_scenes[scene]:
+                            losses_scenes[scene][c+"_unjoint"] = []
                         # append value of criterion in scene/criterion list
                         losses_scenes[scene][c].append(loss.item())
+                        losses_scenes[scene][c+"_unjoint"].append(loss_unjoint.item())
+
 
 
                     # social loss
                     conflict_thresholds = [0.1,0.5,1.0]
-                    social_losses = []
                     conflict_points = []
 
                     # social loss
                     for thresh in conflict_thresholds:
-                        ls,pts = helpers_evaluation.conflicts(o.squeeze(squeeze_dimension).cpu().numpy(),thresh)
-                        social_losses.append(ls)
+                        social_loss,social_loss_disjoint,social_loss_pf,social_loss_disjoint_pf,pts = helpers_evaluation.conflicts(o.squeeze(squeeze_dimension).cpu().numpy(),thresh)
                         conflict_points.append(pts)
-
-                        # print("social_".format(thresh))
                         key = "social_" + str(thresh)
                         
                         if key not in losses_scenes[scene]:
                             losses_scenes[scene][key] = []
-                        losses_scenes[scene][key].append(ls)
-                        losses[key] = ls
+                        losses_scenes[scene][key].append(social_loss)
+                        losses[key] = social_loss
+
+                        key = "social_disjoint_" + str(thresh)
+                        
+                        if key not in losses_scenes[scene]:
+                            losses_scenes[scene][key] = []
+                        losses_scenes[scene][key].append(social_loss_disjoint)
+                        losses[key] = social_loss_disjoint
                     
                     # dynamic loss
-                    speed_len,acc_len = helpers_evaluation.dynamic_eval(
+                    speed_len,acc_len,speed_len_disjoint,acc_len_disjoint = helpers_evaluation.dynamic_eval(
                         o.squeeze(squeeze_dimension).cpu().numpy(),
                         np.argmax(t.squeeze(squeeze_dimension).cpu().numpy(),-1),
                         json.load(open(data_params["dynamics"])),
@@ -356,26 +390,36 @@ def main():
                     losses_scenes[scene]["dynamic_speed"].append(speed_len)
                     losses["dynamic_speed"] = speed_len
 
+                    if "dynamic_speed_disjoint" not in losses_scenes[scene]:
+                        losses_scenes[scene]["dynamic_speed_disjoint"] = []
+                    losses_scenes[scene]["dynamic_speed_disjoint"].append(speed_len_disjoint)
+                    losses["dynamic_speed_disjoint"] = speed_len_disjoint
+
                     if "dynamic_acceleration" not in losses_scenes[scene]:
                         losses_scenes[scene]["dynamic_acceleration"] = []
                     losses_scenes[scene]["dynamic_acceleration"].append(acc_len)
                     losses["dynamic_acceleration"] = acc_len
 
+                    if "dynamic_acceleration_disjoint" not in losses_scenes[scene]:
+                        losses_scenes[scene]["dynamic_acceleration_disjoint"] = []
+                    losses_scenes[scene]["dynamic_acceleration_disjoint"].append(acc_len_disjoint)
+                    losses["dynamic_acceleration_disjoint"] = acc_len_disjoint
+
                     # spatial loss
                     # spatial_profile_ids
                     #convert back to pixel
-                    spatial_losses = []
-                    for id_,trajectory_p in zip(spatial_profile_ids,o.squeeze(squeeze_dimension).cpu().numpy()):
-                        trajectory_p *= pixel2meters
-                        trajectory_p = trajectory_p.astype(np.int32)
-                        res = helpers_evaluation.spatial_conflicts(spatial_masks[id_],trajectory_p)
-                        spatial_losses.append(res)
-                    spatial_loss = np.mean(spatial_losses)
+                    spatial_unjoint,spatial_joint = helpers_evaluation.spatial_loss(spatial_profile_ids,spatial_masks,o.squeeze(squeeze_dimension).cpu().numpy(),pixel2meters)
+                
 
-                    if "spatial_loss" not in losses_scenes[scene]:
-                        losses_scenes[scene]["spatial_loss"] = []
-                    losses_scenes[scene]["spatial_loss"].append(spatial_loss)
-                    losses["spatial_loss"] = spatial_loss
+                    if "spatial_joint" not in losses_scenes[scene]:
+                        losses_scenes[scene]["spatial_joint"] = []
+                    losses_scenes[scene]["spatial_joint"].append(spatial_joint)
+                    losses["spatial_joint"] = spatial_joint
+
+                    if "spatial_unjoint" not in losses_scenes[scene]:
+                        losses_scenes[scene]["spatial_unjoint"] = []
+                    losses_scenes[scene]["spatial_unjoint"].append(spatial_unjoint)
+                    losses["spatial_unjoint"] = spatial_unjoint
 
                     scene_dict[sample_id] = {} # init sample dict in the scene
                     losses_dict[sample_id] = {} # init losses dict for sample in scene

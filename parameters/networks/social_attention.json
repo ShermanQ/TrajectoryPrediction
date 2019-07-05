@@ -6,7 +6,7 @@
 
     "dmodel":128,
     "dropout_tfr" : 0.1,
-    "h":1,
+    "h":4,
     
     
     "predictor_layers": [100,100],

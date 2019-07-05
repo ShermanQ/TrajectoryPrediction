@@ -66,7 +66,7 @@ def main():
         if scene in test_list:
             print("scene in test: changing shift value")
             shift_temp = sampler.shift
-            sampler.shift = prepare_training_params["t_obs"]
+            sampler.shift = prepare_training_params["t_pred"]
             sampler.extract_data(scene)
             sampler.shift = shift_temp
         else:

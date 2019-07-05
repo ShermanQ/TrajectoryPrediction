@@ -3,9 +3,9 @@
     "load_path" : "",    
     
     "input_dim":2,
-    "dmodel":128,
+    "dmodel":32,
     "dropout_tfr" : 0,
-    "h":1,
+    "h":4,
 
     
     "predictor_layers": [100],
@@ -15,14 +15,14 @@
     "vgg_feature_size": 512,
     
     
-    "coordinates_embedding_size":32,
+    "coordinates_embedding_size":0,
     "nb_conv":2,
-    "nb_kernel":32,
-    "cnn_feat_size":128,
-    "kernel_size":3,
+    "nb_kernel":128,
+    "cnn_feat_size":256,
+    "kernel_size":5,
     
     "projection_layers":[128, 256, 128, 64],
-    "use_mha":0,
+    "use_mha":1,
     "use_neighbors": 1,
     "use_images": 1,
 

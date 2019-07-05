@@ -359,13 +359,17 @@ def main():
 
                     # social loss
                     for thresh in conflict_thresholds:
-                        social_loss,social_loss_disjoint,pts = helpers_evaluation.conflicts(o.squeeze(squeeze_dimension).cpu().numpy(),thresh)
+                        social_loss,social_loss_disjoint,social_loss_pf,social_loss_disjoint_pf,pts = helpers_evaluation.conflicts(o.squeeze(squeeze_dimension).cpu().numpy(),thresh)
                         conflict_points.append(pts)
                         key = "social_" + str(thresh)
                         
                         if key not in losses_scenes[scene]:
                             losses_scenes[scene][key] = []
-                        losses_scenes[scene][key].append(social_loss)
+
+                        #
+                        for sl in social_loss_pf:
+                            losses_scenes[scene][key].append(sl)                            
+                        #
                         losses[key] = social_loss
 
                         key = "social_disjoint_" + str(thresh)
@@ -373,10 +377,15 @@ def main():
                         if key not in losses_scenes[scene]:
                             losses_scenes[scene][key] = []
                         losses_scenes[scene][key].append(social_loss_disjoint)
+                        for sl in social_loss_disjoint_pf:
+                            losses_scenes[scene][key].append(sl)     
                         losses[key] = social_loss_disjoint
                     
                     # dynamic loss
-                    speed_len,acc_len,speed_len_disjoint,acc_len_disjoint = helpers_evaluation.dynamic_eval(
+# acc_lhood,speed_lhood,acc_lhood_disjoint,speed_lhood_disjoint,np.mean(acc_lhood),np.mean(speed_lhood),np.mean(acc_lhood_disjoint),np.mean(speed_lhood_disjoint)
+                    # speed_len,acc_len,speed_len_disjoint,acc_len_disjoint = helpers_evaluation.dynamic_eval(
+                    acc,spd,acc_d,spd_d,acc_mean,spd_mean,acc_d_mean,spd_d_mean = helpers_evaluation.dynamic_eval(
+                    
                         o.squeeze(squeeze_dimension).cpu().numpy(),
                         np.argmax(t.squeeze(squeeze_dimension).cpu().numpy(),-1),
                         json.load(open(data_params["dynamics"])),
@@ -387,23 +396,32 @@ def main():
 
                     if "dynamic_speed" not in losses_scenes[scene]:
                         losses_scenes[scene]["dynamic_speed"] = []
-                    losses_scenes[scene]["dynamic_speed"].append(speed_len)
-                    losses["dynamic_speed"] = speed_len
+
+                    for sl in spd:
+                        losses_scenes[scene]["dynamic_speed"].append(sl)    
+                    # losses_scenes[scene]["dynamic_speed"].append(spd)
+                    losses["dynamic_speed"] = spd_mean
 
                     if "dynamic_speed_disjoint" not in losses_scenes[scene]:
                         losses_scenes[scene]["dynamic_speed_disjoint"] = []
-                    losses_scenes[scene]["dynamic_speed_disjoint"].append(speed_len_disjoint)
-                    losses["dynamic_speed_disjoint"] = speed_len_disjoint
+                    for sl in spd_d:
+                        losses_scenes[scene]["dynamic_speed_disjoint"].append(sl) 
+                    # losses_scenes[scene]["dynamic_speed_disjoint"].append(spd_d)
+                    losses["dynamic_speed_disjoint"] = spd_d_mean
 
                     if "dynamic_acceleration" not in losses_scenes[scene]:
                         losses_scenes[scene]["dynamic_acceleration"] = []
-                    losses_scenes[scene]["dynamic_acceleration"].append(acc_len)
-                    losses["dynamic_acceleration"] = acc_len
+                    for sl in acc:
+                        losses_scenes[scene]["dynamic_acceleration"].append(sl) 
+                    # losses_scenes[scene]["dynamic_acceleration"].append(acc)
+                    losses["dynamic_acceleration"] = acc_mean
 
                     if "dynamic_acceleration_disjoint" not in losses_scenes[scene]:
                         losses_scenes[scene]["dynamic_acceleration_disjoint"] = []
-                    losses_scenes[scene]["dynamic_acceleration_disjoint"].append(acc_len_disjoint)
-                    losses["dynamic_acceleration_disjoint"] = acc_len_disjoint
+                    for sl in acc_d:
+                        losses_scenes[scene]["dynamic_acceleration_disjoint"].append(sl) 
+                    # losses_scenes[scene]["dynamic_acceleration_disjoint"].append(acc_d)
+                    losses["dynamic_acceleration_disjoint"] = acc_d_mean
 
                     # spatial loss
                     # spatial_profile_ids
@@ -413,11 +431,13 @@ def main():
 
                     if "spatial_joint" not in losses_scenes[scene]:
                         losses_scenes[scene]["spatial_joint"] = []
+
                     losses_scenes[scene]["spatial_joint"].append(spatial_joint)
                     losses["spatial_joint"] = spatial_joint
 
                     if "spatial_unjoint" not in losses_scenes[scene]:
                         losses_scenes[scene]["spatial_unjoint"] = []
+
                     losses_scenes[scene]["spatial_unjoint"].append(spatial_unjoint)
                     losses["spatial_unjoint"] = spatial_unjoint
 

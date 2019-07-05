@@ -104,28 +104,6 @@ def load_data_loaders(data,prepare_param,training_param,net_params,data_file,sce
 #             return loss 
 
 
-class MaskedLoss(nn.Module):
-    def __init__(self,criterion):
-        super(MaskedLoss, self).__init__()
-        self.criterion = criterion
-
-    def forward(self, outputs, targets, mask = None, first_only = 0):
-
-        if mask is None:
-            mask = torch.ones_like(targets)
-        
-        if first_only:
-            mask[:,1:,:,:] = 0
-        
-        loss =  self.criterion(outputs*mask, targets*mask)
-        
-        # loss = loss.sum()/(mask.sum()/2.0)
-        loss = loss.sum()/(mask.sum())
-
-        # mask.detach()
-
-        return loss
-
 # class MaskedLoss(nn.Module):
 #     def __init__(self,criterion):
 #         super(MaskedLoss, self).__init__()
@@ -141,13 +119,35 @@ class MaskedLoss(nn.Module):
         
 #         loss =  self.criterion(outputs*mask, targets*mask)
         
-#         a = (mask.sum(-1).sum(-1)>0).cuda().float()
-#         # loss = torch.sqrt(loss.sum(dim = -1))
-#         loss = loss.sum(dim = -1)
-#         loss = loss.sum(dim = -1)
-#         loss = loss.sum(dim = -1)/(a.sum(-1))
-#         loss = loss.mean(dim = -1)
-#         return loss    
+#         # loss = loss.sum()/(mask.sum()/2.0)
+#         loss = loss.sum()/(mask.sum())
+
+#         # mask.detach()
+
+#         return loss
+
+class MaskedLoss(nn.Module):
+    def __init__(self,criterion):
+        super(MaskedLoss, self).__init__()
+        self.criterion = criterion
+
+    def forward(self, outputs, targets, mask = None, first_only = 0):
+
+        if mask is None:
+            mask = torch.ones_like(targets)
+        
+        if first_only:
+            mask[:,1:,:,:] = 0
+        
+        loss =  self.criterion(outputs*mask, targets*mask)
+        
+        a = (mask.sum(-1).sum(-1)>0).cuda().float()
+        # loss = torch.sqrt(loss.sum(dim = -1))
+        loss = loss.sum(dim = -1)
+        loss = loss.sum(dim = -1)
+        loss = loss.sum(dim = -1)/(a.sum(-1))
+        loss = loss.mean(dim = -1)
+        return loss    
 
 def random_hyperparameters(hyperparameters):
     selected_params = {}
