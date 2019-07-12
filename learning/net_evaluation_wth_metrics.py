@@ -126,6 +126,8 @@ def main():
 
     s = time.time()
     for z,scene in enumerate(scenes):
+
+        sample_id = 0
         
         print(scene)
 
@@ -149,7 +151,10 @@ def main():
             inputs = inputs.to(device)
             labels =  labels.to(device)
             imgs =  imgs.to(device)  
+
+            # active mask for training, along batch*numbr_agent axis
             active_mask = active_mask.to(device)
+
             points_mask = list(points_mask)
             if not args_net["use_images"]:
                 imgs = imgs.repeat(inputs.size()[0],1)
@@ -167,9 +172,45 @@ def main():
             else:
                 outputs = net((inputs,types,active_mask,points_mask,imgs))
 
-        print(time.time()-s)
+            active_mask = helpers_evaluation.get_active_mask(points_mask[1])
+            points_mask = torch.FloatTensor(points_mask[1]).to(device)                    
+            outputs = torch.mul(points_mask,outputs)
+            labels = torch.mul(points_mask,labels) # bon endroit?
+            # active mask per sample in batch
 
-    print(time.time()-s)
+
+            for i,l,o,t,p, a, il, tl  in zip(inputs, labels, outputs, types, points_mask,active_mask, input_last, target_last):
+
+                i = i[a].detach().cpu().numpy()
+                l = l[a].detach().cpu().numpy()
+                t = t[a]
+                p = p[a]
+                o = o[a].detach().cpu().numpy()
+                tl = tl[a]
+                il = il[a]
+
+                # revert scaling
+                if args_net["normalize"]:
+                    i = helpers_evaluation.revert_scaling_evaluation(
+                        args_net["offsets_input"],
+                        data_params["scalers"],
+                        i)
+
+                i,l,o = helpers.offsets_to_trajectories( i,l,o,args_net["offsets"],args_net["offsets_input"],tl,il)
+                           
+
+                # apply active mask
+                scene_dict[sample_id] = {}
+                scene_dict[sample_id]["inputs"] = i.tolist()
+                scene_dict[sample_id]["labels"] = l.tolist()
+                scene_dict[sample_id]["outputs"] = o.tolist()
+                # scene_dict[sample_id]["active_mask"] = a.cpu().numpy().tolist()
+                scene_dict[sample_id]["types"] = t.tolist()
+                scene_dict[sample_id]["points_mask"] = p.cpu().numpy().tolist()
+
+                sample_id += 1
+        json.dump(scene_dict, open(sub_dir_name + "{}_samples.json".format(scene),"w"),indent= 0)
+        
     
 
 if __name__ == "__main__":

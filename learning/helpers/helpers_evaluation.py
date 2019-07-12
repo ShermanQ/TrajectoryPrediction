@@ -22,6 +22,27 @@ import os
 from classes.datasets import Hdf5Dataset,CustomDataLoader
 from classes.evaluation import Evaluation
 
+# i = i.detach().cpu().numpy()
+def revert_scaling_evaluation(offsets_input,scalers_path,i):
+    scaler = json.load(open(scalers_path))
+    if offsets_input:
+        meanx =  scaler["standardization"]["meanx"]
+        meany =  scaler["standardization"]["meany"]
+        stdx =  scaler["standardization"]["stdx"]
+        stdy =  scaler["standardization"]["stdy"]
+        
+
+        i[:,:,0] = helpers.revert_standardization(i[:,:,0],meanx,stdx)
+        i[:,:,1] = helpers.revert_standardization(i[:,:,1],meany,stdy)
+    else:
+        min_ =  scaler["normalization"]["min"]
+        max_ =  scaler["normalization"]["max"]
+        i = helpers.revert_min_max_scale(i,min_,max_)
+    return i        
+
+    # i = torch.FloatTensor(i).to(device)        
+
+
 
 def types_ohe(types,nb_types):       
     cat = np.arange(1,nb_types+1).reshape(nb_types,1)
