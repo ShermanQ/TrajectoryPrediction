@@ -287,3 +287,87 @@ def get_factor(scene,correspondences_trajnet,correspondences_manual):
 
     return meter2pixel_ratio
 
+
+def predict_neighbors_disjoint(inputs,types,active_mask,points_mask,imgs,net,device):
+    b,n,s,i = points_mask[0].shape
+    b,n,p,i = points_mask[1].shape
+
+    # permute every samples
+    batch_perms = []
+    batch_p0 = []
+    batch_p1 = []
+    for batch_element,p0,p1 in zip(inputs,points_mask[0],points_mask[1]):
+        batch_element_perms = []  
+        batch_p0_perms = []
+        batch_p1_perms = []
+
+        ids_perm = np.arange(n)
+
+        for ix in range(n):
+            ids_perm = np.roll(ids_perm,-ix)
+            batch_element_perms.append(batch_element[torch.LongTensor(ids_perm)])
+            batch_p0_perms.append(p0[ids_perm])
+            batch_p1_perms.append(p1[ids_perm])
+        
+        
+        batch_element_perms = torch.stack(batch_element_perms)
+        batch_perms.append(batch_element_perms)
+        batch_p0_perms = np.array(batch_p0_perms)
+        batch_p0.append(batch_p0_perms)
+        batch_p1_perms = np.array(batch_p1_perms)
+        batch_p1.append(batch_p1_perms)
+
+    # b,n,s,i -> b,n,n,s,i
+    batch_perms = torch.stack(batch_perms)
+    batch_p0 = np.array(batch_p0)
+    batch_p1 = np.array(batch_p1)
+
+    # b,n,n,s,i -> b*n,n,s,i
+    batch_perms = batch_perms.view(-1,n,s,i)
+    batch_p0 = batch_p0.reshape(-1,n,s,i)
+    batch_p1 = batch_p1.reshape(-1,n,p,i)
+
+    # save inputs
+    inputs_temp = inputs
+    points_mask_temp = points_mask
+    active_mask_temp = active_mask
+
+    # new inputs from permutations
+    inputs = batch_perms
+    points_mask = (batch_p0,batch_p1)
+    active_mask = torch.arange(inputs.size()[0]*inputs.size()[1]).to(device)
+
+    # prediction
+    outputs = net((inputs,types,active_mask,points_mask,imgs))
+
+    # reset inputs
+    inputs = inputs_temp
+    points_mask = points_mask_temp
+    active_mask = active_mask_temp
+
+    # select outputs
+    outputs = outputs[:,0]
+    outputs = outputs.view(b,n,p,i)
+    return outputs,inputs,types,active_mask,points_mask
+        
+def predict_naive(inputs,types,active_mask,points_mask,imgs,net,device):
+    b,n,s,i = points_mask[0].shape
+    b,n,p,i = points_mask[1].shape
+
+    inputs = inputs.view(-1,s,i).unsqueeze(1)
+    types = types.view(-1).unsqueeze(1)
+    points_mask[0] = np.expand_dims(points_mask[0].reshape(-1,s,i),1)
+    points_mask[1] = np.expand_dims(points_mask[1].reshape(-1,p,i),1)
+
+    # prediction
+    outputs = net((inputs,types,active_mask,points_mask,imgs))
+
+    # b*n,s,i -> b,n,s,i
+    outputs = outputs.squeeze(1).view(b,n,p,i)
+    inputs = inputs.squeeze(1).view(b,n,s,i)
+    types = types.squeeze(1).view(b,n)
+    points_mask[0] = points_mask[0].squeeze(1).reshape(b,n,s,i)
+    points_mask[1] = points_mask[1].squeeze(1).reshape(b,n,p,i)
+
+    return outputs,inputs,types,active_mask,points_mask
+    

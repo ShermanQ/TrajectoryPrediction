@@ -70,7 +70,7 @@ class LinearProjection(nn.Module):
         # eyes = eyes.repeat(mha_mask.shape[0],0)
 
         # mha_mask = np.logical_or(mha_mask,eyes).astype(int)
-        return torch.ByteTensor(mha_mask).to(self.device).detach()
+        return torch.ByteTensor(mha_mask).detach()
         # return torch.ByteTensor(mha_mask).to(self.device)
 
 
@@ -85,7 +85,7 @@ class SoftAttention(nn.Module):
 
     def forward(self,q,k,v,points_mask = None):
         if points_mask is not None:
-            mask = self.mlp_attention.get_mask(points_mask,q.size()[1])
+            mask = self.mlp_attention.get_mask(points_mask,q.size()[1]).to(self.device)
             att = self.mlp_attention(q,k,v,mask)
         else:
             att = self.mlp_attention(q,k,v)

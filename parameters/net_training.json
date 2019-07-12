@@ -1,5 +1,5 @@
 {
-    "model":"social_attention",
+    "model":"spatial_attention",
     "set_type_train": "train_eval",
     "set_type_test": "test",
     "load_path" : "",  
@@ -18,7 +18,7 @@
     "pred_length"  : 12,
     "seq_length"  : 20,
 
-    "n_epochs" : 80,
+    "n_epochs" : 50,
     "batch_size": 16 ,    
     "lr" : 0.0001, 
 
