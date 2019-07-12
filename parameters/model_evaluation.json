@@ -6,10 +6,10 @@
     "augmentation_angles":[90,180,270],
     "learning_curves":0,
     "learning_props":[0.1,0.2,0.5,1.0],
-    "batch_size":3,
+    "batch_size":1,
     "use_neighbors":1,
-    "model_name":"rnn_mlp",
-    "report_name":"test",
+    "model_name":"s2s_spatial",
+    "report_name":"s2s_spatial",
     "set_type_test":"test",
     "dynamic_threshold":0.001,
     "types2spatial":{

@@ -107,7 +107,7 @@ def main():
         scenes = train_eval_scenes
 
     times = 0 # sum time for every prediction
-    nb = 0 # number of predictions
+    nb_samples = 0 # number of predictions
 
 
 #############################################################################################
@@ -160,8 +160,10 @@ def main():
                 imgs = imgs.repeat(inputs.size()[0],1)
             if not args_net["offsets_input"]:
                 input_last = np.zeros_like(inputs.cpu().numpy()) 
-                
+            
+            b,n,_,_ = inputs.shape
 
+            start = time.time()
             if not args_net["use_neighbors"]:
                 outputs,inputs,types,active_mask,points_mask = helpers_evaluation.predict_naive(inputs,types,active_mask,points_mask,imgs,net,device)
 
@@ -170,7 +172,11 @@ def main():
                 outputs,inputs,types,active_mask,points_mask = helpers_evaluation.predict_neighbors_disjoint(inputs,types,active_mask,points_mask,imgs,net,device)
 
             else:
+                
                 outputs = net((inputs,types,active_mask,points_mask,imgs))
+            end = time.time() - start 
+            times += end
+            nb_samples += b*n
 
             active_mask = helpers_evaluation.get_active_mask(points_mask[1])
             points_mask = torch.FloatTensor(points_mask[1]).to(device)                    
@@ -210,7 +216,13 @@ def main():
 
                 sample_id += 1
         json.dump(scene_dict, open(sub_dir_name + "{}_samples.json".format(scene),"w"),indent= 0)
-        
+    timer = {
+        "total_time":times,
+        "nb_trajectories":nb_samples,
+        "time_per_trajectory":times/nb_samples
+    }
+    # save the time
+    json.dump(timer, open(dir_name + "time.json","w"),indent= 0)   
     
 
 if __name__ == "__main__":

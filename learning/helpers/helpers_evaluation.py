@@ -379,7 +379,7 @@ def predict_naive(inputs,types,active_mask,points_mask,imgs,net,device):
     types = types.view(-1).unsqueeze(1)
     points_mask[0] = np.expand_dims(points_mask[0].reshape(-1,s,i),1)
     points_mask[1] = np.expand_dims(points_mask[1].reshape(-1,p,i),1)
-
+    imgs = imgs.repeat(n,1,1,1)
     # prediction
     outputs = net((inputs,types,active_mask,points_mask,imgs))
 
