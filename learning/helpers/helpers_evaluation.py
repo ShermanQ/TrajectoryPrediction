@@ -223,10 +223,10 @@ def scene_mask(scene,img_path,annotations_path,spatial_profiles):
             annotations = json.load(open(annotations_path.format(scene)))
             polygons = []
             for object_ in annotations["objects"]:
-                    if object_["classTitle"] == spatial_profile:
-                            pts = object_["points"]["exterior"]
-                            a3 = np.array( [pts] ).astype(np.int32)          
-                            cv2.fillPoly( empty_mask, a3, 1 )
+                if object_["classTitle"] == spatial_profile:
+                    pts = object_["points"]["exterior"]
+                    a3 = np.array( [pts] ).astype(np.int32)          
+                    cv2.fillPoly( empty_mask, a3, 1 )
             masks.append(empty_mask)
             masks_ids.append(spatial_profiles[spatial_profile])
 
