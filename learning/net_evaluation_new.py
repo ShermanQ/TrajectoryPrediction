@@ -154,12 +154,109 @@ def main():
         # print(acceleration_results)
         # print(speed_results)
 
+
         # social disjoint, traject7ire prédite et agents voisins groundtruth
         # conflicts_distrib_results = get_distrib_conflicts(scene_files)
+        # social_results = social_conflicts(scene_files)
+        # print(social_results)
         
-        social_results = social_conflicts(scene_files)
-        print(social_results)
+        # spatial_conflicts_results = spatial(scene_files,types_to_spatial,images,spatial_annotations,spatial_profiles,correspondences_trajnet,correspondences_manual)
+        # print(spatial_conflicts_results)
 
+        
+        # results_ade = apply_criterion(helpers_evaluation.ade,scene_files)
+        results_fde = apply_criterion(helpers_evaluation.fde,scene_files)
+
+
+        print(results_fde)
+
+
+def apply_criterion(criterion,scene_files):
+    results = {"global":{"joint":[],"disjoint":[]}}
+    for scene_file in scene_files:
+        scene = scene_file.split("/")[-1].split(".")[0].split("_")[0]
+        results[scene] = {"joint":[],"disjoint":[]}
+        # print(scene)
+
+        scene_file = json.load(open(scene_file))
+        for sample in scene_file:
+            sample = scene_file[sample]
+            labels = np.array(sample["labels"])
+            outputs = np.array(sample["outputs"])
+            point_mask = np.array(sample["points_mask"])
+            
+            loss = criterion(outputs.copy(), labels.copy(),point_mask.copy())
+            loss_unjoint = criterion(outputs[0].copy(), labels[0].copy(),point_mask[0].copy())
+
+            results[scene]["joint"].append(loss)
+            results[scene]["disjoint"].append(loss_unjoint)
+
+            results["global"]["joint"].append(loss)
+            results["global"]["disjoint"].append(loss_unjoint)
+        
+        results[scene]["joint"] = np.mean(results[scene]["joint"])
+        results[scene]["disjoint"] = np.mean(results[scene]["disjoint"])
+    results["global"]["joint"] = np.mean(results["global"]["joint"])
+    results["global"]["disjoint"] = np.mean(results["global"]["disjoint"])
+    return results
+            
+def spatial(scene_files,types_to_spatial,images,spatial_annotations,spatial_profiles,correspondences_trajnet,correspondences_manual):
+    nb_sample = 0
+    spatial_conflicts_results = { "global": {"groundtruth":0,"pred":0}}
+    for scene_file in scene_files:
+        scene = scene_file.split("/")[-1].split(".")[0].split("_")[0]
+
+        spatial_conflicts_results[scene] = {"groundtruth":0,"pred":0}
+
+        scene_file = json.load(open(scene_file))
+
+        #compute mask for spatial structure
+        spatial_masks = helpers_evaluation.scene_mask(scene,images,spatial_annotations,spatial_profiles)
+        #get rtio for meter to pixel conversion
+        meters_to_pixel = helpers_evaluation.get_factor(scene,correspondences_trajnet,correspondences_manual)
+
+        # print(scene)
+        nb_sample_scene = 0
+        for sample in scene_file:
+            sample = scene_file[sample]
+            label = np.array(sample["labels"][0]) * meters_to_pixel
+            output = np.array(sample["outputs"][0]) * meters_to_pixel
+            type_ = sample["types"][0]
+            spatial_profile_id = types_to_spatial[str(int(type_))]
+            mask = spatial_masks[spatial_profile_id]
+            nb_pt = len(output)
+            
+            spatial_pred = spatial_conflicts(mask,output)
+            spatial_gt = spatial_conflicts(mask,label)
+
+            spatial_conflicts_results["global"]["groundtruth"] += spatial_gt
+            spatial_conflicts_results["global"]["pred"] += spatial_pred
+
+            spatial_conflicts_results[scene]["groundtruth"] += spatial_gt
+            spatial_conflicts_results[scene]["pred"] += spatial_pred
+
+            nb_sample_scene += 1
+        spatial_conflicts_results[scene]["groundtruth"] /= float(nb_pt*nb_sample_scene)
+        spatial_conflicts_results[scene]["pred"] /= float(nb_pt*nb_sample_scene)
+        nb_sample += nb_sample_scene
+    spatial_conflicts_results["global"]["groundtruth"] /= float(nb_pt*nb_sample)
+    spatial_conflicts_results["global"]["pred"] /= float(nb_pt*nb_sample)  
+    return spatial_conflicts_results     
+
+def spatial_conflicts(mask,trajectory_p):
+    ctr = 0
+    # print(mask.shape)
+    for point in trajectory_p:
+        #case out of frame
+        if int(point[0]) in range(0,mask.shape[0]) and int(point[1]) in range(0,mask.shape[1]):
+            if mask[int(point[0]),int(point[1])]:
+                    ctr += 1
+    return ctr
+
+# def spatial_loss(spatial_mask,trajectory,meters_to_pixel):
+#     trajectory *= meters_to_pixel
+#     nb = spatial_conflicts(spatial_mask,trajectory)    
+#     return nb
 
 def social_conflicts(scene_files):
     social_results = {}

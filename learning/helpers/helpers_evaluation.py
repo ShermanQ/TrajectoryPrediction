@@ -22,6 +22,60 @@ import os
 from classes.datasets import Hdf5Dataset,CustomDataLoader
 from classes.evaluation import Evaluation
 
+def ade(outputs,targets,mask = None):
+
+    if mask is None:
+        # mask = torch.ones_like(targets)
+        mask = np.ones_like(targets)
+    # if mask is not None:
+    outputs,targets = outputs*mask, targets*mask
+
+    ade = np.subtract(outputs,targets) ** 2
+    ade = np.sqrt(ade.sum(-1))
+    ade = ade.sum()/(mask.sum()/2)
+    return ade
+
+def fde(outputs,targets,mask):
+
+    if len(targets.shape) < 3:
+        outputs = np.expand_dims(outputs,0)
+        targets = np.expand_dims(targets,0)
+        mask = np.expand_dims(mask,0)
+
+
+    if mask is None:
+        mask = np.ones_like(targets)     
+    # if mask is not None:
+    outputs,targets = outputs*mask, targets*mask
+
+    # n,s,i = outputs.shape
+    ids = (mask.sum(-1) > 0).sum(-1)
+
+    points_o = []
+    points_t = []
+    mask_n = []
+
+    for seq_o,seq_t,m,id in zip(outputs,targets,mask,ids):
+        if id == 0 or id == len(seq_t):
+            points_o.append(seq_o[-1])
+            points_t.append(seq_t[-1])
+            mask_n.append(m[-1])
+        else:
+            points_o.append(seq_o[id-1])
+            points_t.append(seq_t[id-1])
+            mask_n.append(m[id-1])
+
+    points_o = np.array(points_o)
+    points_t = np.array(points_t)
+    mask_n = np.array(mask_n)
+
+
+    fde = np.subtract(points_o,points_t) ** 2
+    fde = np.sqrt(fde.sum(-1))
+    fde = fde.sum()/(mask_n.sum()/2.0)
+
+    return fde
+
 # i = i.detach().cpu().numpy()
 def revert_scaling_evaluation(offsets_input,scalers_path,i):
     scaler = json.load(open(scalers_path))
